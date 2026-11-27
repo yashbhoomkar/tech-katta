@@ -10,12 +10,12 @@
   ],
   "companies": [],
   "free": true,
-  "statement": "Every restaurant on Zotato has photos: dishes, menus, the shop front. Restaurants **upload** photos now and then, and customers **view** them all the time: each menu page shows a dozen.\n\nDesign the service that stores and serves the photos. A photo is about **200 KB** and never changes after upload (a new photo gets a new name). Views come from all over India at up to **60,000 a second** in the evening, and a few photos (the famous biryani) take most of them.\n\nViews must be quick: half under 10 ms, and the 99th percentile under 160 ms. Names must never repeat. The budget is ₹25,000 a month.\n\nThe bytes of a photo should never pass through your API servers: in this problem the CDN reads photos straight from the object store, and the upload route stands for the call that creates the name and signs the upload link (the phone then sends the bytes to storage itself).",
+  "statement": "Every restaurant on Zotato has photos: dishes, menus, the shop front. Restaurants **upload** photos now and then, and customers **view** them all the time: each menu page shows a dozen.\n\nDesign the service that stores and serves the photos. A photo is about **200 KB** and never changes after upload (a new photo gets a new name). Views come from all over India at up to **60,000 a second** in the evening, and a few photos (the famous biryani) take most of them.\n\nViews must be quick: half under 10 ms, and the 99th percentile under 160 ms. Names must never repeat. The budget is ₹60,000 a month.\n\nThe bytes of a photo should never pass through your API servers: in this problem the CDN reads photos straight from the object store, and the upload route stands for the call that creates the name and signs the upload link (the phone then sends the bytes to storage itself).",
   "constraints": [
     "Up to 20 crore photos, 200 KB each",
     "Peak: 60,000 views and 50 uploads a second",
     "Median view under 10 ms",
-    "Budget ₹25,000 a month"
+    "Budget ₹60,000 a month"
   ],
   "total_items": 200000000,
   "requests": [
@@ -59,7 +59,7 @@
         "p99_ms": {
           "GET_IMAGE": 160
         },
-        "budget_inr": 25000
+        "budget_inr": 60000
       }
     },
     {

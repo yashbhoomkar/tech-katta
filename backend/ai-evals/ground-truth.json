@@ -61,7 +61,7 @@
    ],
    "lead_says": [
     "api received 2,525 calls a second but can serve 500.",
-    "GET_LINK took 472.7 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 505 % of capacity."
+    "GET_LINK took 472.6 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 505 % of capacity."
    ],
    "also_accept": [
     "load:api"
@@ -371,7 +371,7 @@
     "margin:tightest"
    ],
    "lead_says": [
-    "The tightest promise is GET_PASTE p99 in 'An incident link goes round', with 24 % to spare."
+    "The tightest promise is the budget in 'A quiet hour', with 24 % to spare."
    ],
    "also_accept": [],
    "also_says": [],
@@ -409,7 +409,7 @@
     "finding:p99:GET_PASTE:db"
    ],
    "lead_says": [
-    "GET_PASTE took 89.2 ms at the 99th percentile; the promise is 80 ms. Slowest hop: db at 74 % of capacity."
+    "GET_PASTE took 89.1 ms at the 99th percentile; the promise is 80 ms. Slowest hop: db at 74 % of capacity."
    ],
    "also_accept": [
     "load:db"
@@ -451,7 +451,7 @@
    ],
    "lead_says": [
     "api received 4,530 calls a second but can serve 2,000.",
-    "GET_PASTE took 602.2 ms at the 99th percentile; the promise is 80 ms. Slowest hop: api at 227 % of capacity."
+    "GET_PASTE took 602.1 ms at the 99th percentile; the promise is 80 ms. Slowest hop: api at 227 % of capacity."
    ],
    "also_accept": [
     "load:api"
@@ -670,7 +670,7 @@
    "problem": "rate-limiter",
    "design": "reference",
    "kind": "reference",
-   "source_sha": "79ec5dbb68907712",
+   "source_sha": "28f63763a43d610d",
    "verdict": {
     "word": "Accepted",
     "passed": 5,
@@ -684,7 +684,7 @@
     "margin:tightest"
    ],
    "lead_says": [
-    "The tightest promise is the budget in 'A normal afternoon', with 14 % to spare."
+    "The tightest promise is the budget in 'A normal afternoon', with 10 % to spare."
    ],
    "also_accept": [],
    "also_says": [],
@@ -706,7 +706,7 @@
    "problem": "rate-limiter",
    "design": "sql-counters",
    "kind": "wrong",
-   "source_sha": "d5f813a57ecbda1a",
+   "source_sha": "708b9a15a42296cc",
    "verdict": {
     "word": "Overloaded",
     "passed": 1,
@@ -714,7 +714,7 @@
     "first_failed": "t02-peak"
    },
    "verdict_fails": true,
-   "fault": "A large SQL primary takes 2,500 writes a second; every call is a write, 10,000 a second.",
+   "fault": "A large SQL primary takes 10,000 writes a second; every check is a write, and the peak is 12,000 a second.",
    "fault_parts": [
     "db"
    ],
@@ -723,14 +723,14 @@
     "finding:p99:CHECK:none"
    ],
    "lead_says": [
-    "db received 10,050 calls a second but can serve 2,509.",
-    "CHECK took 356.3 ms at the 99th percentile; the promise is 100 ms. Slowest hop: db at 401 % of capacity."
+    "db received 12,050 calls a second but can serve 10,021.",
+    "CHECK took 352.6 ms at the 99th percentile; the promise is 100 ms. Slowest hop: db at 120 % of capacity."
    ],
    "also_accept": [
     "load:db"
    ],
    "also_says": [
-    "db runs at 40 % of what it can take in 'A normal afternoon', and 401 % at its busiest ('Evening peak')."
+    "db runs at 12 % of what it can take in 'A normal afternoon', and 120 % at its busiest ('Evening peak')."
    ],
    "never_a_problem": [
     "test:t01-normal-day"
@@ -752,7 +752,7 @@
    "problem": "rate-limiter",
    "design": "write-to-all-copies",
    "kind": "wrong",
-   "source_sha": "02d0223d71a757dd",
+   "source_sha": "1f82af7d9afac5c3",
    "verdict": {
     "word": "Unavailable",
     "passed": 3,
@@ -798,7 +798,7 @@
     "first_failed": "t02-peak"
    },
    "verdict_fails": true,
-   "fault": "Four large servers serve 8,000 calls a second; the peak sends 10,000.",
+   "fault": "Four large servers serve 8,000 calls a second; the peak sends 12,000.",
    "fault_parts": [
     "api"
    ],
@@ -807,14 +807,14 @@
     "finding:p99:CHECK:none"
    ],
    "lead_says": [
-    "api received 10,050 calls a second but can serve 8,000.",
-    "CHECK took 418.6 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 126 % of capacity."
+    "api received 12,050 calls a second but can serve 8,000.",
+    "CHECK took 422.4 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 151 % of capacity."
    ],
    "also_accept": [
     "load:api"
    ],
    "also_says": [
-    "api runs at 13 % of what it can take in 'A normal afternoon', and 126 % at its busiest ('Evening peak')."
+    "api runs at 15 % of what it can take in 'A normal afternoon', and 151 % at its busiest ('Evening peak')."
    ],
    "never_a_problem": [
     "test:t01-normal-day"
@@ -831,11 +831,11 @@
    "facts_sent": 15
   },
   {
-   "id": "rate-limiter/three-nodes",
+   "id": "rate-limiter/tight-servers",
    "problem": "rate-limiter",
-   "design": "three-nodes",
+   "design": "tight-servers",
    "kind": "wrong",
-   "source_sha": "4634c9ff863eac24",
+   "source_sha": "8daefe3e4461a9cc",
    "verdict": {
     "word": "Too Slow",
     "passed": 1,
@@ -843,7 +843,7 @@
     "first_failed": "t02-peak"
    },
    "verdict_fails": true,
-   "fault": "Six large servers run at 84 % of what they can take at the peak, so the slowest checks wait longer than the promise allows. Three storage nodes are enough here.",
+   "fault": "Seven large servers run at 86 % of what they can take at the peak, so the slowest checks wait longer than the promise allows.",
    "fault_parts": [
     "api"
    ],
@@ -851,13 +851,13 @@
     "finding:p99:CHECK:api"
    ],
    "lead_says": [
-    "CHECK took 149.8 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 84 % of capacity."
+    "CHECK took 166.0 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 86 % of capacity."
    ],
    "also_accept": [
     "load:api"
    ],
    "also_says": [
-    "api runs at 9 % of what it can take in 'A normal afternoon', and 84 % at its busiest ('Evening peak')."
+    "api runs at 9 % of what it can take in 'A normal afternoon', and 86 % at its busiest ('Evening peak')."
    ],
    "never_a_problem": [
     "test:t01-normal-day"
@@ -893,14 +893,14 @@
     "finding:budget:all:api"
    ],
    "lead_says": [
-    "This design costs ₹2,66,000 a month; the budget is ₹1,60,000."
+    "This design costs ₹2,66,000 a month; the budget is ₹1,80,000."
    ],
    "also_accept": [
     "cost:total",
     "cost:api"
    ],
    "also_says": [
-    "This design costs ₹2,66,000 a month, over the budget of ₹1,60,000.",
+    "This design costs ₹2,66,000 a month, over the budget of ₹1,80,000.",
     "api costs ₹1,44,000 a month, 54 % of the total."
    ],
    "never_a_problem": [],
@@ -1080,7 +1080,7 @@
    ],
    "lead_says": [
     "db received 2,370 calls a second but can serve 1,791.",
-    "GET_FEED took 249.0 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 132 % of capacity."
+    "GET_FEED took 248.7 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 132 % of capacity."
    ],
    "also_accept": [
     "load:db"
@@ -1223,7 +1223,7 @@
    "problem": "notification-sender",
    "design": "reference",
    "kind": "reference",
-   "source_sha": "eaa75104f2145e1e",
+   "source_sha": "32bb0cbdcc784476",
    "verdict": {
     "word": "Accepted",
     "passed": 5,
@@ -1233,18 +1233,15 @@
    "verdict_fails": false,
    "fault": null,
    "fault_parts": [
-    "worker",
-    "db"
+    "worker"
    ],
    "must_lead_with": [
     "load:worker",
-    "load:db",
     "margin:tightest"
    ],
    "lead_says": [
     "worker runs at 25 % of what it can take in 'A steady hour', and 100 % at its busiest ('The match starts').",
-    "db runs at 20 % of what it can take in 'A steady hour', and 80 % at its busiest ('The match starts').",
-    "The tightest promise is the budget in 'A steady hour', with 11 % to spare."
+    "The tightest promise is the budget in 'A steady hour', with 12 % to spare."
    ],
    "also_accept": [],
    "also_says": [],
@@ -1259,8 +1256,7 @@
    ],
    "problems": [],
    "risks": [
-    "load:worker",
-    "load:db"
+    "load:worker"
    ],
    "facts_sent": 19
   },
@@ -1269,7 +1265,7 @@
    "problem": "notification-sender",
    "design": "no-queue",
    "kind": "wrong",
-   "source_sha": "66e0f013585f8322",
+   "source_sha": "10c7771f45d615ef",
    "verdict": {
     "word": "Overloaded",
     "passed": 1,
@@ -1277,7 +1273,7 @@
     "first_failed": "t02-match-starts"
    },
    "verdict_fails": true,
-   "fault": "Without a queue the database takes the spike directly: 5,000 writes a second against a large primary's 2,500.",
+   "fault": "Without a queue the database takes the spike directly: 12,000 writes a second against a large primary's 10,000.",
    "fault_parts": [
     "db"
    ],
@@ -1285,13 +1281,13 @@
     "finding:overloaded:SEND:db"
    ],
    "lead_says": [
-    "db received 5,000 calls a second but can serve 2,500."
+    "db received 12,000 calls a second but can serve 10,000."
    ],
    "also_accept": [
     "load:db"
    ],
    "also_says": [
-    "db runs at 20 % of what it can take in 'A steady hour', and 200 % at its busiest ('The match starts')."
+    "db runs at 10 % of what it can take in 'A steady hour', and 120 % at its busiest ('The match starts')."
    ],
    "never_a_problem": [
     "test:t01-steady"
@@ -1311,15 +1307,15 @@
    "problem": "notification-sender",
    "design": "one-small-worker",
    "kind": "wrong",
-   "source_sha": "32424f7b65cd8558",
+   "source_sha": "fd25f9bb1b26f9e6",
    "verdict": {
     "word": "Too Slow",
-    "passed": 1,
+    "passed": 0,
     "total": 5,
-    "first_failed": "t02-match-starts"
+    "first_failed": "t01-steady"
    },
    "verdict_fails": true,
-   "fault": "One small worker does 500 a second, exactly the normal rate: the backlog from the spike never drains.",
+   "fault": "One small worker does 500 a second, half the normal rate: the backlog from the spike never drains.",
    "fault_parts": [
     "worker"
    ],
@@ -1327,7 +1323,7 @@
     "finding:backlog:SEND:worker"
    ],
    "lead_says": [
-    "SEND was still waiting 540 s after it was accepted; the promise is 180 s. worker can do 500 a second but 5,000 arrive."
+    "SEND was still waiting 600 s after it was accepted; the promise is 180 s. worker can do 500 a second but 1,000 arrive."
    ],
    "also_accept": [
     "load:worker"
@@ -1335,12 +1331,10 @@
    "also_says": [
     "worker runs at 100 % of what it can take in 'A steady hour'."
    ],
-   "never_a_problem": [
-    "test:t01-steady"
-   ],
+   "never_a_problem": [],
    "problems": [
     "verdict",
-    "test:t02-match-starts",
+    "test:t01-steady",
     "finding:backlog:SEND:worker"
    ],
    "risks": [
@@ -1353,7 +1347,7 @@
    "problem": "notification-sender",
    "design": "async-replica",
    "kind": "wrong",
-   "source_sha": "27946d9924663e05",
+   "source_sha": "928f2200a793325e",
    "verdict": {
     "word": "Data Lost",
     "passed": 3,
@@ -1384,8 +1378,7 @@
     "finding:lost:SEND:db"
    ],
    "risks": [
-    "load:worker",
-    "load:db"
+    "load:worker"
    ],
    "facts_sent": 19
   },
@@ -1394,7 +1387,7 @@
    "problem": "notification-sender",
    "design": "too-few-servers",
    "kind": "wrong",
-   "source_sha": "b5e551378e40e1fe",
+   "source_sha": "2ecbade3b9f07aa6",
    "verdict": {
     "word": "Overloaded",
     "passed": 1,
@@ -1402,7 +1395,7 @@
     "first_failed": "t02-match-starts"
    },
    "verdict_fails": true,
-   "fault": "The servers still take the whole spike before the queue: two large serve 4,000 a second.",
+   "fault": "The servers still take the whole spike before the queue: two large serve 4,000 a second, and the spike sends 12,000.",
    "fault_parts": [
     "api"
    ],
@@ -1410,13 +1403,13 @@
     "finding:overloaded:SEND:api"
    ],
    "lead_says": [
-    "api received 5,000 calls a second but can serve 4,000."
+    "api received 12,000 calls a second but can serve 4,000."
    ],
    "also_accept": [
     "load:api"
    ],
    "also_says": [
-    "api runs at 13 % of what it can take in 'A steady hour', and 125 % at its busiest ('The match starts')."
+    "api runs at 25 % of what it can take in 'A steady hour', and 300 % at its busiest ('The match starts')."
    ],
    "never_a_problem": [
     "test:t01-steady"
@@ -1428,17 +1421,16 @@
    ],
    "risks": [
     "load:api",
-    "load:worker",
-    "load:db"
+    "load:worker"
    ],
-   "facts_sent": 17
+   "facts_sent": 16
   },
   {
    "id": "notification-sender/many-workers",
    "problem": "notification-sender",
    "design": "many-workers",
    "kind": "wrong",
-   "source_sha": "9fd4d5a981cd3248",
+   "source_sha": "f6dbf26a33334017",
    "verdict": {
     "word": "Over Budget",
     "passed": 0,
@@ -1454,15 +1446,15 @@
     "finding:budget:all:worker"
    ],
    "lead_says": [
-    "This design costs ₹2,88,000 a month; the budget is ₹1,75,000."
+    "This design costs ₹3,48,000 a month; the budget is ₹2,60,000."
    ],
    "also_accept": [
     "cost:total",
     "cost:worker"
    ],
    "also_says": [
-    "This design costs ₹2,88,000 a month, over the budget of ₹1,75,000.",
-    "worker costs ₹1,44,000 a month, 50 % of the total."
+    "This design costs ₹3,48,000 a month, over the budget of ₹2,60,000.",
+    "worker costs ₹1,44,000 a month, 41 % of the total."
    ],
    "never_a_problem": [],
    "problems": [
@@ -1510,7 +1502,7 @@
    "problem": "image-serving",
    "design": "reference",
    "kind": "reference",
-   "source_sha": "5e7e6cd1cf7342c5",
+   "source_sha": "570a122076975214",
    "verdict": {
     "word": "Accepted",
     "passed": 5,
@@ -1524,7 +1516,7 @@
     "margin:tightest"
    ],
    "lead_says": [
-    "The tightest promise is GET_IMAGE p99 in 'Dinner time', with 11 % to spare."
+    "The tightest promise is GET_IMAGE p50 in 'Dinner time', with 60 % to spare."
    ],
    "also_accept": [],
    "also_says": [],
@@ -1546,105 +1538,92 @@
    "problem": "image-serving",
    "design": "no-cdn",
    "kind": "wrong",
-   "source_sha": "49da88e65d4b3e26",
+   "source_sha": "9910c8e7ccadaf4a",
    "verdict": {
     "word": "Overloaded",
-    "passed": 1,
+    "passed": 0,
     "total": 5,
-    "first_failed": "t02-dinner"
+    "first_failed": "t01-afternoon"
    },
    "verdict_fails": true,
-   "fault": "Every image view reaches the load balancer: 60,000 a second against its 50,000.",
+   "fault": "Every view goes through the servers: 60,000 calls a second against the 2,000 that two medium servers serve.",
    "fault_parts": [
     "api"
    ],
    "must_lead_with": [
     "finding:overloaded:GET_IMAGE:api",
-    "finding:p99:GET_IMAGE:none",
-    "finding:p50:GET_IMAGE:none"
+    "finding:p99:GET_IMAGE:none"
    ],
    "lead_says": [
-    "api received 60,050 calls a second but can serve 4,000.",
-    "GET_IMAGE took 482.6 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 1501 % of capacity.",
-    "GET_IMAGE took 120.6 ms for the median request; the promise is 10 ms."
+    "api received 2,010 calls a second but can serve 2,000.",
+    "GET_IMAGE took 442.1 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 100 % of capacity."
    ],
    "also_accept": [
     "load:api"
    ],
    "also_says": [
-    "api runs at 50 % of what it can take in 'An afternoon', and 1501 % at its busiest ('Dinner time')."
+    "api runs at 100 % of what it can take in 'An afternoon'."
    ],
-   "never_a_problem": [
-    "test:t01-afternoon"
-   ],
+   "never_a_problem": [],
    "problems": [
     "verdict",
-    "test:t02-dinner",
+    "test:t01-afternoon",
     "finding:overloaded:GET_IMAGE:api",
-    "finding:p99:GET_IMAGE:none",
-    "finding:p50:GET_IMAGE:none"
+    "finding:p99:GET_IMAGE:none"
    ],
    "risks": [
-    "load:lb",
     "load:api"
    ],
-   "facts_sent": 16
+   "facts_sent": 15
   },
   {
    "id": "image-serving/cache-behind-servers",
    "problem": "image-serving",
    "design": "cache-behind-servers",
    "kind": "wrong",
-   "source_sha": "f7c1463b26213215",
+   "source_sha": "88a6cd24425904e6",
    "verdict": {
     "word": "Overloaded",
-    "passed": 1,
+    "passed": 0,
     "total": 5,
-    "first_failed": "t02-dinner"
+    "first_failed": "t01-afternoon"
    },
    "verdict_fails": true,
-   "fault": "A cache behind the servers doesn't protect the servers or the load balancer: all 60,000 views still go through them.",
+   "fault": "A cache behind the servers doesn't protect them: all 60,000 views still go through them.",
    "fault_parts": [
     "api"
    ],
    "must_lead_with": [
     "finding:overloaded:GET_IMAGE:api",
-    "finding:p99:GET_IMAGE:none",
-    "finding:p50:GET_IMAGE:none"
+    "finding:p99:GET_IMAGE:none"
    ],
    "lead_says": [
-    "api received 60,050 calls a second but can serve 4,000.",
-    "GET_IMAGE took 521.1 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 1501 % of capacity.",
-    "GET_IMAGE took 120.0 ms for the median request; the promise is 10 ms."
+    "api received 2,010 calls a second but can serve 2,000.",
+    "GET_IMAGE took 444.2 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 100 % of capacity."
    ],
    "also_accept": [
     "load:api"
    ],
    "also_says": [
-    "api runs at 50 % of what it can take in 'An afternoon', and 1501 % at its busiest ('Dinner time')."
+    "api runs at 100 % of what it can take in 'An afternoon'."
    ],
-   "never_a_problem": [
-    "test:t01-afternoon"
-   ],
+   "never_a_problem": [],
    "problems": [
     "verdict",
-    "test:t02-dinner",
+    "test:t01-afternoon",
     "finding:overloaded:GET_IMAGE:api",
-    "finding:p99:GET_IMAGE:none",
-    "finding:p50:GET_IMAGE:none"
+    "finding:p99:GET_IMAGE:none"
    ],
    "risks": [
-    "load:cache",
-    "load:lb",
     "load:api",
     "static:W003:cache"
    ],
-   "facts_sent": 19
+   "facts_sent": 18
   },
   {
-   "id": "image-serving/one-server",
+   "id": "image-serving/views-through-servers",
    "problem": "image-serving",
-   "design": "one-server",
+   "design": "views-through-servers",
    "kind": "wrong",
    "source_sha": "91868755b284b6fc",
    "verdict": {
@@ -1654,7 +1633,7 @@
     "first_failed": "t02-dinner"
    },
    "verdict_fails": true,
-   "fault": "5 % of views miss the CDN: 3,000 a second, more than one medium server's 1,000.",
+   "fault": "5 % of views miss the CDN: 3,000 a second go through one server, more than a medium server's 1,000. The CDN should read the files itself.",
    "fault_parts": [
     "api"
    ],
@@ -1664,7 +1643,7 @@
    ],
    "lead_says": [
     "api received 3,050 calls a second but can serve 1,000.",
-    "GET_IMAGE took 458.2 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 305 % of capacity."
+    "GET_IMAGE took 458.1 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 305 % of capacity."
    ],
    "also_accept": [
     "load:api"
@@ -1692,7 +1671,7 @@
    "problem": "image-serving",
    "design": "random-32-bit-ids",
    "kind": "wrong",
-   "source_sha": "d716f2d080007988",
+   "source_sha": "26ab0b44acecc7e9",
    "verdict": {
     "word": "Wrong Answer",
     "passed": 0,
@@ -1726,7 +1705,7 @@
    "problem": "image-serving",
    "design": "many-servers",
    "kind": "wrong",
-   "source_sha": "0c550e10ca9136af",
+   "source_sha": "35bc8671914954e9",
    "verdict": {
     "word": "Over Budget",
     "passed": 0,
@@ -1734,7 +1713,7 @@
     "first_failed": "t01-afternoon"
    },
    "verdict_fails": true,
-   "fault": "Forty servers do what the CDN already does, at far more than the budget.",
+   "fault": "Forty servers do what the CDN and the object store already do, at far more than the budget.",
    "fault_parts": [
     "api"
    ],
@@ -1801,7 +1780,7 @@
    "problem": "leaderboard",
    "design": "reference",
    "kind": "reference",
-   "source_sha": "909ec4864b1a4931",
+   "source_sha": "a4e7ac1730b4d7d7",
    "verdict": {
     "word": "Accepted",
     "passed": 5,
@@ -1815,7 +1794,7 @@
     "margin:tightest"
    ],
    "lead_says": [
-    "The tightest promise is the budget in 'Before the match', with 12 % to spare."
+    "The tightest promise is the budget in 'Before the match', with 11 % to spare."
    ],
    "also_accept": [],
    "also_says": [],
@@ -1837,7 +1816,7 @@
    "problem": "leaderboard",
    "design": "no-index",
    "kind": "wrong",
-   "source_sha": "3b4063c3599a241f",
+   "source_sha": "785d5056f380f4eb",
    "verdict": {
     "word": "Too Slow",
     "passed": 0,
@@ -1853,13 +1832,13 @@
     "finding:p99:GET_TOP:db"
    ],
    "lead_says": [
-    "GET_TOP took 1169.2 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 13 % of capacity."
+    "GET_TOP took 1137.9 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 10 % of capacity."
    ],
    "also_accept": [
     "load:db"
    ],
    "also_says": [
-    "db runs at 8 % of what it can take in 'Before the match'."
+    "db runs at 2 % of what it can take in 'Before the match'."
    ],
    "never_a_problem": [],
    "problems": [
@@ -1875,7 +1854,7 @@
    "problem": "leaderboard",
    "design": "minute-ttl",
    "kind": "wrong",
-   "source_sha": "981e87de7d5cbc7a",
+   "source_sha": "e80b3356a59a94f4",
    "verdict": {
     "word": "Wrong Answer",
     "passed": 0,
@@ -1909,7 +1888,7 @@
    "problem": "leaderboard",
    "design": "medium-db",
    "kind": "wrong",
-   "source_sha": "a02e6b4610d35292",
+   "source_sha": "72a16169ebbee836",
    "verdict": {
     "word": "Overloaded",
     "passed": 1,
@@ -1925,7 +1904,7 @@
     "finding:overloaded:GET_TOP:db"
    ],
    "lead_says": [
-    "db received 1,260 calls a second but can serve 1,050."
+    "db received 1,440 calls a second but can serve 1,200."
    ],
    "also_accept": [
     "load:db"
@@ -1951,7 +1930,7 @@
    "problem": "leaderboard",
    "design": "no-cache",
    "kind": "wrong",
-   "source_sha": "77e596da7c1fd9d2",
+   "source_sha": "982937aa4b4a7a57",
    "verdict": {
     "word": "Overloaded",
     "passed": 1,
@@ -1959,7 +1938,7 @@
     "first_failed": "t02-match"
    },
    "verdict_fails": true,
-   "fault": "Every top-list read goes to the primary, which is already busy with score writes.",
+   "fault": "Every top-list read goes to the primary: 24,000 reads a second against the 20,000 a large primary serves, on top of the score writes.",
    "fault_parts": [
     "db"
    ],
@@ -1968,14 +1947,14 @@
     "finding:p99:GET_TOP:none"
    ],
    "lead_says": [
-    "db received 7,200 calls a second but can serve 5,854.",
-    "GET_TOP took 252.3 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 123 % of capacity."
+    "db received 25,200 calls a second but can serve 19,091.",
+    "GET_TOP took 269.3 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 132 % of capacity."
    ],
    "also_accept": [
     "load:db"
    ],
    "also_says": [
-    "db runs at 21 % of what it can take in 'Before the match', and 123 % at its busiest ('During the match')."
+    "db runs at 22 % of what it can take in 'Before the match', and 132 % at its busiest ('During the match')."
    ],
    "never_a_problem": [
     "test:t01-warm-up"
@@ -1996,7 +1975,7 @@
    "problem": "leaderboard",
    "design": "big-everything",
    "kind": "wrong",
-   "source_sha": "a09238f5626ba366",
+   "source_sha": "970518465d803988",
    "verdict": {
     "word": "Over Budget",
     "passed": 0,
@@ -2006,31 +1985,31 @@
    "verdict_fails": true,
    "fault": "It passes every test at more than the budget.",
    "fault_parts": [
-    "db"
+    "api"
    ],
    "must_lead_with": [
-    "finding:budget:all:db"
+    "finding:budget:all:api"
    ],
    "lead_says": [
-    "This design costs ₹3,29,000 a month; the budget is ₹1,90,000."
+    "This design costs ₹5,45,000 a month; the budget is ₹4,00,000."
    ],
    "also_accept": [
     "cost:total",
-    "cost:db"
+    "cost:api"
    ],
    "also_says": [
-    "This design costs ₹3,29,000 a month, over the budget of ₹1,90,000.",
-    "db costs ₹1,80,000 a month, 55 % of the total."
+    "This design costs ₹5,45,000 a month, over the budget of ₹4,00,000.",
+    "api costs ₹3,60,000 a month, 66 % of the total."
    ],
    "never_a_problem": [],
    "problems": [
     "verdict",
     "test:t01-warm-up",
-    "finding:budget:all:db",
+    "finding:budget:all:api",
     "cost:total"
    ],
    "risks": [],
-   "facts_sent": 14
+   "facts_sent": 15
   },
   {
    "id": "leaderboard/template",
@@ -2071,7 +2050,7 @@
    "problem": "ticket-booking",
    "design": "reference",
    "kind": "reference",
-   "source_sha": "754ddfac9fad8e27",
+   "source_sha": "12b5dadb62775552",
    "verdict": {
     "word": "Accepted",
     "passed": 5,
@@ -2103,9 +2082,9 @@
    "facts_sent": 19
   },
   {
-   "id": "ticket-booking/cache-not-cleared",
+   "id": "ticket-booking/long-ttl",
    "problem": "ticket-booking",
-   "design": "cache-not-cleared",
+   "design": "long-ttl",
    "kind": "wrong",
    "source_sha": "f2ec17c342e16574",
    "verdict": {
@@ -2115,15 +2094,15 @@
     "first_failed": "t01-day-before"
    },
    "verdict_fails": true,
-   "fault": "A booked seat can still show as free for a minute: someone else picks it and is told it's gone.",
+   "fault": "A cached seat map a minute old shows seats that were taken a minute ago: fans pick them and are told they are gone. The problem allows 2 seconds.",
    "fault_parts": [
     "cache"
    ],
    "must_lead_with": [
-    "finding:ryw:GET_SEATS:cache"
+    "finding:stale:GET_SEATS:cache"
    ],
    "lead_says": [
-    "After a write, GET_SEATS must show the new data at once. Yours reads from cache, which can be behind."
+    "GET_SEATS can return data up to 60 s old, but this problem allows 2 s. Look at the cache TTL, or invalidate on write."
    ],
    "also_accept": [],
    "also_says": [],
@@ -2131,41 +2110,7 @@
    "problems": [
     "verdict",
     "test:t01-day-before",
-    "finding:ryw:GET_SEATS:cache"
-   ],
-   "risks": [],
-   "facts_sent": 16
-  },
-  {
-   "id": "ticket-booking/replica-reads",
-   "problem": "ticket-booking",
-   "design": "replica-reads",
-   "kind": "wrong",
-   "source_sha": "128691bbaf5cfbb7",
-   "verdict": {
-    "word": "Wrong Answer",
-    "passed": 0,
-    "total": 5,
-    "first_failed": "t01-day-before"
-   },
-   "verdict_fails": true,
-   "fault": "Async replicas are a second behind: a seat you just booked can show as free.",
-   "fault_parts": [
-    "db"
-   ],
-   "must_lead_with": [
-    "finding:ryw:GET_SEATS:db"
-   ],
-   "lead_says": [
-    "After a write, GET_SEATS must show the new data at once. Yours reads from db, which can be behind."
-   ],
-   "also_accept": [],
-   "also_says": [],
-   "never_a_problem": [],
-   "problems": [
-    "verdict",
-    "test:t01-day-before",
-    "finding:ryw:GET_SEATS:db"
+    "finding:stale:GET_SEATS:cache"
    ],
    "risks": [],
    "facts_sent": 16
@@ -2175,7 +2120,7 @@
    "problem": "ticket-booking",
    "design": "async-replica",
    "kind": "wrong",
-   "source_sha": "9a01b04d94e42985",
+   "source_sha": "04908ab57f7d5ee2",
    "verdict": {
     "word": "Data Lost",
     "passed": 3,
@@ -2213,7 +2158,7 @@
    "problem": "ticket-booking",
    "design": "medium-db",
    "kind": "wrong",
-   "source_sha": "b99f76d4f1a29ac1",
+   "source_sha": "fcb49918468024aa",
    "verdict": {
     "word": "Overloaded",
     "passed": 1,
@@ -2231,15 +2176,15 @@
     "finding:p99:BOOK:none"
    ],
    "lead_says": [
-    "db received 2,400 calls a second but can serve 1,500.",
-    "GET_SEATS took 290.4 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 160 % of capacity.",
-    "BOOK took 688.2 ms at the 99th percentile; the promise is 250 ms. Slowest hop: db at 160 % of capacity."
+    "db received 1,280 calls a second but can serve 1,043.",
+    "GET_SEATS took 290.1 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 123 % of capacity.",
+    "BOOK took 687.9 ms at the 99th percentile; the promise is 250 ms. Slowest hop: db at 123 % of capacity."
    ],
    "also_accept": [
     "load:db"
    ],
    "also_says": [
-    "db runs at 7 % of what it can take in 'The day before', and 160 % at its busiest ('10 am: sales open')."
+    "db runs at 8 % of what it can take in 'The day before', and 123 % at its busiest ('10 am: sales open')."
    ],
    "never_a_problem": [
     "test:t01-day-before"
@@ -2261,7 +2206,7 @@
    "problem": "ticket-booking",
    "design": "random-ids",
    "kind": "wrong",
-   "source_sha": "ad7847e990043e45",
+   "source_sha": "27ce631868d8d20e",
    "verdict": {
     "word": "Wrong Answer",
     "passed": 0,
@@ -2295,7 +2240,7 @@
    "problem": "ticket-booking",
    "design": "big-everything",
    "kind": "wrong",
-   "source_sha": "711fe122d158f356",
+   "source_sha": "7c2cdd4bd24375cb",
    "verdict": {
     "word": "Over Budget",
     "passed": 0,
@@ -2370,7 +2315,7 @@
    "problem": "chat-message-store",
    "design": "reference",
    "kind": "reference",
-   "source_sha": "4a9706ab43869e44",
+   "source_sha": "7b8dc6e5aefe2ed7",
    "verdict": {
     "word": "Accepted",
     "passed": 5,
@@ -2384,7 +2329,7 @@
     "margin:tightest"
    ],
    "lead_says": [
-    "The tightest promise is the budget in 'Lunch time', with 19 % to spare."
+    "The tightest promise is the budget in 'Lunch time', with 14 % to spare."
    ],
    "also_accept": [],
    "also_says": [],
@@ -2406,7 +2351,7 @@
    "problem": "chat-message-store",
    "design": "one-copy-each-way",
    "kind": "wrong",
-   "source_sha": "0f81ab581b345999",
+   "source_sha": "a69f76eba93cbaea",
    "verdict": {
     "word": "Wrong Answer",
     "passed": 0,
@@ -2440,7 +2385,7 @@
    "problem": "chat-message-store",
    "design": "write-all-read-one",
    "kind": "wrong",
-   "source_sha": "b671122a3c2ace53",
+   "source_sha": "70af6153ba700d59",
    "verdict": {
     "word": "Unavailable",
     "passed": 3,
@@ -2481,7 +2426,7 @@
    "problem": "chat-message-store",
    "design": "write-one-read-all",
    "kind": "wrong",
-   "source_sha": "4c85fc9416cfdaa1",
+   "source_sha": "4798fd97edb86a93",
    "verdict": {
     "word": "Data Lost",
     "passed": 3,
@@ -2525,7 +2470,7 @@
    "problem": "chat-message-store",
    "design": "sql-messages",
    "kind": "wrong",
-   "source_sha": "aad984a83c046b28",
+   "source_sha": "9127717df38d533f",
    "verdict": {
     "word": "Overloaded",
     "passed": 1,
@@ -2533,7 +2478,7 @@
     "first_failed": "t02-dinner"
    },
    "verdict_fails": true,
-   "fault": "5,000 messages a second against a large SQL primary's 2,500 writes.",
+   "fault": "12,000 messages a second against a large SQL primary's 10,000 writes.",
    "fault_parts": [
     "db"
    ],
@@ -2543,15 +2488,15 @@
     "finding:p99:SEND_MESSAGE:none"
    ],
    "lead_says": [
-    "db received 15,000 calls a second but can serve 4,615.",
-    "GET_MESSAGES took 282.9 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 325 % of capacity.",
-    "SEND_MESSAGE took 682.9 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 325 % of capacity."
+    "db received 22,000 calls a second but can serve 12,941.",
+    "GET_MESSAGES took 266.6 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 170 % of capacity.",
+    "SEND_MESSAGE took 666.6 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 170 % of capacity."
    ],
    "also_accept": [
     "load:db"
    ],
    "also_says": [
-    "db runs at 65 % of what it can take in 'Lunch time', and 325 % at its busiest ('Dinner time')."
+    "db runs at 34 % of what it can take in 'Lunch time', and 170 % at its busiest ('Dinner time')."
    ],
    "never_a_problem": [
     "test:t01-lunch"
@@ -2573,7 +2518,7 @@
    "problem": "chat-message-store",
    "design": "random-ids",
    "kind": "wrong",
-   "source_sha": "23a430e6eba81263",
+   "source_sha": "20ad67e21174f59d",
    "verdict": {
     "word": "Wrong Answer",
     "passed": 0,
@@ -2607,7 +2552,7 @@
    "problem": "chat-message-store",
    "design": "big-cluster",
    "kind": "wrong",
-   "source_sha": "cc516b140d271464",
+   "source_sha": "6f3812abb86eabb6",
    "verdict": {
     "word": "Over Budget",
     "passed": 0,
@@ -2623,15 +2568,15 @@
     "finding:budget:all:kv"
    ],
    "lead_says": [
-    "This design costs ₹3,22,000 a month; the budget is ₹2,25,000."
+    "This design costs ₹4,94,000 a month; the budget is ₹3,30,000."
    ],
    "also_accept": [
     "cost:total",
     "cost:kv"
    ],
    "also_says": [
-    "This design costs ₹3,22,000 a month, over the budget of ₹2,25,000.",
-    "kv costs ₹2,00,000 a month, 62 % of the total."
+    "This design costs ₹4,94,000 a month, over the budget of ₹3,30,000.",
+    "kv costs ₹3,00,000 a month, 61 % of the total."
    ],
    "never_a_problem": [],
    "problems": [
@@ -2641,7 +2586,7 @@
     "cost:total"
    ],
    "risks": [],
-   "facts_sent": 14
+   "facts_sent": 13
   },
   {
    "id": "chat-message-store/template",
@@ -2682,7 +2627,7 @@
    "problem": "ind-vs-pak-live-score",
    "design": "reference",
    "kind": "reference",
-   "source_sha": "98254e15d0b9197b",
+   "source_sha": "0985da0be98866c7",
    "verdict": {
     "word": "Accepted",
     "passed": 5,
@@ -2696,7 +2641,7 @@
     "margin:tightest"
    ],
    "lead_says": [
-    "The tightest promise is the budget in 'The toss', with 13 % to spare."
+    "The tightest promise is the budget in 'The toss', with 12 % to spare."
    ],
    "also_accept": [],
    "also_says": [],
@@ -2718,7 +2663,7 @@
    "problem": "ind-vs-pak-live-score",
    "design": "no-cdn",
    "kind": "wrong",
-   "source_sha": "1425a312edcb6373",
+   "source_sha": "b680c0ba94e6afbb",
    "verdict": {
     "word": "Overloaded",
     "passed": 0,
@@ -2726,7 +2671,7 @@
     "first_failed": "t01-toss"
    },
    "verdict_fails": true,
-   "fault": "2 lakh reads a second reach the load balancer, which takes 50,000.",
+   "fault": "5 lakh reads a second reach the origin, which sixteen large servers can't serve (32,000 a second), and the load balancer takes 1 lakh.",
    "fault_parts": [
     "api"
    ],
@@ -2735,14 +2680,14 @@
     "finding:p99:GET_SCORE:none"
    ],
    "lead_says": [
-    "api received 20,001 calls a second but can serve 14,000.",
-    "GET_SCORE took 416.0 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 143 % of capacity."
+    "api received 50,001 calls a second but can serve 32,001.",
+    "GET_SCORE took 418.1 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 156 % of capacity."
    ],
    "also_accept": [
     "load:api"
    ],
    "also_says": [
-    "api runs at 143 % of what it can take in 'The toss'."
+    "api runs at 156 % of what it can take in 'The toss'."
    ],
    "never_a_problem": [],
    "problems": [
@@ -2761,7 +2706,7 @@
    "problem": "ind-vs-pak-live-score",
    "design": "cdn-minute-ttl",
    "kind": "wrong",
-   "source_sha": "7fbc808742809b2a",
+   "source_sha": "80d55c242b619f11",
    "verdict": {
     "word": "Wrong Answer",
     "passed": 0,
@@ -2803,7 +2748,7 @@
     "first_failed": "t02-last-over"
    },
    "verdict_fails": true,
-   "fault": "5 % of 2 lakh reads miss the CDN: 10,000 a second, more than four large servers serve.",
+   "fault": "5 % of 5 lakh reads miss the CDN: 25,000 a second, more than four large servers serve.",
    "fault_parts": [
     "api"
    ],
@@ -2812,14 +2757,14 @@
     "finding:p99:GET_SCORE:none"
    ],
    "lead_says": [
-    "api received 10,001 calls a second but can serve 8,000.",
-    "GET_SCORE took 433.5 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 125 % of capacity."
+    "api received 25,001 calls a second but can serve 8,000.",
+    "GET_SCORE took 445.4 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 313 % of capacity."
    ],
    "also_accept": [
     "load:api"
    ],
    "also_says": [
-    "api runs at 13 % of what it can take in 'The toss', and 125 % at its busiest ('The last over')."
+    "api runs at 31 % of what it can take in 'The toss', and 313 % at its busiest ('The last over')."
    ],
    "never_a_problem": [
     "test:t01-toss"
@@ -2833,14 +2778,14 @@
    "risks": [
     "load:api"
    ],
-   "facts_sent": 19
+   "facts_sent": 18
   },
   {
    "id": "ind-vs-pak-live-score/primary-only",
    "problem": "ind-vs-pak-live-score",
    "design": "primary-only",
    "kind": "wrong",
-   "source_sha": "594cd8fc5b19c0ca",
+   "source_sha": "2545020b08d80318",
    "verdict": {
     "word": "Unavailable",
     "passed": 3,
@@ -2848,7 +2793,7 @@
     "first_failed": "t04-cache-restarts"
    },
    "verdict_fails": true,
-   "fault": "When the cache restarts, all 10,000 origin reads hit one primary that serves 8,000.",
+   "fault": "When the cache restarts, all 25,000 origin reads hit one primary that serves 20,000.",
    "fault_parts": [
     "db"
    ],
@@ -2884,7 +2829,7 @@
    "problem": "ind-vs-pak-live-score",
    "design": "big-origin",
    "kind": "wrong",
-   "source_sha": "191fb28c274035f3",
+   "source_sha": "270d79d4ab068e3e",
    "verdict": {
     "word": "Over Budget",
     "passed": 0,
@@ -2900,15 +2845,15 @@
     "finding:budget:all:api"
    ],
    "lead_says": [
-    "This design costs ₹3,83,000 a month; the budget is ₹2,60,000."
+    "This design costs ₹6,23,000 a month; the budget is ₹3,80,000."
    ],
    "also_accept": [
     "cost:total",
     "cost:api"
    ],
    "also_says": [
-    "This design costs ₹3,83,000 a month, over the budget of ₹2,60,000.",
-    "api costs ₹2,40,000 a month, 63 % of the total."
+    "This design costs ₹6,23,000 a month, over the budget of ₹3,80,000.",
+    "api costs ₹4,80,000 a month, 77 % of the total."
    ],
    "never_a_problem": [],
    "problems": [

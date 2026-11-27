@@ -14,11 +14,11 @@
    "UPLOAD_IMAGE": 17.2
   },
   "tightest": {
-   "promise": "budget",
-   "request": null,
-   "test": "t01-afternoon",
-   "margin": 0.24,
-   "text": "Tightest promise: budget, 24 % to spare."
+   "promise": "p50",
+   "request": "GET_IMAGE",
+   "test": "t02-dinner",
+   "margin": 0.6,
+   "text": "Tightest promise: GET_IMAGE p50, 60 % to spare."
   },
   "rank_p99_ms": 56.1,
   "tests": [
@@ -447,9 +447,9 @@
     "reason": "budget",
     "request": null,
     "phase": null,
-    "expected": "≤ ₹25,000",
+    "expected": "≤ ₹60,000",
     "actual": "₹2,47,000",
-    "message": "This design costs ₹2,47,000 a month; the budget is ₹25,000.",
+    "message": "This design costs ₹2,47,000 a month; the budget is ₹60,000.",
     "blame": {
      "part": "api",
      "line": 3,
