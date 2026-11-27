@@ -130,13 +130,13 @@ export function openReport(opener, held, capMod, first) {
     const visual = state.tab === 'visual', text = visual ? state.note : state.quick;
     if (!visual && !text.trim()) return;
     const meta = pageMeta(), title = titleOf(text, meta.url), category = visual ? 'bug' : categoryOf(state.chip);
-    const description = descriptionOf({ text, meta, captureError: visual && !state.shot ? state.shotErr || 'unknown' : '' });
-    const report = { title, description };
     state.busy = true; state.msg = 'Sending…'; paint();
-    let shotUrl = null;
+    let shotUrl = null, shotErr = '';
     if (visual && state.shot) {
-      try { shotUrl = ed?.hasMarks() ? (await ed.flatten()).dataUrl : (await (await import('./feedback-capture.js')).encodePng(state.shot)).dataUrl; } catch { /* no picture goes; the words do */ }
+      try { shotUrl = ed?.hasMarks() ? (await ed.flatten()).dataUrl : (await (await import('./feedback-capture.js')).encodePng(state.shot)).dataUrl; } catch (e) { shotErr = String(e?.message || 'the picture could not be made'); } // no picture goes; the words do, and the issue says why
     }
+    const description = descriptionOf({ text, meta, captureError: visual && !shotUrl ? shotErr || state.shotErr || 'unknown' : '' });
+    const report = { title, description };
     try {
       const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 20_000);
       const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payloadOf({ title, description, category, screenshot: shotUrl, meta })), signal: ctrl.signal }).finally(() => clearTimeout(timer));

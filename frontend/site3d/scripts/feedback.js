@@ -88,7 +88,7 @@ export function startFeedback() {
   // when the browser is idle: load the popup and the screenshot code, and work out the fonts once, so pressing Report has nothing left to fetch
   const warm = () => {
     // the mark 'tk-report:ready' says all of it is loaded and the fonts are worked out (the speed tests wait for it)
-    Promise.all([loadUi(), import('./feedback-capture.js').then((m) => { capMod = m; return m.warmFonts(); })]).then(() => performance.mark('tk-report:ready')).catch(() => {});
+    Promise.all([loadUi(), import('./feedback-capture.js').then((m) => { capMod = m; return m.preload(); })]).then(() => performance.mark('tk-report:ready')).catch(() => {});
   };
   const go = () => (window.requestIdleCallback ? requestIdleCallback(warm, { timeout: 2000 }) : setTimeout(warm, 1500));
   if (document.readyState === 'complete') go(); else addEventListener('load', go, { once: true });

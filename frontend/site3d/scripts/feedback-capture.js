@@ -20,11 +20,34 @@ const intersects = (r, margin) => r.bottom > -margin && r.right > -margin && r.t
 let lib = null; // html-to-image, loaded once
 const load = () => (lib ||= import('./vendor/html-to-image.esm.js').catch((e) => { lib = null; throw e; })); // a failed load is tried again next time
 
-// ---- fonts: the @font-face CSS with the font files inside it, worked out once (the page's own sheets and the Google Fonts one are read, the files fetched)
-let fontJob = null;
-export function warmFonts() {
-  return (fontJob ||= load().then((m) => m.getFontEmbedCSS(document.documentElement)).then((css) => fontBlocks(css || '')).catch(() => []));
+// ---- fonts: the page's @font-face rules for Latin text, as CSS with the font files inside it, worked out once per page load (at idle, warmFonts) and kept; a capture
+// embeds only the faces whose family, weight and characters are on the screen (pickFontFaces) and never fetches a font itself
+async function readFonts() {
+  const faces = [];
+  for (const sheet of Array.from(document.styleSheets)) {
+    let rules; try { rules = Array.from(sheet.cssRules); } catch { continue; } // a sheet the page may not read (no CORS): its fonts are left out
+    for (const r of rules) {
+      if (r.type !== CSSRule.FONT_FACE_RULE) continue;
+      const range = r.style.getPropertyValue('unicode-range'); // the site is English: the other scripts' files would only make every picture heavier
+      if (range && !/U\+0+-0*FF\b/i.test(range)) continue; // the browser writes U+0000-00FF back as U+0-FF
+      faces.push({ css: r.cssText, base: sheet.href || location.href });
+    }
+  }
+  const files = new Map();
+  const toData = (url) => files.get(url) || files.set(url, fetch(url).then((res) => (res.ok ? res.blob() : Promise.reject(new Error('font')))).then((b) => new Promise((ok, no) => { const f = new FileReader(); f.onload = () => ok(f.result); f.onerror = no; f.readAsDataURL(b); }))).get(url);
+  const out = await Promise.all(faces.map(async ({ css, base }) => {
+    const urls = Array.from(new Set((css.match(/url\((?:"[^"]+"|'[^']+'|[^)]+)\)/g) || []).map((u) => u.slice(4, -1).replace(/^["']|["']$/g, ''))));
+    let text = css;
+    for (const u of urls) { if (u.startsWith('data:')) continue; try { text = text.split(u).join(await toData(new URL(u, base).href)); } catch { return ''; } }
+    return text;
+  }));
+  return out.filter(Boolean).join('\n');
 }
+let fontJob = null;
+/** the font faces (one @font-face string each), worked out the first time they are asked for and kept */
+export function warmFonts() { return (fontJob ||= readFonts().then(fontBlocks).catch(() => []).then((b) => { if (!b.length) fontJob = null; return b; })); } // nothing found: asked again next time
+/** at idle after load: the picture library is loaded and the fonts are worked out, before anyone presses Report */
+export const preload = () => Promise.all([load(), warmFonts()]);
 
 const BLANK = 'data:,';
 
@@ -51,7 +74,7 @@ async function readCanvases(pr, grabbed) {
 
 /** what an element with no styling of its own has for each property we copy (read in a throwaway iframe), so a declaration that says the same is left off the clone */
 function styleSkipper() {
-  const f = document.createElement('iframe'); f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+  const f = document.createElement('iframe'); f.className = 'tk-probe'; f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
   f.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;height:600px;border:0;visibility:hidden;pointer-events:none';
   document.body.appendChild(f);
   const doc = f.contentDocument; doc.open(); doc.write('<!doctype html><html><body></body></html>'); doc.close();
@@ -82,7 +105,7 @@ function makeFilter(used) {
     if (n.nodeType !== 1) { if (bare.has(n.parentNode)) return false; if (n.nodeType === 3) for (const ch of n.data) used.chars.add(ch); return true; }
     if (bare.has(n.parentNode)) return false;
     const c = n.classList;
-    if (c && (c.contains('tk-report') || c.contains('tk-report-pop'))) return false;
+    if (c && (c.contains('tk-report') || c.contains('tk-report-pop') || c.contains('tk-probe'))) return false; // the button, the popup and our own probe frame are not part of the page
     const tag = n.tagName;
     if (tag === 'SCRIPT' || tag === 'NOSCRIPT' || tag === 'TEMPLATE') return false;
     if (n.namespaceURI !== 'http://www.w3.org/1999/xhtml' || n.firstChild === null) return true; // svg is cloned as a whole; an empty element costs nothing
@@ -130,7 +153,8 @@ export async function capturePage({ geometry, grabbed, alive = () => true } = {}
     lap('draw'); restore(); restore = () => {}; perf.total = Math.round(now() - t0);
     return { canvas, width: out.width, height: out.height };
   } catch (e) {
-    throw new Error(String(e?.message || e?.type || e || 'unknown').slice(0, 160));
+    const t = e?.target, what = e?.type ? [e.type, t?.tagName, String(t?.currentSrc || t?.src || t?.href?.baseVal || '').slice(0, 60)].filter(Boolean).join(' ') : ''; // an Event from an <img> that would not load says which
+    throw new Error(String(e?.message || what || e || 'unknown').slice(0, 160));
   } finally { restore(); skipper?.done(); }
 }
 

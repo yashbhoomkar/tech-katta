@@ -1,4 +1,4 @@
-import { expect, test, type Browser } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 import { localApi } from "./api";
 
 // How fast the Report popup's picture is there, on a slow phone: 320×579 at 3.375x, touch, the CPU slowed 4x (CDP Emulation.setCPUThrottlingRate), the pages that were
@@ -8,10 +8,20 @@ import { localApi } from "./api";
 //   cold: Report is pressed and Visual straight after (the moment the popup is up): within 1500 ms
 // A busy shared runner gets 1.5x more (process.env.CI), never a laptop. The numbers are printed ("REPORT SPEED ...") and kept as annotations.
 const API = "https://tech-api.katta.cc";
-const BUDGET = { warm: 500, cold: 1500 }, SLACK = process.env.CI ? 1.5 : 1, RUNS = 3, RATE = 4;
+const BUDGET = { warm: 500, cold: 1500 }, SLACK = process.env.CI ? 1.5 : 1, RUNS = 3, RATE = Number(process.env.PERF_RATE || 4); // PERF_RATE=6 or 1 to see another rate: then nothing is asserted
 const PAGES = ["/problems", "/home", "/problems/sandbox"];
 
 const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
+
+async function setupPage(page: Page) {
+  await page.addInitScript(() => Object.defineProperty(navigator, "webdriver", { get: () => false }));
+  await localApi(page, true);
+  await page.route(`${API}/v1/auth/config`, (r) => r.fulfill({ json: { enabled: true, clientId: "test" }, headers: CORS }));
+  await page.route(`${API}/v1/me`, (r) => r.fulfill({ json: { user: { name: "Asha" } }, headers: CORS }));
+  await page.route(`${API}/v1/events`, (r) => r.fulfill({ status: 204, headers: CORS }));
+  await page.route(`${API}/v1/me/**`, (r) => r.fulfill({ status: 204, headers: CORS }));
+}
+const CORS = { "access-control-allow-origin": "http://localhost:4173", "access-control-allow-credentials": "true" };
 
 /** one fresh phone: the page loaded and idle (the Report code and the fonts are ready), then the CPU slowed; returns the cold and the warm time in ms */
 async function run(browser: Browser, path: string) {
@@ -19,12 +29,7 @@ async function run(browser: Browser, path: string) {
   try {
     await ctx.addInitScript(() => Object.defineProperty(navigator, "webdriver", { get: () => false }));
     const page = await ctx.newPage();
-    await localApi(page, true);
-    const CORS = { "access-control-allow-origin": "http://localhost:4173", "access-control-allow-credentials": "true" };
-    await page.route(`${API}/v1/auth/config`, (r) => r.fulfill({ json: { enabled: true, clientId: "test" }, headers: CORS }));
-    await page.route(`${API}/v1/me`, (r) => r.fulfill({ json: { user: { name: "Asha" } }, headers: CORS }));
-    await page.route(`${API}/v1/events`, (r) => r.fulfill({ status: 204, headers: CORS }));
-    await page.route(`${API}/v1/me/**`, (r) => r.fulfill({ status: 204, headers: CORS }));
+    await setupPage(page);
     await page.goto(`${path}?feedback=on`);
     await expect(page.locator(".tk-report")).toBeVisible({ timeout: 30_000 });
     if (path.endsWith("/sandbox")) { await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 }); await page.waitForTimeout(2000); }
@@ -63,7 +68,38 @@ for (const path of PAGES) {
     for (let i = 0; i < RUNS; i++) { const r = await run(browser, path); cold.push(r.cold); warm.push(r.warm); }
     const line = `REPORT SPEED ${path} at ${RATE}x: cold ${cold.join("/")} median ${median(cold)} ms (budget ${BUDGET.cold * SLACK}), warm ${warm.join("/")} median ${median(warm)} ms (budget ${BUDGET.warm * SLACK})`;
     console.log(line); test.info().annotations.push({ type: "speed", description: line });
-    expect(median(warm), line).toBeLessThanOrEqual(BUDGET.warm * SLACK);
-    expect(median(cold), line).toBeLessThanOrEqual(BUDGET.cold * SLACK);
+    if (RATE === 4) { expect(median(warm), line).toBeLessThanOrEqual(BUDGET.warm * SLACK); expect(median(cold), line).toBeLessThanOrEqual(BUDGET.cold * SLACK); }
   });
 }
+
+// the fonts are read once per page load and never again by a capture
+test("the fonts' CSS is made once per page: Latin files only, fetched once, and a capture fetches no font", async ({ page }) => {
+  await setupPage(page);
+  const hits: string[] = [];
+  const FONT = Buffer.from("wOF2fakefontbytes");
+  await page.route("https://fonts.test/**", (r) => { hits.push(new URL(r.request().url()).pathname); return r.fulfill({ body: FONT, headers: { "content-type": "font/woff2", "access-control-allow-origin": "*" } }); });
+  await page.addInitScript(() => document.addEventListener("DOMContentLoaded", () => {
+    const st = document.createElement("style");
+    st.textContent = `@font-face{font-family:"Probe Sans";src:url(https://fonts.test/latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131}
+      @font-face{font-family:"Probe Sans";src:url(https://fonts.test/ext.woff2) format("woff2");unicode-range:U+0100-02BA}
+      @font-face{font-family:"Probe Sans";font-weight:700;src:url(https://fonts.test/latin.woff2) format("woff2");unicode-range:U+0000-00FF}`;
+    document.head.appendChild(st);
+  }));
+  await page.goto("/privacy");
+  await expect(page.locator(".tk-report")).toBeVisible({ timeout: 30_000 });
+  const r = await page.evaluate(async () => {
+    const url = performance.getEntriesByType("resource").map((e) => e.name).find((n) => /\/feedback\.js(\?|$)/.test(n)) as string;
+    const m = await import(url.replace("feedback.js", "feedback-capture.js"));
+    const blocks = await m.warmFonts(), again = await m.warmFonts(), css = blocks.join("\n");
+    return { same: blocks === again || blocks.join("\n") === again.join("\n"), faces: (css.match(/Probe Sans/g) ?? []).length, all: (css.match(/@font-face/g) ?? []).length, inlined: css.includes("data:font/woff2;base64,") || css.includes("data:application/font-woff2;base64,") || css.includes("base64,"), remote: css.includes("fonts.test") };
+  });
+  expect(r.same).toBe(true);
+  expect(r.faces, "the Latin faces only").toBe(2);
+  expect(r.inlined && !r.remote, "the file is inside the CSS").toBe(true);
+  expect(hits.sort(), "one fetch for the one Latin file").toEqual(["/latin.woff2"]);
+  const before = hits.length;
+  await page.locator(".tk-report").click();
+  await page.locator("[data-tab=visual]").click();
+  await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
+  expect(hits.length, "the capture fetched no font").toBe(before);
+});
