@@ -5,9 +5,9 @@ import{ACCENT_LINE,ACCENT_MID,LINE_SOFT,ON_ACCENT}from"../../theme/palette.js";i
 // Method, FIG: a 45-minute interview as a bar. Requirements 5, entities 2, API 5, high-level design 15,
 // deep dives 13, questions at the end 5. A marker walks the clock and the current step lights up.
 function ClockFig({still,uid=""}){const D=pace(15),X0=20,W=600,Y=120,T=45;
-const steps=[["Requirements",5,""],["Entities",2,""],["API",5,""],["High-level design",15,"a design that works end to end"],["Deep dives",13,"make it hold up"],["Your questions",5,""]];
+const steps=[["Requirements",5,""],["Numbers",2,""],["Entities and API",5,""],["High-level design",15,"a design that works end to end"],["Deep dives",13,"make it hold up"],["Your questions",5,""]];
 let at=0;const segs=steps.map(([n,m,sub])=>{const s={n,m,sub,a:at};at+=m;return s});const x=(m)=>X0+(m/T)*W;
-return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`ckt${uid}`}><title id={`ckt${uid}`}>A 45-minute system design interview split into steps: about 5 minutes on requirements, 2 on the core entities, 5 on the API, 15 on a high-level design that works end to end, 13 on deep dives that make it hold up, and the last 5 for your questions.</title>
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`ckt${uid}`}><title id={`ckt${uid}`}>A 45-minute system design interview split into steps: about 5 minutes on requirements, 2 on the numbers, 5 on the entities and API, 15 on a high-level design that works end to end, 13 on deep dives that make it hold up, and the last 5 for your questions.</title>
 <text x="20" y="30" className="fb">One 45-minute interview</text><text x="20" y="48" className="fl">rough minutes; the design that works end to end comes first</text>
 {segs.map((s,i)=><g key={s.n}><rect x={x(s.a)} y={Y-20} width={x(s.a+s.m)-x(s.a)-2} height="40" rx="2" fill={i===3?BLUE:i===4?ACCENT_MID:i===5?LINE_SOFT:ACCENT_LINE}/>
 {s.m>=5&&<text x={(x(s.a)+x(s.a+s.m))/2} y={Y+5} textAnchor="middle" className="fb" style={{fill:i===3||i===4?ON_ACCENT:INK}}>{s.m} min</text>}

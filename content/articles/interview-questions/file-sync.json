@@ -23,7 +23,7 @@
         "Edit a file on one device and every other signed-in device gets the new version on its own, usually within seconds.",
         "Work offline: edits made on a train with no signal sync when the phone is back online.",
         "Share a file or folder with other people, as viewer or editor.",
-        "Out of scope here: two people typing in the same document at once (that's Shared document editor, question 19), search inside files, and previews."
+        "Out of scope here: two people typing in the same document at once (that's Shared document editor, question 18), search inside files, and previews."
       ]
     },
     {

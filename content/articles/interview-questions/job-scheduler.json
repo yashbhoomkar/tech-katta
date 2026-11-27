@@ -35,7 +35,7 @@
       "rows": [
         [
           "On time",
-          "Started within 5 seconds of its time, even at 9 pm"
+          "Claimed and put on the queue within 5 seconds of its time, even at 9 pm"
         ],
         [
           "Never lost",
@@ -60,7 +60,7 @@
       "items": [
         "Rating reminders: 1 crore orders a day, one reminder each. Add payouts, syncs and the rest: about 1.2 crore jobs a day, around 140 a second on average.",
         "Evenings are busier: reminders follow dinner deliveries, so 9 to 11 pm runs at around 500 a second.",
-        "The spike: 3 lakh restaurants' 9 pm payouts are all due at 21:00:00. Start them in 5 seconds and that's 60,000 a second for those 5 seconds, far above normal.",
+        "The spike: 3 lakh restaurants' 9 pm payouts are all due at 21:00:00. Claim and queue them in 5 seconds and that's 60,000 a second for those 5 seconds, far above normal. \"Started\" means queued: running them is the executors' job. If each payout waits about 2 seconds on a bank, clearing 3 lakh in 15 minutes needs about 700 in flight at once, so size the executors for the backlog you accept.",
         "Storage: 1.2 crore rows a day at about 500 bytes is 6 GB a day. Keep finished jobs for a few weeks, then archive them."
       ]
     },
@@ -188,7 +188,7 @@
             "\"Lakhs of jobs for one restaurant's offers?\" Store one job that expands into many small ones when it runs, instead of lakhs of rows up front.",
             "\"Cancel a job that's already running?\" Mark it cancelled; the executor checks between steps and stops cleanly.",
             "\"Why not cron on one machine?\" One machine is one failure away from missing the 9 pm payouts, and can't spread lakhs of jobs.",
-            "\"How do you test it?\" Kill executors mid-job and pause schedulers, then check every job ran, none did its work twice, and the 9 pm jobs started within 5 seconds."
+            "\"How do you test it?\" Kill executors mid-job and pause schedulers, then check every job ran, none did its work twice, and the 9 pm jobs were claimed and queued within 5 seconds."
           ]
         }
       ]
@@ -202,7 +202,7 @@
   ],
   "practice": {
     "v": 2,
-    "brief": "Each test sends what the company's services do: schedule jobs (with their own id, so a retry doesn't duplicate) and look them up; meanwhile the scheduler finds the jobs that are due, 100 at a time, and workers claim each one and run it within a few minutes (fifteen when everything is due at once). An accepted job must never be lost, and a job must never run twice.",
+    "brief": "Each test sends what the company's services do: schedule jobs (with their own id, so a retry doesn't duplicate) and look them up; meanwhile the scheduler finds the jobs that are due, 100 at a time, and workers claim each one and run it within a few minutes (fifteen when everything is due at once). An accepted job must never be lost, and two schedulers must never both fire the same job (a job whose worker died is run again, so its work must be safe to repeat).",
     "entities": {
       "jobs": {
         "rows": 1000000000,

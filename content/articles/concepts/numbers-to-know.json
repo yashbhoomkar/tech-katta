@@ -69,7 +69,7 @@
     {
       "t": "fig",
       "id": "nm-latency",
-      "cap": "Round-trip times on a log scale: memory, SSD, a call in the same zone, another zone, another region. Each step is roughly ten times the one before."
+      "cap": "Round-trip times on a log scale: memory, SSD, a call in the same zone, another zone, another region. The steps are uneven: memory to SSD is about a thousand times, one zone to another about three times, one zone to another region fifty times or more."
     },
     {
       "t": "p",
@@ -229,7 +229,7 @@
     },
     {
       "t": "p",
-      "x": "The most common mistake is splitting the database before the numbers call for it. Work it out: Zotato with 5 crore users at 5 KB each is 250 GB of user data. Even at 50 crore users it is 2.5 TB, well within one large machine with SSD. Orders at 2 KB, 50 lakh a day, are about 3.6 TB a year, so a few years fit before archiving or sharding is needed."
+      "x": "The most common mistake is splitting the database before the numbers call for it. Work it out: Zotato with 5 crore users at 5 KB each is 250 GB of user data. Even at 50 crore users it is 2.5 TB, well within one large machine with SSD. Orders at 2 KB, 1 crore a day, are about 7 TB a year, so a couple of years fit before archiving or sharding is needed."
     },
     {
       "t": "fig",
@@ -277,8 +277,63 @@
       "t": "list",
       "items": [
         "A queue in front of the database earns its place for other reasons: smoothing short bursts (a sale, a cricket final), decoupling slow work (sending notifications, resizing images), or retries.",
-        "Very high write rates do need different tools: rider locations at lakhs a second suit an LSM-based store or in-memory aggregation; click and view counts suit batching and stream processing.",
-        "Say the number first, then the tool: '2,000 order writes a second fit one Postgres primary; rider pings at 2 lakh a second go to Cassandra'."
+        "Very high write rates do need different tools: rider locations at tens of thousands of pings a second suit in-memory state for the latest position and an LSM-based store for the history; click and view counts suit batching and stream processing.",
+        "Say the number first, then the tool: '2,000 order writes a second fit one Postgres primary; rider pings at 75,000 a second stay in memory, with only their history going to Cassandra'."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Shortcuts for the arithmetic"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A day is 86,400 seconds, call it 10⁵: a million requests a day is about 12 a second, and a crore a day about 120.",
+        "Peak traffic is 2 to 3 times the day's average, and for an evening-heavy app like Zotato 4 to 5 times at dinner.",
+        "1 KB × a million is 1 GB; 1 KB × a billion is 1 TB. Multiply by 3 for copies, and say so.",
+        "Reads outnumber writes 10 to 1 or 100 to 1 for most products; say your own ratio and why."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "What an availability target allows",
+      "head": [
+        "Target",
+        "Down per year",
+        "Down per month",
+        "What it means"
+      ],
+      "rows": [
+        [
+          "99%",
+          "about 3.7 days",
+          "about 7 hours",
+          "A server you restart by hand"
+        ],
+        [
+          "99.9%",
+          "about 8.8 hours",
+          "about 44 minutes",
+          "One database that takes 30 minutes to fail over uses most of a month"
+        ],
+        [
+          "99.95%",
+          "about 4.4 hours",
+          "about 22 minutes",
+          "Needs automatic failover and more than one zone"
+        ],
+        [
+          "99.99%",
+          "about 53 minutes",
+          "about 4.4 minutes",
+          "Needs no manual step in any common failure"
+        ],
+        [
+          "99.999%",
+          "about 5 minutes",
+          "about 26 seconds",
+          "Rarely worth its cost; say what you would give up"
+        ]
       ]
     },
     {

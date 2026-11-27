@@ -86,7 +86,7 @@
     {
       "t": "list",
       "items": [
-        "Filters: 'nearest dishes that are veg and from open restaurants'. Filtering after the vector search can leave too few results; filtering before can break the index's shortcuts. Good engines filter during the search.",
+        "Filters: 'nearest dishes that are veg and from open restaurants'. Filtering after the vector search can leave too few results; filtering before can break the index's shortcuts. Good engines filter during the search; in the pgvector example, the WHERE clause is applied while the index is scanned, so with a selective filter it can return fewer rows than asked for (raise the search width, or use an iterative scan).",
         "Keywords still matter: a search for 'Chicken 65' wants that exact dish. Hybrid search runs a keyword search and a vector search and merges the two rankings.",
         "A new model means new vectors for everything: re-embed in the background into a new index, then switch, as with any search reindex.",
         "Embedding costs time and money per item; embed on write, not on every read."
