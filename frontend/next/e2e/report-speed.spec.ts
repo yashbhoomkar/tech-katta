@@ -107,3 +107,33 @@ test("the fonts' CSS is made once per page: Latin files only, fetched once, and 
   await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
   expect(hits.length, "the capture fetched no font").toBe(before);
 });
+
+// The same, the way a person (and a test driver) really does it: the page has been open for 7 s (not waited on for "ready" or calm frames), then real touch taps with the CPU
+// slowed; the time is read by the test from the moment before the Visual tap to the picture being there, so a page that is too busy to take the tap is caught too. This is
+// what found /home taking 1.3 s to answer a tap while its 3D scene went on drawing behind the popup. Budgets: cold 600 ms, warm 150 ms (CI 1.5x).
+test(`the Report picture is fast for real taps after 7 s on the page: /home (warm 150 ms, cold 600 ms, CPU ${RATE}x)`, async ({ browser }) => {
+  test.setTimeout(420_000);
+  const one = async (wait: number) => {
+    const ctx = await browser.newContext({ baseURL: "http://localhost:4173", viewport: { width: 320, height: 579 }, deviceScaleFactor: 3.375, isMobile: true, hasTouch: true });
+    try {
+      const page = await ctx.newPage();
+      await setupPage(page);
+      await page.goto("/home?feedback=on");
+      await expect(page.locator(".tk-report")).toBeVisible({ timeout: 30_000 });
+      await page.waitForTimeout(7000);
+      const cdp = await ctx.newCDPSession(page);
+      await cdp.send("Emulation.setCPUThrottlingRate", { rate: RATE });
+      await page.locator(".tk-report").tap();
+      if (wait) await page.waitForTimeout(wait);
+      const t0 = Date.now();
+      await page.locator("[data-tab=visual]").tap();
+      await page.locator(".tk-mk-stage canvas").waitFor({ timeout: 60_000 });
+      return Date.now() - t0;
+    } finally { await ctx.close(); }
+  };
+  const cold: number[] = [], warm: number[] = [];
+  for (let i = 0; i < RUNS; i++) { cold.push(await one(0)); warm.push(await one(1000)); }
+  const line = `REPORT SPEED real taps /home at ${RATE}x: cold ${cold.join("/")} median ${median(cold)} ms (budget ${600 * SLACK}), warm ${warm.join("/")} median ${median(warm)} ms (budget ${150 * SLACK})`;
+  console.log(line); test.info().annotations.push({ type: "speed", description: line });
+  if (RATE === 4) { expect(median(warm), line).toBeLessThanOrEqual(150 * SLACK); expect(median(cold), line).toBeLessThanOrEqual(600 * SLACK); }
+});
