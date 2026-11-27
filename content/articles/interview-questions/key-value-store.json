@@ -1823,6 +1823,7 @@
         "step": "design",
         "x": "Copies in other zones (Multi-AZ) so a confirmed write survives a dead machine."
       }
-    ]
+    ],
+    "referenceNote": "The canvas has no leaderless ring, so the storage nodes are drawn as six shards of one engine behind a cache. Read that box as the article's ring of six nodes with three copies each: the article's design uses version vectors and tunable N, W and R, which the canvas does not model."
   }
 }
