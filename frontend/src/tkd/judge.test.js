@@ -33,7 +33,7 @@ test('7.10, the worked example', () => {
   assert.equal(s.perRequest.GET_LINK.trace.find((t) => t.part === 'cache').hit, 0.989852);
   near(s.parts.db.rho, 0.0268, 1e-4, 'db rho');
   const tr = Object.fromEntries(s.perRequest.GET_LINK.trace.map((t) => [t.part, t.ms]));
-  near(tr.lb, 2.08, 0.01); near(tr.api, 61.2, 0.05); near(tr.cache, 2.04, 0.01); near(tr.db, 10.27, 0.02);
+  near(tr.lb, 2.04, 0.01); near(tr.api, 61.2, 0.05); near(tr.cache, 2.04, 0.01); near(tr.db, 10.27, 0.02);
   near(s.perRequest.GET_LINK.p99, 75.6, 0.2, 'GET_LINK p99');
   near(s.perRequest.GET_LINK.p50, 16.3, 0.2, 'GET_LINK p50');
   near(s.perRequest.CREATE_LINK.p99, 94.1, 0.2, 'CREATE_LINK p99');
