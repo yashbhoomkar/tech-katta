@@ -70,7 +70,7 @@ test("signed out: the workspace is locked and loads no island", async ({ page })
   await visitor(page, "out");
   const asked: string[] = [];
   page.on("request", (r) => asked.push(r.url()));
-  await page.goto("/problems/url-shortener");
+  await page.goto("/problems/ticket-booking");
   // signed out a problem is its title, difficulty and brief, then the sign-in card: no canvas, no judge, no island, no pop-up
   await expect(page.locator(".public-problem .si-card")).toBeVisible();
   await expect(page.locator(".signin")).toHaveCount(0);

@@ -7,7 +7,7 @@
   "access": "free",
   "date": "5 Nov 2026",
   "title": "How to answer a system design question",
-  "dek": "The same six steps for every question, how long to spend on each, and what the interviewer is listening for at each one. Every question in this section follows them.",
+  "dek": "The same five steps for every question, how long to spend on each, and what the interviewer is listening for at each level. Every question in this section follows them.",
   "body": [
     {
       "t": "example"
@@ -19,7 +19,7 @@
     {
       "t": "fig",
       "id": "interview-clock",
-      "cap": "A 45-minute interview, roughly: requirements 5 minutes, entities 2, API 5, a high-level design 15, deep dives 13, and the last 5 for your questions. Spending 20 minutes on requirements or skipping straight to sharding are the two most common ways to run out of time."
+      "cap": "A 45-minute interview, roughly: requirements 5 minutes, the numbers 2, entities and API 5, a high-level design 15, deep dives 13, and the last 5 for your questions. Spending 20 minutes on requirements or skipping straight to sharding are the two most common ways to run out of time."
     },
     {
       "t": "analogy",
@@ -52,7 +52,7 @@
     },
     {
       "t": "p",
-      "x": "Keep the handful of conversions in your head: a day is about 10⁵ seconds, 10 lakh requests a day is about 12 a second, peaks are 2–3 times the average. The Quick Notes page has the rest."
+      "x": "Keep the handful of conversions in your head: a day is about 10⁵ seconds, 10 lakh requests a day is about 12 a second, peaks are 2–3 times the average. The numbers panel on the Quick Notes page has the rest."
     },
     {
       "t": "h2",

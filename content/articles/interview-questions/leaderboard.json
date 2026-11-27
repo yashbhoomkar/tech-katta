@@ -94,7 +94,7 @@
     },
     {
       "t": "p",
-      "x": "Answering and scoring are separated by time: the 20-second window only saves answers, which is a simple append. Scoring happens once, after the window, when the right answer is known."
+      "x": "Answering and scoring are separated by time: the 20-second window only records answers, and scoring happens once, after the window, when the right answer is known. Recording is still the hardest write in the design: 2.5 lakh answers a second, each unique to a player and a question. Append them to a log partitioned by player (Kafka, or a Cassandra or DynamoDB table keyed by player and question); the key makes a resent answer overwrite itself, so each answer counts once, and the scorer reads the partitions and applies that rule."
     },
     {
       "t": "h2",

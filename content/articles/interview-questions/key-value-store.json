@@ -78,8 +78,8 @@
     {
       "t": "code",
       "label": "API",
-      "x": "GET    /kv/cart:u_42          → 200 { \"value\": \"…\", \"version\": 8 }\nPUT    /kv/cart:u_42          { \"value\": \"…\", \"if_version\": 8 }   → 200 { \"version\": 9 }\nDELETE /kv/cart:u_42          → 204",
-      "say": "Read a key and its version. Write it, optionally only if it's still at the version you read. Delete it."
+      "x": "GET    /kv/cart:u_42          → 200 { \"values\": [\"…\"], \"context\": \"vv:a3.b1\" }   (two values when writes were concurrent)\nPUT    /kv/cart:u_42          { \"value\": \"…\", \"context\": \"vv:a3.b1\" }   → 200 { \"context\": \"vv:a4.b1\" }\nDELETE /kv/cart:u_42          → 204",
+      "say": "Read a key: you get its value, or both values if two writes were concurrent, and a context token (the version vector). Write it, passing back the context you read. Delete it. A conditional write on an integer version is the follow-up, for keys that need a single decider."
     },
     {
       "t": "h2",
@@ -118,7 +118,7 @@
       "kind": "CONSISTENT HASHING WITH VIRTUAL NODES",
       "what": "Hash machines onto a ring of values, many times each (virtual nodes). A key belongs to the next three different machines clockwise from its hash, skipping extra points of a machine already picked.",
       "use": "Adding a machine moves only about 1/N of the keys, taken a little from every machine; losing one spreads its load over everyone.",
-      "avoid": "Every node and client needs the same ring. Keep it in a small consensus-backed store (see the consensus article) and cache it.",
+      "avoid": "Every node and client needs the same ring. Keep it in a small consensus-backed store (the ZooKeeper article shows how a small ensemble agrees on one value) and cache it.",
       "ex": "Going from 15 to 16 machines moves about 6% of keys, a little from each of the 15.",
       "like": "A new house gets a number between its neighbours; nobody else's address changes."
     },
@@ -137,7 +137,7 @@
         "N copies, W to confirm a write, R to answer a read. With N = 3, W = 2, R = 2, reads see the latest confirmed write.",
         "Choose by need: carts use W = 2, R = 2; a \"last seen\" timestamp could use W = 1, R = 1 for speed, accepting a stale read now and then.",
         "Put the three copies in three different zones, so losing a zone loses one copy, not two.",
-        "Two writers at once: give each value a version and write with \"only if still version 8\". This needs one decider per key (a leader per slice, see follow-ups); without it, two writers can each land on some copies."
+        "Two writers at once: by default both writes are kept (their version vectors show they were concurrent) and the reader merges them, as the cart service does. A key that must have exactly one winner needs a single decider, a leader per slice, and then a conditional write, \"only if still version 8\" (see follow-ups)."
       ]
     },
     {
@@ -1823,6 +1823,7 @@
         "step": "design",
         "x": "Copies in other zones (Multi-AZ) so a confirmed write survives a dead machine."
       }
-    ]
+    ],
+    "referenceNote": "The canvas has no leaderless ring, so the storage nodes are drawn as six shards of one engine behind a cache. Read that box as the article's ring of six nodes with three copies each: the article's design uses version vectors and tunable N, W and R, which the canvas does not model."
   }
 }

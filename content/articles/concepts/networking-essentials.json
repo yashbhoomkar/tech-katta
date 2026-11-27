@@ -4,7 +4,7 @@
   "group": "core",
   "no": "CONCEPT // 01",
   "tag": "FOUNDATIONS",
-  "access": "paid",
+  "access": "free",
   "date": "9 Nov 2026",
   "title": "Networking essentials: how machines reach each other",
   "dek": "Layers and addresses, one request from tap to answer, TCP or UDP, HTTP, the API styles built on it, pushing updates, phone-to-phone calls, spreading load, layer 4 or 7, distance, and what to do when calls fail.",
@@ -407,7 +407,7 @@
         [
           "In browsers",
           "Everything (HTTP, WebSocket)",
-          "Only through WebRTC"
+          "Not as raw sockets: through WebRTC, WebTransport and HTTP/3 (all in every major browser)"
         ],
         [
           "Use for",
@@ -437,7 +437,7 @@
       "items": [
         "Say nothing and use TCP for APIs, payments, uploads and anything that touches data. Interviewers assume it.",
         "Choose UDP when freshness beats completeness (live audio, video, positions in a game), and say what happens on loss: the codec hides it, or the next update replaces it.",
-        "Remember browsers can't open raw UDP sockets. A web client gets UDP only through WebRTC, so plan a path for it: Zotato's web dashboard could get rider positions over a WebSocket while the apps use UDP.",
+        "Remember browsers can't open raw UDP sockets. A web page gets UDP-based transport only through APIs the browser provides: WebRTC for calls and peer data, WebTransport for datagrams and streams to a server, and HTTP/3 (which the browser uses by itself). Plan a path for it: Zotato's web dashboard could get rider positions over a WebSocket while the apps use UDP.",
         "Mixing is normal: a video call uses HTTPS for login and call setup and UDP for the media."
       ]
     },
@@ -690,7 +690,7 @@
         "Nouns in paths, verbs in methods. `POST /cancelOrder` is not RESTful; `PATCH /orders/9101` with a new status is. If an action really isn't a change to a resource, model it as one: `POST /orders/9101/refunds` creates a refund.",
         "Nest to show belonging: `/restaurants/42/menu`, `/users/77/orders`. Keep it to one or two levels.",
         "The server assigns ids on create, so `POST /orders` has no id in the path and returns it.",
-        "Paginate lists with a cursor, not page numbers, so new rows don't shift the pages."
+        "Paginate lists, and prefer a cursor to page numbers when rows arrive while people page (feeds, live orders), so new rows don't shift the pages."
       ]
     },
     {
@@ -907,7 +907,7 @@
         "The handshake is HTTP, so cookies and auth headers are checked once at the start.",
         "Messages can be text or binary. WebSocket defines no format; most apps send JSON with a type field, and those message types are your API: `{type: 'msg'}`, `{type: 'typing'}`, `{type: 'read'}`.",
         "Every proxy, firewall and load balancer on the path must allow the upgrade and keep the connection open. Many have idle timeouts (60 seconds is a common default), so both sides send pings.",
-        "A layer 4 load balancer suits WebSockets well: it passes the whole connection to one server and leaves it there.",
+        "A load balancer in front of WebSockets must leave each connection on one server. A layer 4 balancer does that simply, by passing the connection through; many production setups use a layer 7 proxy instead, which ends TLS and checks the sign-in token at the upgrade request, at the price of handling every connection itself.",
         "Scaling needs a plan: the connections live on dedicated connection servers, and a message for a user must reach whichever server holds that user's socket, usually through a pub/sub system such as Redis."
       ]
     },
@@ -1026,7 +1026,7 @@
     {
       "t": "list",
       "items": [
-        "Media travels over UDP, encrypted end to end (DTLS and SRTP). A lost packet is concealed by the codec, not resent.",
+        "Media travels over UDP, encrypted (DTLS and SRTP). Between two phones that is end to end; with the SFU introduced below, the encryption ends at the SFU unless an extra end-to-end layer is added on top. A lost packet is concealed by the codec, not resent.",
         "Bitrate adapts: when packets start to go missing, the sender lowers quality instead of letting the call freeze.",
         "Data channels can carry arbitrary messages between the peers, reliable or not, which is how some games and file-sharing tools use WebRTC.",
         "The call keeps checking its path; if a phone switches from Wi-Fi to 4G, the peers try again and may move to TURN."
@@ -1305,7 +1305,7 @@
         "Spread individual requests, including the many streams inside one HTTP/2 or gRPC connection.",
         "Retry an idempotent request on another server when one fails, and add headers such as the client's real IP (X-Forwarded-For).",
         "Stickiness by cookie when you must keep a user on one server (better to avoid needing it).",
-        "HTTP-based push, long polling and server-sent events, works well behind it: each is an ordinary HTTP request, just a slow one, so it can be routed by path like any other. Some layer 7 balancers also carry WebSockets, but a layer 4 one is usually the better home for them.",
+        "HTTP-based push, long polling and server-sent events, works well behind it: each is an ordinary HTTP request, just a slow one, so it can be routed by path like any other. Layer 7 proxies carry WebSockets too, and can end TLS and check the sign-in token at the upgrade request, which is why many production setups use them; a layer 4 balancer is the simpler home, since it just passes the connection through. It is a trade-off between simplicity and control.",
         "Costs: CPU for TLS and parsing on every request, a little added latency, and two connections per request path instead of one."
       ]
     },
@@ -1379,7 +1379,7 @@
       "t": "list",
       "items": [
         "For an HTTP API, draw a layer 7 load balancer and mention it ends TLS and can route by path.",
-        "If the design uses WebSockets, say the connection servers sit behind a layer 4 balancer and use least connections, so each socket stays put and load stays even.",
+        "If the design uses WebSockets, say the connection servers sit behind a balancer that uses least connections (layer 4 for simplicity, layer 7 if it must check the token at the upgrade), so each socket stays put and load stays even.",
         "For gRPC between services, say either client-side balancing or a layer 7 balancer that understands HTTP/2, because a layer 4 one would pin each client to one server."
       ]
     },

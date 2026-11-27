@@ -48,9 +48,9 @@
     {
       "t": "list",
       "items": [
-        "Storage: 'Zotato keeps about 2 KB per order and takes 50 lakh orders a day: 10 GB a day, about 3.6 TB a year. One Postgres can hold a year, but not five years of history with indexes. Old orders can be archived, or the table sharded.'",
-        "Write throughput: 'At the dinner peak we expect 50,000 writes a second: orders, status changes, rider pings, each updating several indexes and shipped to replicas. That is more than one primary can sustain with headroom, however big. We need to split the writes.'",
-        "Read throughput: 'Even with read replicas, 1 crore daily users making many queries each are more than one primary and its replicas can serve with fresh enough data, so we spread the reads across shards.'"
+        "Storage: 'Zotato keeps about 2 KB per order and takes 1 crore orders a day: 20 GB a day, about 7 TB a year. One Postgres can hold a year or two, but not five years of history with indexes. Old orders can be archived, or the table sharded.'",
+        "Write throughput: 'At the dinner peak we expect about a lakh writes a second: orders, status changes and 75,000 rider pings, each updating several indexes and shipped to replicas. That is more than one primary can sustain with headroom, however big. We need to split the writes.'",
+        "Read throughput, the weakest reason: replicas and a cache fix most read problems first, so only argue it when they fall short: 'Even with read replicas and a cache, the reads that must be fresh (a customer's own orders) are more than one primary can serve, so we spread them across shards.'"
       ]
     },
     {
@@ -427,7 +427,7 @@
         "Cassandra hashes the partition key (Murmur3) onto a ring of token ranges, with many virtual nodes per machine: a form of consistent hashing.",
         "DynamoDB hashes the partition key to pick an internal partition and splits partitions as they grow or get busy. You never see a ring.",
         "MongoDB splits data into range-based chunks of the shard key (or of its hash, with a hashed shard key), and a background balancer splits and moves chunks to keep shards even.",
-        "For SQL, Vitess (MySQL) and Citus (Postgres) sit in front of many databases and handle routing, some cross-shard queries and resharding. Aurora and Spanner offer distributed SQL with sharding built in.",
+        "For SQL, Vitess (MySQL) and Citus (Postgres) sit in front of many databases and handle routing, some cross-shard queries and resharding. Spanner and CockroachDB are distributed SQL databases with sharding built in. Standard Aurora is not: it has one writer, and only Aurora Limitless Database shards.",
         "All of them route queries and rebalance when you add capacity, though the mechanics differ. In an interview, name the database and the key: 'DynamoDB, partition key customer_id'."
       ]
     },
@@ -517,7 +517,7 @@
     {
       "t": "list",
       "items": [
-        "The textbook answer is two-phase commit (2PC): a coordinator asks every shard to prepare, waits until all say yes, then tells all to commit. It keeps them consistent, but it is slow (several round trips, locks held throughout) and fragile: if the coordinator or a shard fails at the wrong moment, the others wait with locks held. Most production systems avoid it.",
+        "The textbook answer is two-phase commit (2PC): a coordinator asks every shard to prepare, waits until all say yes, then tells all to commit. It keeps them consistent, but it is slow (several round trips, locks held throughout) and fragile: if the coordinator or a shard fails at the wrong moment, the others wait with locks held. Application teams avoid running it themselves, but databases such as Spanner and CockroachDB run two-phase commit over consensus groups all day, which is why they can offer cross-shard transactions at a price in latency.",
         "Best: choose the key so the transaction stays on one shard. Shard by customer_id and keep the customer's wallet, orders and payment records together; then their transactions are ordinary single-shard transactions, fast and reliable.",
         "When an operation truly spans shards, use a saga: a sequence of local steps, each with a compensating step that undoes it. If a later step fails, run the compensations for the earlier ones in reverse.",
         "Where exactness isn't needed, accept eventual consistency: a restaurant's rating count copied to several shards can disagree for a few seconds and then converge, which is far simpler than coordinating every update."

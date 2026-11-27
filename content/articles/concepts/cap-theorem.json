@@ -150,7 +150,7 @@
     {
       "t": "list",
       "items": [
-        "One source of truth: keep the data that must be exact in a single primary database. Every write and every read that must be current goes to it. Nothing can disagree because there is only one copy that counts. It limits how far that part scales, but often that part is small: bookings and payments, not menus.",
+        "One source of truth: keep the data that must be exact in a single primary database. Every write and every read that must be current goes to it. Nothing can disagree because there is only one copy that counts. It limits how far that part scales, but often that part is small: bookings and payments, not menus. Its weak point is failover: if the primary dies and an asynchronous replica takes over, writes the replica had not yet received are lost, even though they were acknowledged. A synchronous replica or a quorum is what keeps acknowledged writes safe.",
         "Coordinated writes: when several stores must agree, for example the bookings database and a seat-map cache, coordinate them, with a distributed transaction such as two-phase commit, or by writing through a consensus-based store. Every write now waits for several machines, so latency rises, and during a split the system refuses writes it can't coordinate.",
         "Strongly consistent databases: PostgreSQL and MySQL with reads from the primary; Google Spanner, which keeps strong consistency across regions using synchronised clocks and consensus; DynamoDB with strongly consistent reads (ConsistentRead: true), which read from the partition's leader; and coordination services like etcd or ZooKeeper for small, critical data."
       ]
@@ -183,8 +183,8 @@
     {
       "t": "list",
       "items": [
-        "Cassandra: each read and write names a consistency level. ONE answers from a single replica (fast, available, maybe stale); QUORUM needs a majority, and with QUORUM on both reads and writes a read always sees the latest write; ALL needs every replica.",
-        "DynamoDB: reads are eventually consistent by default and half the cost; ConsistentRead gives the latest data from the leader. Global tables replicate across regions asynchronously.",
+        "Cassandra: each read and write names a consistency level. ONE answers from a single replica (fast, available, maybe stale); QUORUM needs a majority, and with QUORUM on both reads and writes a read always sees the latest successful write (a write that failed to reach its quorum can still surface later, and concurrent writes are settled by timestamp); ALL needs every replica.",
+        "DynamoDB: reads are eventually consistent by default and half the cost; ConsistentRead gives the latest data from the leader. Global tables replicate across regions asynchronously by default; since 2025 a multi-Region strong consistency mode makes a write wait for another Region too, at the cost of latency.",
         "MongoDB: write concern (how many replicas must confirm) and read concern (whether a read may return data that could still be rolled back) are set per operation.",
         "PostgreSQL: reads from the primary are current; reads from asynchronous replicas may lag; synchronous replication makes a commit wait for a replica."
       ]
@@ -225,7 +225,7 @@
         ],
         [
           "Zotato",
-          "Payments, wallet, seat booking, order placement",
+          "Payments, wallet, order placement, coupon redemption",
           "Menus, ratings, search, restaurant pages"
         ]
       ]
@@ -293,6 +293,7 @@
         "Strong consistency: every read sees the latest write, as if there were one copy. The most expensive in latency and availability, and necessary where exactness matters: account balances, seat bookings, stock.",
         "Causal consistency: if one event caused another, everyone sees them in that order. A reply never appears before the comment it answers; a 'delivered' status never shows before 'picked up'. Unrelated events may appear in different orders to different people.",
         "Read-your-own-writes: you always see your own changes immediately, even if others see them a little later. After you edit your profile you see the new version, which is what users actually notice. Common in social and content products.",
+        "Monotonic reads: once you have seen a newer value you never see an older one. Without it, two reads that land on different replicas can show an order shipped and then, a moment later, not shipped. Pinning a user to one replica, or remembering the latest position they have seen, provides it.",
         "Eventual consistency: if writes stop, all copies eventually agree; until then a read may be old. The weakest and cheapest, and the default of many distributed databases. DNS is the classic example: a changed record reaches everyone within minutes or hours. It is what you get when you choose availability."
       ]
     },
@@ -330,11 +331,34 @@
           "Profiles, posts, settings"
         ],
         [
+          "Monotonic reads",
+          "You never see data go backwards",
+          "Low: stick the user to one replica",
+          "Feeds, order status, counters on screen"
+        ],
+        [
           "Eventual",
           "Copies agree once writes stop",
           "Lowest",
           "Counts, feeds, search, DNS"
         ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Copies, failover and split brain"
+    },
+    {
+      "t": "p",
+      "x": "Most of this article assumes data has several copies. How they are kept is the part interviewers push on."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Leader and followers: one copy takes every write and ships it to the others. Reads from followers may lag by the time the shipping takes (replication lag).",
+        "Synchronous or not: a synchronous follower must have the write before the leader answers, so nothing acknowledged is lost, at the price of slower writes and a stall if that follower is down. An asynchronous one answers first, so a failover can lose the last moments of writes.",
+        "Failover: when the leader dies, a follower is promoted. Doing that safely needs agreement on who is alive and who leads, which is what a consensus group (a quorum, as in ZooKeeper, etcd or Raft) or a managed service provides. PostgreSQL covers its own tools.",
+        "Split brain: if two nodes both believe they lead, both accept writes and the copies diverge. The cure is a majority vote or a lease, plus fencing: the store behind the leader rejects writes that carry an old leader's number. The Contention concept shows fencing tokens."
       ]
     },
     {

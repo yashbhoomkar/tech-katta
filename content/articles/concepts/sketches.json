@@ -92,7 +92,7 @@
         [
           "t-digest / KLL",
           "What is the p50, p99 of these values?",
-          "Very accurate at the tails",
+          "t-digest is most accurate at the tails; KLL bounds the rank error evenly",
           "A few KB"
         ],
         [

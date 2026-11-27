@@ -68,7 +68,7 @@
         [
           "One order by its ID",
           "Index by_order",
-          "partition order_id"
+          "partition order_id (an index read is eventually consistent, so it can miss an order written a moment ago)"
         ],
         [
           "Orders waiting for a rider",
