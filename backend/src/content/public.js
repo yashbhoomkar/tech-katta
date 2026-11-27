@@ -50,6 +50,9 @@ export function briefLines(text) {
 const HEADER = ['section', 'slug', 'group', 'no', 'tag', 'access', 'date', 'title', 'dek', 'audio'];
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]));
 
+/** an article in the free sample (access "free"): served in full to anyone, signed out or not */
+export const isFree = (a) => a?.access === 'free';
+
 /** what a signed-out reader gets of an article (or of a problem: its practice data, hints and tests never) */
 export function publicArticle(a) {
   const head = pick(a, HEADER);
