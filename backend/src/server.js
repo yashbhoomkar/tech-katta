@@ -198,6 +198,7 @@ async function handleContent(request, response, pathname, searchParams) {
   if (pathname === '/v1/site') return sendContent(request, response, bodies.site);
   if (pathname === '/v1/stories') return (await signedIn(request)) ? sendGated(request, response, bodies.stories) : sendSignedOut(request, response);
   if (pathname === '/v1/lab') return sendGated(request, response, (await signedIn(request)) ? bodies.lab : bodies.publicLab);
+  if (pathname === '/v1/lab/engine') return sendContent(request, response, bodies.engineLab);
   if (pathname === '/v1/articles') {
     const section = searchParams.get('section') || '';
     if (section && !SLUG.test(section)) return sendContentError(request, response, 400, 'bad_section');
@@ -208,12 +209,14 @@ async function handleContent(request, response, pathname, searchParams) {
   const rest = pathname.slice('/v1/articles/'.length), solution = rest.endsWith('/solution'), wrong = rest.endsWith('/wrong');
   const slug = solution ? rest.slice(0, -'/solution'.length) : wrong ? rest.slice(0, -'/wrong'.length) : rest;
   if (!SLUG.test(slug)) return sendContentError(request, response, 404, 'not_found');
+  // the free sample (access "free": content/public.js isFree) is served in full to anyone; every other article, solution and wrong design needs a session
+  const free = bodies.isFree(slug);
   if (solution || wrong) {
-    if (!(await signedIn(request))) return sendSignedOut(request, response);
+    if (!free && !(await signedIn(request))) return sendSignedOut(request, response);
     const body = solution ? bodies.solution(slug) : bodies.wrong(slug);
     return body ? sendGated(request, response, body) : sendContentError(request, response, 404, 'not_found');
   }
-  const article = (await signedIn(request)) ? bodies.article(slug) : bodies.publicArticle(slug);
+  const article = (free || (await signedIn(request))) ? bodies.article(slug) : bodies.publicArticle(slug);
   if (!article) return sendContentError(request, response, 404, 'not_found');
   return sendGated(request, response, article);
 }
@@ -226,7 +229,7 @@ function route(request, response) {
   try { url = new URL(request.url || '/', 'http://localhost'); } catch { return sendJson(request, response, 400, { status: 'error', error: 'bad_request' }); }
   const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
 
-  if (pathname === '/v1/site' || pathname === '/v1/lab' || pathname === '/v1/stories' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
+  if (pathname === '/v1/site' || pathname === '/v1/lab' || pathname === '/v1/lab/engine' || pathname === '/v1/stories' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Allow-Headers': 'If-None-Match', 'Access-Control-Max-Age': '600' });
       response.end();
