@@ -213,7 +213,7 @@
   ],
   "practice": {
     "v": 2,
-    "brief": "Each test sends searches for dishes by their words in a city, cheapest first, and now and then a restaurant changes a price. Popular searches repeat (\"biryani\" at dinner). A changed price must show in search within five minutes.",
+    "brief": "Each test sends searches for dishes by their words in a city, cheapest first, and now and then a restaurant changes a price. Popular searches repeat (\"biryani\" at dinner). A changed price must show in search within five minutes (the article's target is one minute; the tests allow a looser five, which keeps the cache useful on the canvas).",
     "entities": {
       "dishes": {
         "rows": 30000000,

@@ -225,7 +225,7 @@
   ],
   "practice": {
     "v": 2,
-    "brief": "Each test sends swipes and match lists. A swipe sets one side of the pair's row (the pair is stored once, by its two ids in order) and answers at once with whether it made a match; about one swipe in ten does, and then both phones are told by the push provider (which takes 2,000 a second) within a minute. A resent swipe must change nothing.",
+    "brief": "Each test sends swipes and match lists. A swipe sets one side of the pair's row (the pair is stored once, by its two ids in order) and answers at once with whether it made a match; about one swipe in ten does on these test nights (far more than the usual one in 150 in the numbers above, so that the push provider's limit comes into play), and then both phones are told by the push provider (which takes 2,000 a second) within a minute. A resent swipe must change nothing.",
     "entities": {
       "pairs": {
         "rows": 10000000000,
