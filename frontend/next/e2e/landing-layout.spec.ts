@@ -37,6 +37,14 @@ async function topBarInside(page: Page, what: string) {
 async function tabCoversNothing(page: Page, what: string) {
   const hits = await page.evaluate(() => {
     const tab = document.querySelector(".tk-report") as HTMLElement, t = tab.getBoundingClientRect(), out: string[] = [];
+    // in the tab bar: the bar floats over the page by design (the page keeps room under it); the tab must be whole inside it and overlap no other item of it
+    const bar = tab.parentElement?.classList.contains("tabbar") ? tab.parentElement : null;
+    if (bar) {
+      const bb = bar.getBoundingClientRect();
+      if (t.left < bb.left - 0.5 || t.right > bb.right + 0.5 || t.top < bb.top - 0.5 || t.bottom > bb.bottom + 0.5 || t.right > innerWidth || t.bottom > innerHeight) out.push("the Report item is not whole inside the tab bar");
+      Array.from(bar.children).forEach((c) => { if (c === tab) return; const r = c.getBoundingClientRect(); if (r.width && r.left < t.right - 0.5 && r.right > t.left + 0.5 && r.top < t.bottom && r.bottom > t.top) out.push(`it overlaps ${(c.textContent || "").trim()}`); });
+      return out;
+    }
     const hit = (b: DOMRect) => b.width > 0 && b.height > 0 && b.left < t.right && b.right > t.left && b.top < t.bottom && b.bottom > t.top;
     const shown = (e: Element) => { for (let n: Element | null = e; n && n !== document.body; n = n.parentElement) { const cs = getComputedStyle(n); if (cs.display === "none" || cs.visibility === "hidden" || Number(cs.opacity) < 0.05) return false; } return true; };
     const skip = (e: Element) => !!e.closest(".tk-report, .tk-report-pop, canvas, script, style");
@@ -65,7 +73,9 @@ for (const [w, h] of SIZES) {
         const hint = await page.evaluate(() => {
           const el = document.querySelector(".explore-hint") as HTMLElement | null; if (!el) return null;
           const r = el.getBoundingClientRect(), a = (getComputedStyle(el).backgroundColor.match(/[\d.]+/g) ?? []).map(Number);
-          const pts = [0.2, 0.4, 0.5, 0.6, 0.8].map((k) => { const e = document.elementFromPoint(r.left + r.width * k, r.bottom - 3); return !!e && el.contains(e); });
+          // (a point under the tab bar is the tab bar's, by design: on a small screen the hint's lower edge is scrolled under it)
+          const bar = document.querySelector(".tabbar") as HTMLElement | null, bb = bar && getComputedStyle(bar).display !== "none" ? bar.getBoundingClientRect() : null;
+          const pts = [0.2, 0.4, 0.5, 0.6, 0.8].map((k) => { const x = r.left + r.width * k, y = r.bottom - 3; if (y >= innerHeight) return true; if (bb && y > bb.top && y < bb.bottom && x > bb.left && x < bb.right) return true; const e = document.elementFromPoint(x, y); return !!e && el.contains(e); });
           return { alpha: a.length > 3 ? a[3] : 1, covered: pts.some((x) => !x), onScreen: r.bottom > 0 && r.top < innerHeight };
         });
         if (hint?.onScreen) { expect(hint.alpha, "the hint pill is solid").toBe(1); expect(hint.covered, "nothing is drawn over the hint's lower edge").toBe(false); }
@@ -82,7 +92,7 @@ for (const [w, h] of SIZES) {
             expect(l >= 0 && r <= w && t >= 0 && b <= h, `a tour button is whole on the screen (${[l, t, r, b].map(Math.round)})`).toBe(true);
             if (geo.bar) { const [bl, bt, br, bb] = geo.bar; expect(!(l < br && r > bl && t < bb && b > bt), `a tour button is under the tab bar (${[l, t, r, b].map(Math.round)} / ${geo.bar.map(Math.round)})`).toBe(true); }
           }
-          await offer.locator('[data-o="no"]').last().tap();
+          await (w < 1000 ? offer.locator('[data-o="no"]').last().tap() : offer.locator('[data-o="no"]').last().click());
           await expect(offer).toHaveCount(0);
         }
         // the Report tab opens by a real tap (a click on a wide screen)
