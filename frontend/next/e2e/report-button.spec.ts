@@ -6,6 +6,11 @@ import { expectTabClear } from "./report-tab";
 // by the button (navigator.webdriver), so these tests say they are not one.
 const API = "https://tech-api.katta.cc";
 const CORS = { "access-control-allow-origin": "http://localhost:4173", "access-control-allow-credentials": "true" };
+/** Send, as a person would: not before the popup has been up for 2 s (a report sooner than that is dropped as a script's, feedback-ui.js tooSoon). Waits on the popup's own open mark, not a sleep. */
+async function sendNow(page: Page) {
+  await page.waitForFunction(() => { const m = performance.getEntriesByName("tk-report:popup").at(-1); return !!m && performance.now() - m.startTime > 2100; });
+  await page.locator("[data-send]").click();
+}
 async function visit(page: Page) {
   await page.addInitScript(() => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-design-view", "2d"); } catch { /* blocked */ } });
   await localApi(page, true);
@@ -109,7 +114,7 @@ for (const theme of ["dark", "light"] as const) {
     await expect(page.locator("[data-chip=bug]")).toHaveAttribute("aria-checked", "true");
     await expect(page.locator("[data-send]")).toBeDisabled();
     await page.locator("[data-msg]").fill("The Home page card does not open\nI tapped Start twice and nothing happened.");
-    await page.locator("[data-send]").click();
+    await sendNow(page);
     await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
     expect(got).toHaveLength(1);
     expect(got[0].repo).toBe("yashbhoomkar/tech-katta-feedback");
@@ -130,7 +135,7 @@ for (const theme of ["dark", "light"] as const) {
     await page.locator(".tk-report").click();
     await page.locator("[data-chip=idea]").click();
     await page.locator("[data-msg]").fill("x".repeat(200));
-    await page.locator("[data-send]").click();
+    await sendNow(page);
     await expect(page.locator(".tk-rp-done")).toBeVisible();
     expect(got[0].category).toBe("feature");
     expect(got[0].title).toHaveLength(80);
@@ -195,7 +200,7 @@ for (const theme of ["dark", "light"] as const) {
     expect(a?.all ?? 0, "the picture is not blank").toBeGreaterThan(12);
     expect(a?.region ?? 0, "the canvas area of the picture is not blank (a DOM-only capture draws a WebGL canvas empty)").toBeGreaterThan(5);
     await page.locator("[data-note]").fill("The part looks wrong");
-    await page.locator("[data-send]").click();
+    await sendNow(page);
     await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
     expect(got[0].screenshot?.startsWith("data:image/png;base64,")).toBe(true);
     expect(got[0].title).toBe("The part looks wrong");
@@ -239,7 +244,7 @@ test.describe("a low-end phone: 320×579 at 3.375x", () => {
     expect(a?.all ?? 0).toBeGreaterThan(12);
     expect(a?.region ?? 0).toBeGreaterThan(5);
     await bigEnoughButtons(page);
-    await page.locator("[data-send]").click();
+    await sendNow(page);
     await expect(page.locator(".tk-rp-done")).toBeVisible();
     expect(got[0].metadata.devicePixelRatio).toBeCloseTo(3.375, 2);
     expect(got[0].metadata.viewport).toEqual({ width: 320, height: 579 });
@@ -260,7 +265,7 @@ test("Visual feedback when the picture cannot be taken: it says so, the note sti
   await page.locator("[data-tab=visual]").click();
   await expect(page.locator(".tk-rp-shot.fail")).toContainText("Couldn't take the screenshot");
   await page.locator("[data-note]").fill("Still want to tell you");
-  await page.locator("[data-send]").click();
+  await sendNow(page);
   await expect(page.locator(".tk-rp-done")).toBeVisible();
   expect(got[0].screenshot).toBeNull();
   expect(got[0].description).toMatch(/Screenshot: capture failed \(.+\)/);
@@ -273,7 +278,7 @@ test("when the worker refuses or cannot be reached: a prefilled GitHub issue and
   await page.goto("/privacy");
   await page.locator(".tk-report").click();
   await page.locator("[data-msg]").fill("It broke on the policy page");
-  await page.locator("[data-send]").click();
+  await sendNow(page);
   const fall = page.locator(".tk-rp-done");
   await expect(fall).toContainText("We could not send your report from here.");
   const href = (await fall.locator("a.main").getAttribute("href")) ?? "";
@@ -288,8 +293,87 @@ test("when the worker refuses or cannot be reached: a prefilled GitHub issue and
   // the service blocked altogether (an ad blocker): the same way out
   await page.unroute(WORKER);
   await page.route(WORKER, (r) => r.abort());
-  await page.locator("[data-send]").click();
+  await sendNow(page);
   await expect(page.locator(".tk-rp-done")).toContainText("We could not send your report from here.");
+});
+
+test("the popup says reports are public, above Send, on both tabs", async ({ page }) => {
+  await setup(page, "dark");
+  await page.goto("/privacy");
+  await page.locator(".tk-report").click();
+  for (const tab of ["quick", "visual"]) {
+    await page.locator(`[data-tab=${tab}]`).click();
+    const note = page.locator(".tk-rp-public");
+    await expect(note).toHaveText("Reports are public on GitHub. Don't include personal details.");
+    expect(await page.evaluate(() => { const n = document.querySelector(".tk-rp-public")!, b = document.querySelector("[data-send]")!; return !!(n.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING); }), "above Send").toBe(true);
+  }
+});
+
+test("Quick feedback needs 10 characters; 10 reports a day per browser; a report within 2 s of opening is dropped", async ({ page }) => {
+  await setup(page, "dark");
+  const got = await worker(page);
+  await page.goto("/privacy");
+  // minimum length
+  await page.locator(".tk-report").click();
+  await page.locator("[data-msg]").fill("123456789");
+  await expect(page.locator("[data-send]")).toBeDisabled();
+  await expect(page.locator("[data-status]")).toContainText("At least 10 characters");
+  await page.locator("[data-msg]").fill("1234567890");
+  await expect(page.locator("[data-send]")).toBeEnabled();
+  // within 2 s of opening: told it worked, nothing sent, and it does not use up the 30 s gap
+  await page.evaluate(() => { const ta = document.querySelector("[data-msg]") as HTMLTextAreaElement; ta.value = "sent far too fast"; ta.dispatchEvent(new Event("input")); (document.querySelector("[data-send]") as HTMLButtonElement).click(); });
+  await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
+  expect(got).toHaveLength(0);
+  expect(await page.evaluate(() => localStorage.getItem("tk-report-at"))).toBeNull();
+  // ten reports in the last day: the eleventh is refused, with the reason
+  await page.locator(".tk-rp-x").click();
+  await page.evaluate(() => localStorage.setItem("tk-report-log", JSON.stringify(Array.from({ length: 10 }, (_, i) => Date.now() - (i + 1) * 60_000))));
+  await page.locator(".tk-report").click();
+  await page.locator("[data-msg]").fill("the eleventh report today");
+  await sendNow(page);
+  await expect(page.locator("[data-status]")).toContainText(/10 reports today/);
+  expect(got).toHaveLength(0);
+  // a day later it is open again
+  await page.evaluate(() => localStorage.setItem("tk-report-log", JSON.stringify(Array.from({ length: 10 }, (_, i) => Date.now() - 25 * 3_600_000 - i * 60_000))));
+  await sendNow(page);
+  await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
+  expect(got).toHaveLength(1);
+  expect(JSON.parse((await page.evaluate(() => localStorage.getItem("tk-report-log"))) ?? "[]")).toHaveLength(1);
+});
+
+test("Visual screenshots cover typed values, the signed-in person's name and anything data-private, in the picture that is sent", async ({ page }) => {
+  await setup(page, "dark");
+  const got = await worker(page);
+  await page.goto("/privacy");
+  await expect(page.locator(".tk-report")).toBeVisible();
+  const BOX = { field: [20, 100], private: [20, 160], name: [20, 220], other: [20, 280] } as const;
+  await page.evaluate((b) => {
+    const put = (tag: string, at: readonly number[], css: string, html = "") => { const e = document.createElement(tag); e.style.cssText = `position:fixed;left:${at[0]}px;top:${at[1]}px;width:300px;height:40px;z-index:5;${css}`; e.innerHTML = html; document.body.appendChild(e); return e; };
+    (put("input", b.field, "background:#ff00ff;color:#fff;border:0;font-size:20px") as HTMLInputElement).value = "4111 1111 1111 1111";
+    put("div", b.private, "background:#00ffff;color:#000;font-size:20px", "a note about me").setAttribute("data-private", "");
+    put("p", b.name, "background:#ffff00;color:#000;font-size:20px;margin:0", "Welcome, Asha");
+    put("p", b.other, "background:#00ff00;color:#000;font-size:20px;margin:0", "this stays visible");
+  }, BOX);
+  await page.locator(".tk-report").click();
+  await page.locator("[data-tab=visual]").click();
+  await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
+  await sendNow(page);
+  await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
+  const shot = got[0].screenshot!;
+  const px = await page.evaluate(async ([url, box]) => {
+    const img = new Image(); img.src = url as string; await img.decode();
+    const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const g = c.getContext("2d")!; g.drawImage(img, 0, 0);
+    const k = img.width / innerWidth, out: Record<string, string[]> = {};
+    for (const [name, at] of Object.entries(box as Record<string, number[]>)) {
+      const seen = new Set<string>();
+      for (const fx of [0.1, 0.5, 0.9]) for (const fy of [0.2, 0.5, 0.8]) { const d = g.getImageData(Math.round((at[0] + 300 * fx) * k), Math.round((at[1] + 40 * fy) * k), 1, 1).data; seen.add(`${d[0]},${d[1]},${d[2]}`); }
+      out[name] = [...seen];
+    }
+    return out;
+  }, [shot, BOX] as const);
+  // the covered places are one solid colour, the page's own colours (magenta, cyan, yellow) are nowhere in them; the control is untouched
+  for (const k of ["field", "private", "name"]) expect(px[k], `${k} is covered by one solid block`).toEqual(["31,35,40"]);
+  expect(px.other.every((c) => c !== "31,35,40") && px.other.includes("0,255,0"), "the rest of the page is still in the picture").toBe(true);
 });
 
 test("one report per 30 seconds, and a bot that fills the hidden field is told it worked without anything being sent", async ({ page }) => {
@@ -297,18 +381,18 @@ test("one report per 30 seconds, and a bot that fills the hidden field is told i
   const got = await worker(page);
   await page.goto("/privacy");
   await page.locator(".tk-report").click();
-  await page.locator("[data-msg]").fill("first");
-  await page.locator("[data-send]").click();
+  await page.locator("[data-msg]").fill("first report here");
+  await sendNow(page);
   await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
   await page.locator(".tk-rp-x").click();
   await page.locator(".tk-report").click();
   await page.locator("[data-msg]").fill("second, right away");
-  await page.locator("[data-send]").click();
+  await sendNow(page);
   await expect(page.locator("[data-status]")).toContainText(/Please wait \d+ s/);
   expect(got).toHaveLength(1);
   await page.evaluate(() => localStorage.removeItem("tk-report-at"));
   await page.locator(".tk-rp-hp").evaluate((e) => { (e as HTMLInputElement).value = "http://spam"; });
-  await page.locator("[data-send]").click();
+  await sendNow(page);
   await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
   expect(got).toHaveLength(1);
 });
@@ -427,7 +511,7 @@ test.describe("markup on a low-end phone: 320×579 at 3.375x, real touch", () =>
     await page.locator("[data-fs]").click();
     await expect(page.locator(".tk-mk-full")).toHaveCount(0);
     await page.locator("[data-note]").fill("Look at the box");
-    await page.locator("[data-send]").click();
+    await sendNow(page);
     await expect(page.locator(".tk-rp-done")).toBeVisible();
     const sent = got[0].screenshot ?? "";
     expect(sent.startsWith("data:image/png;base64,")).toBe(true);
@@ -461,7 +545,7 @@ for (const theme of ["dark", "light"] as const) {
     await page.keyboard.press("Escape"); // leaves full screen, the popup stays
     await expect(page.locator(".tk-mk-full")).toHaveCount(0);
     await expect(popup(page)).toBeVisible();
-    await page.locator("[data-send]").click();
+    await sendNow(page);
     await expect(page.locator(".tk-rp-done")).toBeVisible();
     expect(await differ(page, before, got[0].screenshot ?? "", { x: 0, y: 0, w: 1, h: 1 }), "the sent picture is the marked one").toBeGreaterThan(100);
   });
@@ -476,7 +560,7 @@ test("Clear takes every mark away, and a picture with no marks is sent as it was
   await expect(page.locator("[data-clear]")).toBeEnabled();
   await page.locator("[data-clear]").click();
   await expect(page.locator("[data-clear]")).toBeDisabled();
-  await page.locator("[data-send]").click();
+  await sendNow(page);
   await expect(page.locator(".tk-rp-done")).toBeVisible();
   expect(await differ(page, before, got[0].screenshot ?? "", { x: 0, y: 0, w: 1, h: 1 })).toBe(0);
 });
@@ -493,7 +577,7 @@ test("the Report button and Send are the same accessible blue with white text, i
     expect(fg).toBe("rgb(255, 255, 255)");
     expect(ratio(bg, fg)).toBeGreaterThanOrEqual(4.5);
     await page.locator(".tk-report").click();
-    await page.locator("[data-msg]").fill("x");
+    await page.locator("[data-msg]").fill("x".repeat(10));
     expect((await rgb("[data-send]"))[0]).toBe(bg);
     await page.locator(".tk-rp-x").click();
   }
