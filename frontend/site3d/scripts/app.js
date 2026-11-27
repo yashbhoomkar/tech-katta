@@ -7,7 +7,6 @@ import * as learn from './pages/learn.js';
 import * as article from './pages/article.js';
 import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
-import * as practice from './pages/practice.js';
 import * as problems from './pages/problems.js';
 import * as workspace from './pages/workspace.js';
 import * as you from './pages/you.js';
@@ -20,6 +19,7 @@ import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
 import { store } from './store.js';
 import { INCIDENTS } from './sim.js';
 import { startGate } from './gating.js';
+import { startFeedback } from './feedback.js';
 import { hashTarget } from './legacy-hash.js';
 import { pageView, hostAnalytics } from './analytics.js';
 
@@ -27,12 +27,12 @@ import { pageView, hostAnalytics } from './analytics.js';
 function titleFor(path, nav) {
   const brand = 'Tech Katta';
   if (nav === 'home') return `${brand}: everything for your system design interview`;
-  if (nav === 'me') return `Dashboard · ${brand}`;
+  if (nav === 'me') return `Home · ${brand}`;
   if (nav === 'you') return `You · ${brand}`;
   if (nav === 'legal') return `${policy.policyTitle(path.replace(/\W/g, ''))} · ${brand}`;
   if (nav === 'notes') return `Quick Notes · ${brand}`;
   if (nav === 'problems') return workspace.titleOf(path) || `Problems · ${brand}`;
-  if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Simulator'} · ${inc ? 'Simulator · ' : ''}${brand}`; }
+  if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Warm-ups'} · ${inc ? 'Warm-ups · ' : ''}${brand}`; }
   const m = path.match(/^\/learn\/([\w-]+)(?:\/([\w-]+))?/);
   if (m) { const sec = SECTIONS.find((s) => s.id === m[1]); const a = m[2] && listNow().find((x) => x.slug === m[2] && x.section === m[1]); return a ? `${splitTitle(a.title)[0]} · ${sec.name} · ${brand}` : `${sec ? sec.name : 'Learn'} · ${brand}`; }
   return `Not found · ${brand}`;
@@ -51,7 +51,7 @@ export const owns = (path) => OWN.test(path);
 export function go(to, { replace = false } = {}) {
   const u = new URL(to, location.href);
   if (u.origin !== location.origin || !owns(u.pathname)) { if (replace) location.replace(u.href); else location.assign(u.href); return; }
-  if (replace) history.replaceState(null, '', u.pathname + u.search + u.hash); else history.pushState(null, '', u.pathname + u.search + u.hash);
+  if (replace) history.replaceState(null, '', u.pathname + u.search + u.hash); else { history.pushState(null, '', u.pathname + u.search + u.hash); window.tkSpa = (window.tkSpa || 0) + 1; } // tkSpa: pages of this site came before this one (the workspace's ← goes Back)
   route();
 }
 window.tkGo = go;
@@ -85,7 +85,7 @@ const ART = /^\/learn\/(concepts|components|interview-questions|real-systems)\/(
 const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-writes', 'load-balancing': 'networking-essentials', cdn: 'big-files' };
 const ROUTES = [
   [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
-  [/^\/simulator\/([\w-]+)$/, sim, 'sim'], [/^\/simulator\/?$/, practice, 'sim'], [/^\/home\/?$/, me, 'me'], [/^\/problems\/?$/, problems, 'problems'],
+  [/^\/simulator\/([\w-]+)$/, sim, 'sim'], [/^\/home\/?$/, me, 'me'], [/^\/problems\/?$/, problems, 'problems'],
   [/^\/me\/?$/, you, 'you'], [/^\/(privacy|terms)\/?$/, policy, 'legal'], [/^\/learn\/quick-notes\/?$/, notes, 'notes'],
   [/^\/(?:problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/, workspace, 'problems'],
 ];
@@ -117,6 +117,7 @@ function route() {
   if (!owns(path)) { location.reload(); return; }
   // tech.katta.cc's old addresses (/dashboard/…, and /dashboard/#<key>: the #fragment never reaches the host, so this cannot be a host rule)
   if (/^\/dashboard(?:\/|$)/.test(path)) { legacyRedirect(path); return; }
+  if (/^\/simulator\/?$/.test(path)) { go('/problems#warm-ups', { replace: true }); return; } // the warm-ups are listed under Solve
   if (/^\/learn\/?$/.test(path)) { go('/learn/concepts', { replace: true }); return; } // the Learn tab opens its first section
   const old = path.match(/^\/learn\/([\w-]+)\/?$/);
   if (old && !SEC.test(path) && old[1] in OLD) { go(`/learn/concepts/${OLD[old[1]] || old[1]}`, { replace: true }); return; }
@@ -126,7 +127,7 @@ function route() {
     if (my !== token) return;
     try { cleanup?.(); } catch (e) { console.warn(e); }
     cleanup = null;
-    document.querySelectorAll('[data-nav]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.nav === nav));
+    document.querySelectorAll('[data-nav]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.nav === nav || (a.dataset.nav === 'problems' && nav === 'sim'))); // Solve covers the warm-ups
     document.body.dataset.page = nav || 'missing';
     updateShell(nav || 'missing', path);
     if (!refreshing) pageView(path);
@@ -136,7 +137,7 @@ function route() {
     setCanonical(path, !mod);
     const back = keep || (!linkClick && !window.tkFresh && positions[path] > 0 ? positions[path] : 0); linkClick = false; window.tkFresh = false; curPath = '';
     scrollTo(0, 0);
-    if (!mod) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy">at this address</span></h1><p><a class="btn dark" href="/home">Go to the Dashboard<span class="chip">→</span></a></p></section>`; }
+    if (!mod) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy">at this address</span></h1><p><a class="btn dark" href="/home">Go to Home<span class="chip">→</span></a></p></section>`; }
     else cleanup = mod.mount(view, (path.match(re) || []).slice(1), { reduced, go: (h) => { window.tkFresh = true; go(h); } }) || null;
     view.classList.remove('leaving');
     view.focus({ preventScroll: true });
@@ -165,6 +166,7 @@ addEventListener('hashchange', () => {
   if (to && owns(to)) { history.replaceState(null, '', to); route(); }
 });
 wireSearch(); // ⌘K, "/" and every [data-search] button
+startFeedback(); // testers only (?feedback=on)
 startGate(); // who is signed in, and the site's lock copy: articles wait on both
 hostAnalytics(); // Vercel Web Analytics, once per page load
 route();

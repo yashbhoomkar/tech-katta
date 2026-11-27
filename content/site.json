@@ -877,7 +877,7 @@
   "privacy": {
     "eyebrow": "PRIVACY",
     "title": "What is kept when you sign in",
-    "updated": "Last updated 13 November 2026",
+    "updated": "Last updated 26 November 2026",
     "sections": [
       [
         "Signing in",
@@ -910,6 +910,10 @@
       [
         "Deleting it",
         "Use Delete my account in the account menu. Your account, designs, stars and the usage records linked to it are removed from the database straight away. The copy in your own browser stays until you clear it."
+      ],
+      [
+        "Feedback",
+        "The Report button on every page lets you tell us about a problem or an idea. Quick feedback sends your note. Visual feedback also takes a screenshot of the page when you open that tab, shows it to you first, and sends it with your note. Either way the page address (without anything after a ? or #), your browser, screen size, language, the site's version and the time go with it. It is sent through BugDrop (bugdrop.dev) to a public GitHub repository the owner uses to fix problems, so anyone can read what you send, the screenshot included: leave out anything private. Nothing is sent until you press Send. To turn the button off, open any page with ?feedback=off."
       ]
     ]
   },

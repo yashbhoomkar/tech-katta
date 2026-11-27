@@ -16,7 +16,7 @@ const numOf = (no = '') => (no.match(/(\d+)/) || [])[1] || '';
 const HEAD = {
   concepts: ['The ideas every design is built from', 'Each opens with a short 3D story, then the full article.'],
   components: ['The tools interviewers name', 'What each is for, where it stops, and when to pick it.'],
-  'interview-questions': ['Asked in real interviews', 'Each answered the way you would say it out loud: clarify, estimate, design, trade-offs.'],
+  'interview-questions': ['How to answer, and the answers', 'Seven guides on how to answer, then the written answer to every problem. Solve it first, then read how it is done.'],
   'real-systems': ['How apps you use are built', 'Real products at Indian scale, part by part.'],
 };
 
@@ -32,16 +32,19 @@ export function mount(view, [sectionId], { reduced }) {
     const groups = sec.groups.map(([g, name]) => [name, mine.filter((a) => a.group === g)]).filter(([, l]) => l.length);
     const other = mine.filter((a) => !sec.groups.some(([g]) => g === a.group));
     if (other.length) groups.push(['More', other]);
+    // interview guides: the 7 "Start here" guides, then the written answer to each problem (one list; each row also opens the problem)
+    const answers = sec.id === 'interview-questions';
+    if (answers) { const probs = mine.filter((a) => a.group !== 'start'); groups.splice(1, groups.length, ...(probs.length ? [['Answers to the problems', probs]] : [])); }
     // interview questions and real systems: a plain list, no 3D preview (owner: "there should be no animation")
     const noFig = sec.id === 'interview-questions' || sec.id === 'real-systems';
     const next = mine.find((x) => !read[`${x.section}/${x.slug}`]);
-    const levels = sec.id === 'interview-questions' ? ['easy', 'medium', 'hard'].filter((l) => mine.some((x) => x.group === l)) : [];
+    const levels = [];
     const colour = (PLACES.find((p) => p.id === sec.id) || PLACES[2]).colour;
     view.innerHTML = `
     <section class="page learn" style="--acc: var(--${colour})">
       <header class="sec-head">
         <div>
-          <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>${esc(sec.name)}</span></nav>
+          <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><span>${esc(sec.name)}</span></nav>
           <h1 class="headline"><span class="thin">${esc(sec.name)}</span><span class="heavy accent">${esc(HEAD[sec.id][0])}</span></h1>
           <p class="lead">${esc(HEAD[sec.id][1])}</p>
           <nav class="tabs" aria-label="Sections">${SECTIONS.map((s) => `<a href="/learn/${s.id}" ${s.id === sec.id ? 'aria-current="page"' : ''}>${esc(s.name)}<span class="mono">${list.filter((a) => a.section === s.id).length}</span></a>`).join('')}</nav>
@@ -53,20 +56,20 @@ export function mount(view, [sectionId], { reduced }) {
         </div>
       </header>
       ${levels.length ? `<div class="seg levels" role="group" aria-label="Filter by difficulty" style="--n:${levels.length + 1}">${['all', ...levels].map((l, i) => `<button type="button" data-level="${l}" data-i="${i}" aria-pressed="${l === 'all'}">${l === 'all' ? 'All' : l[0].toUpperCase() + l.slice(1)}</button>`).join('')}<i class="seg-pill" aria-hidden="true"></i></div>`
-        : groups.length > 1 ? `<nav class="jump" aria-label="Groups">${groups.map(([name], gi) => `<a href="#g-${gi}" data-jumpg="${gi}">${esc(name)}</a>`).join('')}</nav>` : ''}
+        : groups.length > 1 && !answers ? `<nav class="jump" aria-label="Groups">${groups.map(([name], gi) => `<a href="#g-${gi}" data-jumpg="${gi}">${esc(name)}</a>`).join('')}</nav>` : ''}
       <div class="learn-cols${noFig ? ' one' : ''}">
         <div class="learn-list">
           ${groups.map(([name, items], gi) => { const gd = items.filter((x) => read[`${x.section}/${x.slug}`]).length; const gid = sec.groups.find(([, n]) => n === name)?.[0] || 'more';
             return `<section class="track-block" id="g-${gi}" data-group="${gid}">
               <div class="track-head"><h2>${esc(name)}</h2><span class="chip-done mono">${gd} of ${items.length} done</span></div>
               <ol class="lessons">
-                ${items.map((a, i) => { const [h, rest] = splitTitle(a.title), isRead = read[`${a.section}/${a.slug}`]; return `<li>
+                ${items.map((a, i) => { const [h, rest] = splitTitle(a.title), isRead = read[`${a.section}/${a.slug}`], ans = answers && a.group !== 'start'; return `<li${ans ? ' class="ans"' : ''}>
                   <a class="lesson${isRead ? ' done' : ''}" href="/learn/${a.section}/${a.slug}" data-preview="${a.slug}">
                     <span class="st" role="img" aria-label="${isRead ? 'Done' : 'Not started'}">${isRead ? '<i class="tk" aria-hidden="true"></i>' : ''}</span>
                     <span class="l-n mono">${String(i + 1).padStart(2, '0')}</span>
                     <span class="l-main"><b>${esc(h)}${a.access === 'free' ? FREE : ''}</b><span class="muted">${esc(rest || a.dek)}</span></span>
-                    <span class="l-tag mono">${esc(tagText(a.tag))}</span>
-                  </a></li>`; }).join('')}
+                    <span class="l-tag mono">${ans ? 'Read the answer' : esc(tagText(a.tag))}</span>
+                  </a>${ans ? `<a class="btn dark sm solve-go" href="/problems/${esc(a.slug)}" aria-label="Solve ${esc(h)} on the canvas">Solve<span class="chip">→</span></a>` : ''}</li>`; }).join('')}
               </ol>
             </section>`; }).join('')}
         </div>
@@ -81,6 +84,7 @@ export function mount(view, [sectionId], { reduced }) {
       view.querySelector('.levels').style.setProperty('--at', b.dataset.i);
       view.querySelectorAll('.track-block').forEach((g) => { g.hidden = !(b.dataset.level === 'all' || g.dataset.group === b.dataset.level || !levels.includes(g.dataset.group)); });
     }));
+    const tabs = view.querySelector('.tabs'), cur = tabs?.querySelector('[aria-current]'); if (cur) tabs.scrollLeft = cur.offsetLeft - (tabs.clientWidth - cur.offsetWidth) / 2; // phones: the open tab is in view
     view.querySelectorAll('[data-jumpg]').forEach((l) => l.addEventListener('click', (e) => { e.preventDefault(); view.querySelector(`#g-${l.dataset.jumpg}`)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); }));
     const card = view.querySelector('.preview-card');
     world?.destroy(); world = null;

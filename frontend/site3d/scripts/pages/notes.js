@@ -13,7 +13,7 @@ const slugOf = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$
 export function mount(view) {
   let alive = true, unmount = null;
   // the loading page has the finished page's header (crumbs, label, title, intro), so nothing moves when the list arrives
-  view.innerHTML = `<section class="page learn reader-wait" style="--acc: var(--lemon)" aria-busy="true"><header class="sec-head"><div><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/learn/concepts">Learn</a><span>/</span><span>Quick Notes</span></nav><p class="kicker"><span>Quick Notes</span></p><h1 class="headline"><span class="thin">Quick Notes</span></h1><p class="lead wait-lead">&nbsp;</p></div></header><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>`;
+  view.innerHTML = `<section class="page learn reader-wait" style="--acc: var(--lemon)" aria-busy="true"><header class="sec-head"><div><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><a href="/learn/concepts">Learn</a><span>/</span><span>Quick Notes</span></nav><p class="kicker"><span>Quick Notes</span></p><h1 class="headline"><span class="thin">Quick Notes</span></h1><p class="lead wait-lead">&nbsp;</p></div></header><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>`;
   Promise.all([getSite(), listArticles().catch(() => [])]).then(async ([s]) => {
     if (!alive) return;
     const n = s?.notes;
@@ -21,7 +21,7 @@ export function mount(view) {
     const published = listNow().filter((a) => a.section === 'quick-notes');
     view.innerHTML = `<section class="page learn" style="--acc: var(--lemon)">
       <header class="sec-head"><div>
-        <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/learn/concepts">Learn</a><span>/</span><span>Quick Notes</span></nav>
+        <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><a href="/learn/concepts">Learn</a><span>/</span><span>Quick Notes</span></nav>
         <p class="kicker"><span>${esc(normalCase(n.eyebrow || 'Quick Notes'))}</span></p>
         <h1 class="headline"><span class="thin">${esc(n.title || 'Quick Notes')}</span></h1><p class="lead">${esc(n.desc || '')}</p></div></header>
       <ol class="lessons">${n.items.map(([no, title, topic, status]) => { const a = published.find((x) => slugOf(x.title) === slugOf(title) || x.title === title);

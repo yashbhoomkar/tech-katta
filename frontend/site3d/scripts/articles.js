@@ -7,7 +7,7 @@ export const API = 'https://tech-api.katta.cc';
 export const SECTIONS = [
   { id: 'concepts', name: 'Concepts', groups: [['core', 'Core'], ['patterns', 'Patterns'], ['specialised', 'Specialised data']] },
   { id: 'components', name: 'Components', groups: [['data', 'Data stores and search'], ['streams', 'Streams and workflows'], ['edge', 'Gateways and coordination']] },
-  { id: 'interview-questions', name: 'Interview questions', groups: [['start', 'Start here'], ['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']] },
+  { id: 'interview-questions', name: 'Interview guides', groups: [['start', 'Start here'], ['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']] },
   { id: 'real-systems', name: 'Real systems', groups: [['case-studies', 'Case studies']] },
 ];
 // The API files every component under one group, "tools" (the section's tagline), so the groups are set here, by what

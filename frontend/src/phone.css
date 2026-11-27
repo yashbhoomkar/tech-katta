@@ -1,0 +1,120 @@
+/* The phone workspace (tech-katta-context 53 §5, phase 3): at 900 px and under, a problem is a focus screen: one header, one view at a time
+   (Problem · Design · Results) and a bottom switch. The site's own bars are hidden on these pages (3D site: body.ws-phone). Written over the
+   older phone layout (solve.css, look-3d.css), so every rule here carries the full chain and wins by specificity, not order. */
+@media (max-width: 900px) {
+  .tk-island .tk-legacy .solve.ph { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr) calc(56px + env(safe-area-inset-bottom, 0px)); grid-template-areas: "head" "body" "sw"; height: 100%; padding: 0; overflow: hidden; background: var(--page); }
+  /* header: back, the title on one line, Run, more */
+  .tk-island .tk-legacy .solve.ph .ph-head { grid-area: head; position: static; display: flex; align-items: center; gap: 6px; min-height: 0; height: 52px; padding: 0 8px 0 2px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: var(--page); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; touch-action: pan-y; }
+  .solve.ph .ph-back-btn, .solve.ph .ph-more { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: var(--ink); font-size: 24px; line-height: 1; text-decoration: none; cursor: pointer; }
+  .tk-island .tk-legacy .solve.ph .ph-head .sv-ptitle { flex: 1; min-width: 0; margin: 0; font: 600 16px/1.2 var(--font); letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tk-island .tk-legacy .solve.ph .ph-run { position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 44px; min-width: 76px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--ink); color: var(--page); font: 600 15px var(--font); justify-content: center; }
+  .solve.ph .ph-run:disabled { opacity: .6; }
+  .solve.ph .ph-dot { position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 2px var(--page); }
+  .solve.ph .ph-spin { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: ph-spin .7s linear infinite; }
+  @keyframes ph-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .solve.ph .ph-spin { animation: none; border-right-color: currentColor; opacity: .6; } }
+  /* the three views: only one is visible; the canvas stays mounted underneath so it keeps its place */
+  .tk-island .tk-legacy .solve.ph .ph-prob { grid-area: body; display: none; flex-direction: column; position: relative; min-height: 0; background: var(--card); }
+  .tk-island .tk-legacy .solve.ph.pv-problem .ph-prob { display: flex; }
+  .tk-island .tk-legacy .solve.ph .ph-prob .sv-tabs { position: static; flex: none; display: flex; gap: 4px; overflow-x: auto; height: auto; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: var(--card); box-shadow: none; scrollbar-width: none; }
+  .tk-island .tk-legacy .solve.ph .ph-prob .sv-tabs > * { position: static; flex: none; display: inline-flex; align-items: center; min-height: 40px; margin: 0; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-2); box-shadow: none; font: 600 14px var(--font); white-space: nowrap; text-decoration: none; }
+  .tk-island .tk-legacy .solve.ph .ph-prob .sv-tabs > .on, .tk-island .tk-legacy .solve.ph .ph-prob .sv-tabs > [aria-selected="true"] { background: var(--sunken); color: var(--ink); }
+  .tk-island .tk-legacy .solve.ph .ph-prob .sv-q { position: static; flex: 1; min-height: 0; overflow-y: auto; padding: 16px 16px 112px; border: 0; border-radius: 0; background: var(--card); box-shadow: none; overscroll-behavior: contain; }
+  .solve.ph .ph-start { position: absolute; z-index: 40; left: 0; right: 0; bottom: 0; padding: 28px 12px 12px; background: linear-gradient(transparent, var(--card) 40%); pointer-events: none; }
+  .solve.ph .ph-start .sv-submit { pointer-events: auto; }
+  .solve.ph .ph-start .sv-submit, .solve.ph .ph-readfull .sv-run { width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+  .solve.ph .ph-readfull { margin: 24px 0 0; }
+  .tk-island .tk-legacy .solve.ph .sv-lab { grid-area: body; position: relative; inset: auto; display: block; min-height: 0; overflow: hidden; border: 0; border-radius: 0; visibility: hidden; pointer-events: none; }
+  .tk-island .tk-legacy .solve.ph.pv-design .sv-lab, .tk-island .tk-legacy .solve.ph.pv-results .sv-lab { visibility: visible; pointer-events: auto; }
+  .tk-island .tk-legacy .solve.ph .sv-lab > .lab-wrap { position: absolute; inset: 0; height: auto; padding: 0; }
+  .tk-island .tk-legacy .solve.ph .lab { display: flex; flex-direction: column; height: 100%; }
+  .tk-island .tk-legacy .solve.ph.pv-results .lab-wrap { visibility: hidden; }
+  .tk-island .tk-legacy .solve.ph .lab-canvas { flex: 1; min-height: 0; position: relative; }
+  /* nothing of the desktop toolbar on a phone: the header and the ⋯ menu have it all */
+  .tk-island .tk-legacy .solve.ph :is(.lab-top, .lab-status, .lab-pal, .lab-small, .react-flow__controls, .d3-tools, .d3-hint, .lab-ins.idle, .sv-guide-btn) { display: none; }
+  .tk-island .tk-legacy .solve.ph .lab-empty { left: 16px; right: 16px; text-align: center; font-size: 15px; }
+  /* results: the one layer on screen */
+  .tk-island .tk-legacy .solve.ph:not(.pv-results) .sv-console:not(.sv-player) { display: none; }
+  .tk-island .tk-legacy .solve.ph .sv-player { display: block; visibility: visible; position: absolute; z-index: 8; left: 0; right: 0; bottom: 0; max-height: 52%; margin: 0; overflow-y: auto; border-radius: 18px 18px 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .tk-island .tk-legacy .solve.ph.pv-results .sv-console:not(.sv-player) { display: block; visibility: visible; position: absolute; inset: 0; z-index: 5; max-height: none; margin: 0; padding: 0 0 120px; border: 0; border-radius: 0; box-shadow: none; overflow-y: auto; background: var(--card); }
+  /* in the results: the verdict, a row for every test, what would fix it, and the AWS credit last, as one quiet line */
+  .tk-island .tk-legacy .solve.ph.pv-results .sv-console:not(.sv-player) { display: flex; flex-direction: column; }
+  .solve.ph.pv-results .sv-console > * { order: 3; flex: none; }
+  .solve.ph.pv-results .sv-console > .sv-v { order: 0; } .solve.ph.pv-results .sv-console > .sv-score { order: 1; } .solve.ph.pv-results .sv-console > .sv-results { order: 2; } .solve.ph.pv-results .sv-console > .sv-probes { order: 4; } .solve.ph.pv-results .sv-console > .sv-credit { order: 9; }
+  .solve.ph .sv-credit { margin: 12px 16px 0; padding: 10px 14px; } .solve.ph .sv-credit :is(.sv-credit-bar, small) { display: none; }
+  /* the challenges and the sandbox: the results are a pane of their own (not the judge's console) */
+  .tk-island .tk-legacy .solve.ph .sv-lab > .lab { position: absolute; inset: 0; height: auto; }
+  .tk-island .tk-legacy .solve.ph.pv-results .sv-lab > .lab { visibility: hidden; }
+  .tk-island .tk-legacy .solve.ph .ph-resv { display: none; }
+  .tk-island .tk-legacy .solve.ph.pv-results .ph-resv { display: block; position: absolute; inset: 0; z-index: 5; overflow-y: auto; padding: 16px 16px 40px; background: var(--card); visibility: visible; overscroll-behavior: contain; }
+  .tk-island .tk-legacy .solve.ph .ph-resv .sv-console { display: block; position: static; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; overflow: visible; background: transparent; }
+  .tk-island .tk-legacy .lab-wrap:has(> .solve.ph) { height: 100%; }
+  .solve.ph .ph-resv .ph-acts { display: grid; gap: 8px; margin-top: 16px; } .solve.ph .ph-resv .ph-acts :is(button, a) { min-height: 48px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+  .solve.ph .ph-resv .lab-goals { margin: 12px 0; }
+  .ph-sheet .sb-side { padding: 0; border: 0; background: transparent; overflow: visible; }
+  .solve.ph .ph-empty { position: absolute; inset: 0; z-index: 5; display: grid; align-content: center; justify-items: center; gap: 10px; padding: 24px; text-align: center; background: var(--card); visibility: visible; }
+  .solve.ph .ph-empty p { margin: 0; color: var(--ink-2); font-size: 15px; }
+  .solve.ph .ph-empty .sv-run { min-height: 48px; padding: 0 24px; }
+  .solve.ph .ph-sub { position: absolute; z-index: 6; left: 0; right: 0; bottom: 0; display: grid; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--card); visibility: visible; }
+  .solve.ph .ph-sub span { font-size: 14px; color: var(--ink-2); }
+  .solve.ph .ph-sub .sv-submit { min-height: 48px; width: 100%; }
+  /* replay: the whole screen, a ✕ in the corner back to the results */
+  .tk-island .tk-legacy .solve.ph.pv-replay { grid-template-rows: 0 minmax(0, 1fr) 0; }
+  .tk-island .tk-legacy .solve.ph.pv-replay :is(.ph-head, .ph-sw) { display: none; }
+  .tk-island .tk-legacy .solve.ph.pv-replay .sv-lab { visibility: visible; pointer-events: auto; grid-row: 1 / -1; }
+  .tk-island .tk-legacy .solve.ph.pv-replay .lab-wrap { visibility: visible; }
+  .solve.ph .ph-rx { position: absolute; z-index: 30; top: calc(8px + env(safe-area-inset-top, 0px)); left: 8px; width: 44px; height: 44px; border: 1px solid var(--line-2); border-radius: 50%; background: var(--card); color: var(--ink); font-size: 18px; box-shadow: var(--shadow-2); visibility: visible; }
+  /* the bottom switch */
+  .solve.ph .ph-sw { grid-area: sw; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-top: 1px solid var(--line); background: var(--page); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .solve.ph .ph-sw button { position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 56px; border: 0; background: transparent; color: var(--ink-2); font: 600 15px var(--font); cursor: pointer; }
+  .solve.ph .ph-sw button.on { color: var(--ink); }
+  .solve.ph .ph-sw button.on::before { content: ""; position: absolute; top: 0; left: 28%; right: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--ink); }
+  .solve.ph .ph-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--danger); color: var(--bg); font: 700 12px/1 var(--font); }
+  /* building with a thumb: + Part, the bar for a selected part, connect, the corner buttons */
+  .solve.ph .ph-corner { position: absolute; z-index: 4; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .solve.ph .ph-fab-sm { width: 44px; height: 44px; border: 1px solid var(--line-2); border-radius: 50%; background: var(--card); color: var(--ink); font-size: 20px; line-height: 1; box-shadow: var(--shadow-2); cursor: pointer; }
+  .solve.ph .ph-add { position: absolute; z-index: 4; right: 14px; bottom: 14px; height: 56px; padding: 0 24px; border: 0; border-radius: 28px; background: var(--ink); color: var(--page); font: 600 16px var(--font); box-shadow: var(--shadow-3); cursor: pointer; }
+  .solve.ph .ph-selbar { position: absolute; z-index: 4; left: 50%; bottom: 86px; translate: -50% 0; display: flex; align-items: center; gap: 4px; max-width: calc(100% - 20px); padding: 5px 6px 5px 16px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--card); box-shadow: var(--shadow-3); }
+  .solve.ph .ph-selbar b { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; margin-right: 4px; }
+  .solve.ph .ph-selbar button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--ink); font: 600 14px var(--font); cursor: pointer; }
+  .solve.ph .ph-selbar button:first-of-type { background: var(--sunken); }
+  .solve.ph .ph-selbar button.del { color: var(--danger); } .solve.ph .ph-selbar button:disabled { opacity: .4; }
+  .solve.ph .ph-conn, .solve.ph .ph-toast { position: absolute; z-index: 5; top: 10px; left: 56px; right: 64px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px; border-radius: 14px; background: var(--ink); color: var(--page); font: 600 14px/1.3 var(--font); text-align: center; }
+  .solve.ph .ph-conn button { min-height: 36px; padding: 0 10px; border: 0; border-radius: 999px; background: color-mix(in srgb, currentColor 20%, transparent); color: inherit; font: 600 13px var(--font); }
+  .solve.ph .ph-toast { pointer-events: none; }
+}
+/* landscape on a phone: the switch moves into the header, the canvas takes the rest */
+@media (max-width: 900px) and (max-height: 500px) {
+  .tk-island .tk-legacy .solve.ph { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 44px minmax(0, 1fr); grid-template-areas: "head sw" "body body"; }
+  .tk-island .tk-legacy .solve.ph .ph-head { height: 44px; border-right: 0; }
+  .solve.ph .ph-sw { grid-auto-columns: auto; align-items: stretch; border-top: 0; border-bottom: 1px solid var(--line); padding: 0; }
+  .solve.ph .ph-sw button { min-height: 44px; padding: 0 14px; font-size: 14px; }
+  .solve.ph .ph-sw button.on::before { top: auto; bottom: 0; border-radius: 3px 3px 0 0; }
+  .solve.ph .ph-add { height: 48px; bottom: 10px; } .solve.ph .ph-selbar { bottom: 70px; }
+  .tk-island .tk-legacy .solve.ph.pv-replay { grid-template-rows: 0 minmax(0, 1fr); }
+}
+/* bottom sheets (phone.jsx): the parts, a part's settings, the more menu */
+.ph-back { position: fixed; z-index: 60; inset: 0; display: flex; align-items: flex-end; background: var(--scrim); animation: ph-fade .18s ease-out; }
+.ph-sheet { width: 100%; height: 50%; max-height: 100%; display: flex; flex-direction: column; border-radius: 22px 22px 0 0; background: var(--card); color: var(--ink); box-shadow: var(--shadow-3); padding-bottom: env(safe-area-inset-bottom, 0px); transition: height .25s var(--out, ease), transform .25s var(--out, ease); animation: ph-rise .25s var(--out, ease); }
+.ph-sheet.tall { height: 70%; } .ph-sheet.full { height: 92%; }
+.ph-grab { flex: none; display: grid; place-items: center; height: 28px; touch-action: none; cursor: grab; }
+.ph-grab i { width: 40px; height: 5px; border-radius: 3px; background: var(--line-2); }
+.ph-sh-head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 4px 18px; }
+.ph-sh-head b { font: 600 17px var(--font); }
+.ph-x { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: var(--ink); font-size: 18px; cursor: pointer; }
+.ph-sh-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 16px 20px; overscroll-behavior: contain; }
+.ph-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ph-part { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 88px; padding: 10px 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--ink); font: 600 13px/1.2 var(--font); text-align: center; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: pointer; }
+.ph-part:disabled { opacity: .4; }
+.ph-sh-body .lab-g { margin: 14px 2px 8px; }
+.ph-hint { position: sticky; bottom: 0; margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--sunken); font-size: 14px; line-height: 1.45; }
+.ph-menu { display: grid; gap: 2px; }
+.ph-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 0 14px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font: 600 16px var(--font); text-align: left; cursor: pointer; }
+.ph-item small { color: var(--ink-3); font: 400 13px var(--font); }
+.ph-item.strong { background: var(--sunken); } .ph-item:disabled { opacity: .5; }
+.ph-sub-list { display: grid; padding-left: 12px; }
+/* the settings sheet holds the same panel the wide screens float over the canvas */
+.tk-island .tk-legacy .ph-sheet .lab-ins { position: static; display: block; width: auto; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
+@keyframes ph-rise { from { transform: translateY(24px); opacity: .6; } }
+@keyframes ph-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ph-back, .ph-sheet { animation: none; transition: none; } }

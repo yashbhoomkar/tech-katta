@@ -151,7 +151,13 @@ export function mount(view, _p, { reduced }) {
     if (!ringOn) return;
     if (scrollY > innerHeight * 0.25) { dismissRing(); return; }
     const xy = w.screenOf('topic'), c = stage.querySelector('canvas').getBoundingClientRect();
-    if (xy) { ring.style.left = `${c.left + xy[0]}px`; ring.style.top = `${c.top + xy[1] + 10}px`; ring.style.opacity = ''; }
+    if (xy) {
+      const x = c.left + xy[0], y = c.top + xy[1] + 10;
+      ring.style.left = `${x}px`; ring.style.top = `${y}px`;
+      // never half under the hint or the tour card: where it would touch them it is not drawn
+      const under = ['.explore-hint', '.tour-offer'].some((q) => { const r = document.querySelector(q)?.getBoundingClientRect(); return r && r.width && x + 26 > r.left && x - 26 < r.right && y + 26 > r.top && y - 26 < r.bottom; });
+      ring.style.opacity = under ? '0' : '';
+    }
     ringRaf = requestAnimationFrame(placeRing);
   };
   if (w) ringRaf = requestAnimationFrame(placeRing); else ring.remove();
@@ -221,4 +227,4 @@ export function mount(view, _p, { reduced }) {
   return () => { tour?.end(); stopOffer(); cancelAnimationFrame(ringRaf); ring.remove(); pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); story.destroy(); };
 }
 
-export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">Everything for your system design interview, in one place. Learn, practise and get judged, free.</p><nav><a href="/home">Dashboard</a><a href="/learn">Learn</a><a href="/problems">Problems</a><a href="/simulator">Simulator</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav></footer>`;
+export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">Everything for your system design interview, in one place. Learn, practise and get judged, free.</p><nav><a href="/home">Home</a><a href="/learn">Learn</a><a href="/problems">Problems</a><a href="/simulator">Simulator</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav></footer>`;

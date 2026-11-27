@@ -1,6 +1,7 @@
 // Dashboard: your prep, on this device. The centre is one 3D system whose parts are the 21 concepts: a part turns
 // amber when you have started its concepts and green when all are done, so the system you can explain grows
 // as you learn. Tap a part (or its row) to open its next concept. No streaks, no badges.
+import { solveState } from '../solving.js';
 import { createWorld } from '../world.js';
 import { INCIDENTS } from '../sim.js';
 import { listArticles, listNow, splitTitle, SECTIONS } from '../articles.js';
@@ -51,12 +52,16 @@ export function mount(view, _p, { reduced, go }) {
     const recent = store.recent().map((id) => { const [section, slug] = id.split('/'); return list.find((a) => a.section === section && a.slug === slug); }).filter(Boolean).slice(0, 5);
     const passed = INCIDENTS.filter((i) => best[i.id]?.passed).length;
     const rowsIds = Object.keys(MAP).filter((id) => MAP[id].concepts.length);
+    // the canvas is the heart of the site: Home always points at the problem to open next (signed out: the first one, no progress shown)
+    const sv = locked ? solveState(list, {}, {}) : solveState(list);
+    const solveCard = sv.total ? `<a class="solve-card" href="${sv.next ? `/problems/${esc(sv.next.slug)}` : '/problems'}"><span class="mono">${sv.next ? (sv.started ? 'Continue solving' : 'Solve your first problem') : 'Every problem solved'}${sv.solved ? ` · ${sv.solved} of ${sv.total} solved` : ` · ${sv.total} problems`}</span><b>${esc(sv.next ? splitTitle(sv.next.title)[0] : 'See all problems')}</b><span class="muted">Draw it on the canvas, run the traffic, get judged.</span><span class="go">${sv.next ? (sv.started ? 'Continue' : 'Start') : 'Open'} →</span></a>` : '';
     view.innerHTML = `
     <section class="dash">
       <div class="dash-stage"><canvas></canvas><div class="overlay" aria-hidden="true"></div></div>
       <div class="dash-copy">
         <div class="dash-head">
         <h1 class="headline"><span class="thin">The system you can explain</span><span class="heavy accent">${conceptsRead ? `${conceptsRead} of ${concepts.length} concepts done` : 'Grows as you learn'}</span></h1></div>
+        ${solveCard}
         ${locked ? `<div class="dash-body"><p class="lead">Every part here is taught by a concept. Sign in and it turns amber as you start its concepts and green when you have finished them all.</p>${signInCard('dashboard')}</div>` : `<div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have finished them all. Tap a part to open its next concept. Progress is saved on this device.</p>
         ${nextConcept ? `<a class="next-card" href="/learn/concepts/${nextConcept.slug}"><span class="mono">${conceptsRead ? 'Continue' : 'Start here'} · Concept ${(nextConcept.no.match(/\d+/) || [''])[0]}</span><b>${esc(splitTitle(nextConcept.title)[0])}</b><span class="muted">${esc(nextConcept.dek)}</span><span class="go">Start →</span></a>`
           : `<a class="next-card" href="/learn/components"><span class="mono">All concepts done</span><b>Components next</b><span class="muted">The tools interviewers name, and when to pick each.</span><span class="go">Open →</span></a>`}</div>`}

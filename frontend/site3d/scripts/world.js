@@ -7,6 +7,7 @@
 import * as THREE from './vendor/three.module.min.js';
 import { RoomEnvironment } from './vendor/RoomEnvironment.js';
 import { kindColours } from './palette.js';
+import { registerWorld } from './feedback-hold.js';
 
 // Tech Katta's own look: soft matte models, one pastel per kind of part, taken from the app's six section colours
 // (sky, lilac, peach, mint, lemon, rose), with marigold indicator lights. Status: a coral-red glow when a part fails,
@@ -60,6 +61,9 @@ let quality = (() => {
   const n = navigator; return (n.hardwareConcurrency || 8) <= 4 || (n.deviceMemory || 8) <= 4 || n.connection?.saveData ? 1 : 0;
 })();
 const worlds = new Set();
+// While the Report screenshot is being worked out, the worlds stop drawing (the popup covers them): on a slow phone the drawing and the screenshot would share one CPU
+let held = 0;
+export const holdWorlds = () => { held++; let done = false; return () => { if (!done) { done = true; held--; } }; };
 const markLite = () => document.documentElement.classList.toggle('lite', quality >= 1);
 markLite();
 function stepDown() {
@@ -68,6 +72,13 @@ function stepDown() {
   try { localStorage.setItem(Q_KEY, String(quality)); } catch { /* storage blocked */ }
   worlds.forEach((f) => f());
 }
+
+// One frame, as a canvas, for the Report screenshot (feedback-capture.js): drawn again and read in the same task, so the browser has not yet cleared the buffer
+// and the renderer does not have to keep it (preserveDrawingBuffer costs a copy per frame on a tile-based phone GPU). Keyed by canvas: the 3D pages, the 3D
+// design canvas and a replay all draw through createWorld.
+const snaps = new WeakMap();
+export const snapshotOf = (canvas, maxW) => snaps.get(canvas)?.(maxW) ?? null;
+registerWorld({ snapshotOf, holdWorlds }); // the Report button reads and holds the worlds through this (feedback-hold.js)
 
 export function createWorld(canvas, overlay, { reduced = false, still = false, label = '' } = {}) {
   if (label) { canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', label); }
@@ -450,6 +461,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false, l
   worlds.add(applyQuality);
   function loop(now) {
     if (!running) return;
+    if (held) { last = now; raf = requestAnimationFrame(loop); return; } // a screenshot is being taken: the page's CPU is for that
     if (quality >= 2 && now - lastDraw < 31) { raf = requestAnimationFrame(loop); return; }
     const gap = now - last;
     if (quality < 2 && gap < 1000 && !document.hidden) {
@@ -542,7 +554,18 @@ export function createWorld(canvas, overlay, { reduced = false, still = false, l
     dots.material.dispose(); scene.environment?.dispose(); ground.geometry.dispose(); ground.material.dispose(); grid.geometry.dispose(); grid.material.dispose();
     renderer.dispose(); renderer.forceContextLoss(); overlay.replaceChildren();
   }
-  return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; }, setLabelMinX: (px) => { labelMinX = Math.max(8, px); }, setLabelMode: (m) => { labelMode = m; },
+  snaps.set(canvas, (maxW) => {
+    if (dead) return null;
+    try {
+      renderer.render(scene, camera);
+      // copied in this same task, while the frame is still there (the browser clears it afterwards); to a 2d canvas no wider than the picture will be shown, so there is less
+      // to encode. The caller encodes it (toBlob, off the main thread).
+      const s = document.createElement('canvas'); s.width = Math.max(1, Math.round(maxW && maxW < canvas.width ? maxW : canvas.width)); s.height = Math.max(1, Math.round(canvas.height * s.width / canvas.width));
+      const g = s.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(canvas, 0, 0, s.width, s.height);
+      return s;
+    } catch { return null; }
+  });
+  return { snapshot: snaps.get(canvas), setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; }, setLabelMinX: (px) => { labelMinX = Math.max(8, px); }, setLabelMode: (m) => { labelMode = m; },
     /** a part's position on the canvas in px (for a card beside it), or null */
     pickAt, groundAt, getCamera: () => ({ ...camGoal, t: [...camGoal.t] }),
     screenOf: (id) => { const p = parts.get(id); if (!p || p.gone) return null; const [x, y] = project(p.g.position.x, p.top + p.rise, p.g.position.z); return [x, y]; }, onPick: (cb) => { pickCb = cb; }, destroy };

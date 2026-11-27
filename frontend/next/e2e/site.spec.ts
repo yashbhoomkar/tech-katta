@@ -20,7 +20,7 @@ const errors = (page: Page) => {
 };
 
 const PAGES: [string, RegExp][] = [
-  ["/", /./], ["/home", /Dashboard/], ["/learn/concepts", /Concepts/], ["/learn/concepts/caching", /Caching/], ["/problems", /Problems/], ["/simulator", /Simulator|Practice/],
+  ["/", /./], ["/home", /Home/], ["/learn/concepts", /Concepts/], ["/learn/concepts/caching", /Caching/], ["/problems", /Problems/], ["/simulator", /Problems/],
   ["/simulator/ind-vs-pak", /./], ["/me", /You/], ["/privacy", /./], ["/terms", /Terms/], ["/learn/quick-notes", /Quick Notes/], ["/problems/sandbox", /Sandbox/], ["/practice", /Practice/],
 ];
 for (const [path, h] of PAGES) {
@@ -56,10 +56,13 @@ test("signed out: an article shows its public part and the sign-in card, a list 
   await expect(page.locator(".gate-card")).toBeVisible();
   await page.goto("/learn/concepts");
   await expect(page.locator(".gate-card")).toHaveCount(0);
-  // the Dashboard is personal (progress, next concept): signed out, the card stands in its place (the owner's rule, 2026-11-24; it used to stay open)
+  // Home is personal (progress, next concept): signed out, the card stands in its place (the owner's rule, 2026-11-24; it used to stay open)
   await page.goto("/home");
   await expect(page.locator(".dash .si-card")).toBeVisible();
   await expect(page.locator(".next-card, .dash-more")).toHaveCount(0);
+  // the way into the canvas is public: signed out, Home still points at the first problem (no progress shown)
+  await expect(page.locator(".dash .solve-card")).toHaveAttribute("href", "/problems/url-shortener");
+  await expect(page.locator(".dash .solve-card")).not.toContainText("solved");
 });
 
 test("signed out: the workspace is locked and loads no island", async ({ page }) => {
@@ -124,7 +127,8 @@ test("phone: the workspace brief, no sideways scroll on the main pages @phone", 
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), `${path} scrolls sideways`).toBe(false);
   }
   await page.goto("/problems/menu-search");
-  await expect(page.locator(".sv-pbrief")).toBeVisible();
-  await page.locator(".sv-pbrief .sv-submit").click();
+  // the first visit opens on the problem, with a button to the canvas (phase 3 of context 53 replaced the brief card)
+  await expect(page.locator(".ph-start")).toBeVisible();
+  await page.locator(".ph-start .sv-submit").click();
   await expect(page.locator(".sv-pbar")).toBeVisible();
 });
