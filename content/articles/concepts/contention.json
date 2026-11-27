@@ -109,7 +109,7 @@
       "items": [
         "Queue the requests, in a queue or one partition of a log, and let one worker sell the stock in order. Customers see 'you're in line' and get the answer a moment later.",
         "Split the stock into buckets, say 10 rows of 50, and send each request to a random bucket that still has stock.",
-        "Keep the count in memory, in Redis with an atomic `DECR`, and write orders to the database behind it. It is fast, but plan for Redis failing halfway through the sale.",
+        "Keep the count in memory, in Redis, and write orders to the database behind it. A bare `DECR` can take the count below zero, so use a small script that decrements only if enough is left (and returns the new count). It is fast, but plan for Redis failing halfway through the sale.",
         "Turn most requests away early, with a waiting room or a lottery for the right to buy."
       ]
     },

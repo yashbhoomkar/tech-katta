@@ -62,7 +62,8 @@
         "Stock: 500 stores × about 6,000 items is 30 lakh rows. Small; the hard part is keeping them right, not storing them.",
         "Orders: 15 lakh a day ÷ 86,400 s ≈ 17 a second, about 70 at the evening peak. With about 8 items each, that's some 560 stock updates a second at peak, spread over 500 stores.",
         "Browsing: 1 crore app opens × 20 products seen is 20 crore stock reads a day, about 2,300 a second and over 10,000 at peak. Reads outnumber writes about 20 to 1.",
-        "One busy store: 3,000 orders a day is 5 a minute at its peak hour. That's the load one store's pickers and riders must keep up with."
+        "One busy store: 3,000 orders a day is 5 a minute at its peak hour. That's the load one store's pickers and riders must keep up with.",
+        "Radius: of the 10 minutes, about 4 go on holding stock, paying and picking, leaving about 6 minutes of riding. At about 20 km/h in city traffic that is a 2 km radius, so each store serves a circle of about 12 square km."
       ]
     },
     {
@@ -139,6 +140,10 @@
       "t": "fig",
       "id": "stock-hold",
       "cap": "Two customers want the last packet. Both send the same conditional update; the database applies one first. The first holds the packet and pays; the second changes no rows and is told before paying."
+    },
+    {
+      "t": "p",
+      "x": "An order has about eight items, not one. Take the holds for all of them in one transaction (one `UPDATE` per item inside it, all or nothing), always in the same order, for example by item id. Two orders that touch the same items in different orders can each wait for the other's row, and the database ends the deadlock by failing one of them. Give each order attempt its own `hold_id`: if the app retries after a timeout, the same id returns the hold already made instead of taking the stock a second time."
     },
     {
       "t": "h2",
