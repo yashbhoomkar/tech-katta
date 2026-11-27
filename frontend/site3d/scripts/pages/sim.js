@@ -9,7 +9,7 @@
 //          against the budget and "Run the evening" stay at the bottom; a slim bar at the top reopens the brief
 //   run    the 3D full screen, live numbers at the top, the evening as a timeline at the bottom
 //   done   the verdict as a bottom sheet; "Replay the evening" lets you drag along the timeline and watch any moment
-import { createWorld } from '../world.js';
+import { createWorld } from '../world-lazy.js';
 import { INCIDENTS, layout, run, cost, rupees, perSec, LIMITS, PARTS_INFO, PRICE, APP_CAP, DB_READ } from '../sim.js';
 import { sparkline, esc } from '../ui.js';
 // what to read when a part fails: the simulator's lesson ids → the real concept articles
@@ -90,7 +90,7 @@ function play(view, [id], { reduced, go }) {
   const $ = (s) => view.querySelector(s);
   const sim = $('.sim'), stage = $('.sim-stage');
   let world = null;
-  try { world = createWorld(stage.querySelector('canvas'), stage.querySelector('.overlay'), { reduced, still: true }); } catch { world = null; }
+  try { world = createWorld(stage.querySelector('canvas'), stage.querySelector('.overlay'), { reduced, still: true, onFail: () => sim.classList.add('flat') }); } catch { world = null; }
   sim.classList.toggle('flat', !world);
   const phone = () => innerWidth <= 760;
   const phase = (p) => { sim.dataset.phase = p; reframe(); };

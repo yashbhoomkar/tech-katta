@@ -6,7 +6,7 @@
 //   2. then the section is pinned: the words fade in and the scene slides aside to make room. They stay while you
 //      read, and leave as the next section starts its own animation.
 // Nothing runs on a timer: where you are on the page is where the animation is.
-import { createWorld } from './world.js';
+import { createWorld } from './world-lazy.js';
 import { layout } from './sim.js';
 
 const clamp = (x) => Math.max(0, Math.min(1, x));
@@ -26,11 +26,11 @@ function frameOf(step) {
   return { t: [(x0 + x1) / 2, (z0 + z1) / 2], dist: span * 2.2 + 12 };
 }
 
-export function mountStory(root, steps, { reduced, onStep, intro = false, label = '' } = {}) {
+export function mountStory(root, steps, { reduced, onStep, intro = false, label = '', start = 'scroll' } = {}) {
   const stage = root.querySelector('.stage');
   const canvas = stage.querySelector('canvas'), overlay = stage.querySelector('.overlay');
   let world = null;
-  try { world = createWorld(canvas, overlay, { reduced, label }); } catch { world = null; }
+  try { world = createWorld(canvas, overlay, { reduced, label, start, onFail: () => root.classList.add('flat') }); } catch { world = null; }
   root.classList.toggle('flat', !world);
   const els = [...root.querySelectorAll('[data-step]')];
   // every step after the opening: pin its words so they can wait for the animation
@@ -117,9 +117,9 @@ export function mountStory(root, steps, { reduced, onStep, intro = false, label 
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', onScroll);
   if (world) { system('s0', sysOf(steps[0])); world.setState(steps[0].state); world.setCamera(cams[0].centre, { instant: true }); }
-  // the opening builds itself: parts rise out of the floor one by one, from the users to the database
   let introRaf = 0;
-  if (world && intro && !reduced) {
+  const startIntro = () => {
+    if (!(world && intro && !reduced) || lastStep > 0) return;
     const order = Object.entries(sysOf(steps[0]).parts).sort((a, b) => a[1].x - b[1].x || a[1].z - b[1].z).map(([id]) => id);
     const t0 = performance.now();
     const tick = (now) => {
@@ -129,11 +129,25 @@ export function mountStory(root, steps, { reduced, onStep, intro = false, label 
       world.setState(steps[0].state, { reveal, rate: 12 });
       if (t < 0.6 + order.length * 0.13) introRaf = requestAnimationFrame(tick); else { introRaf = 0; world.setState(steps[0].state); }
     };
-    introRaf = requestAnimationFrame(tick);
-  }
+    tick(t0);
+  };
+  // the opening builds itself: parts rise out of the floor one by one, from the users to the database (when the engine has arrived: until then the page shows its poster)
+  if (world?.lazy) world.onReady(startIntro); else startIntro();
   update();
   return { world, destroy() { cancelAnimationFrame(raf); cancelAnimationFrame(introRaf); removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); world?.destroy(); } };
 }
 
 /** the stage markup (sticky, spans the story) */
-export const stageHtml = (extra = '') => `<div class="stage-wrap"><div class="stage"><canvas></canvas><div class="overlay" aria-hidden="true"></div><div style="display:contents" aria-hidden="true">${extra}</div></div></div>`;
+export const stageHtml = (extra = '', poster = '') => `<div class="stage-wrap"><div class="stage">${posterHtml(poster)}<canvas></canvas><div class="overlay" aria-hidden="true"></div><div style="display:contents" aria-hidden="true">${extra}</div></div></div>`;
+
+// The poster: the scene as an image, in the theme and size of the screen. The stage shows it from the first paint (it is what the first view paints biggest, so it is fetched
+// first); the live 3D takes over when the engine has loaded (world-lazy.js sets data-three on the stage). Made by posters/make-posters.mjs.
+const posterSrc = (name, size) => `/3d/posters/${name}-${document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'}-${size}.webp`;
+export const posterHtml = (name) => (name ? `<picture class="poster-pic"><source media="(max-width: 760px)" srcset="${posterSrc(name, 'phone')}"><img class="poster" data-poster="${name}" src="${posterSrc(name, 'wide')}" width="1280" height="720" alt="" aria-hidden="true" fetchpriority="high" decoding="async"></picture>` : '');
+/** the theme switch changes the poster too, while it is what is showing */
+export function followTheme(root) {
+  const img = root.querySelector('img.poster'); if (!img) return () => {};
+  const mo = new MutationObserver(() => { const n = img.dataset.poster; img.src = posterSrc(n, 'wide'); const s = img.previousElementSibling; if (s) s.srcset = posterSrc(n, 'phone'); });
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  return () => mo.disconnect();
+}
