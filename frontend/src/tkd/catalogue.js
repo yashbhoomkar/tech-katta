@@ -4,10 +4,10 @@
 
 // cap: calls a second one unit serves; p99: milliseconds at low load; price: rupees a month per unit.
 export const CAP = {
-  lb: 50_000, cdn: 1_000_000, queue: 20_000, objectstore: 1_000_000, idgen: 1_000_000,
+  lb: 100_000, cdn: 1_000_000, queue: 20_000, objectstore: 1_000_000, idgen: 1_000_000,
   server: { small: 500, medium: 1_000, large: 2_000 },
   cache: 50_000, nosql: 5_000,
-  sql: { small: { read: 1_000, write: 300 }, medium: { read: 3_000, write: 1_000 }, large: { read: 8_000, write: 2_500 } },
+  sql: { small: { read: 1_000, write: 300 }, medium: { read: 3_000, write: 1_000 }, large: { read: 20_000, write: 10_000 } },
 };
 export const P99 = { lb: 2, cdn: 15, server: 20, cache: 2, sql: { read: 10, write: 15 }, nosql: 8, queue: 5, objectstore: 40, idgen: 0 };
 export const PRICE = {

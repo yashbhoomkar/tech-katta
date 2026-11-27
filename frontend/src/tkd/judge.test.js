@@ -27,7 +27,7 @@ const near = (a, b, tol = 0.2, what = '') => assert.ok(Math.abs(a - b) <= tol, `
 
 test('7.10, the worked example', () => {
   const s = seg(REF, T([phase(2000, 20)]));
-  near(s.parts.lb.rho, 0.0404, 1e-4, 'lb rho');
+  near(s.parts.lb.rho, 0.0202, 1e-4, 'lb rho'); // 2,020 calls a second of the load balancer's 100,000 (50,000 before JUDGE_VERSION 4)
   near(s.parts.api.rho, 0.6733, 1e-4, 'api rho');
   near(s.parts.cache.rho, 0.0202, 1e-4, 'cache rho');
   assert.equal(s.perRequest.GET_LINK.trace.find((t) => t.part === 'cache').hit, 0.989852);

@@ -1,24 +1,24 @@
 {
- "judge_version": 3,
+ "judge_version": 4,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
   "total": 5,
-  "cost_inr": 156000,
+  "cost_inr": 228000,
   "worst_p99_ms": {
-   "SEND": 55.6
+   "SEND": 62.3
   },
   "worst_p50_ms": {
-   "SEND": 13.9
+   "SEND": 15.6
   },
   "tightest": {
    "promise": "budget",
    "request": null,
    "test": "t01-steady",
-   "margin": 0.1086,
-   "text": "Tightest promise: budget, 11 % to spare."
+   "margin": 0.1231,
+   "text": "Tightest promise: budget, 12 % to spare."
   },
-  "rank_p99_ms": 55.6,
+  "rank_p99_ms": 62.3,
   "tests": [
    {
     "id": "t01-steady",
@@ -52,19 +52,19 @@
    }
   ],
   "warnings": [],
-  "judge_version": 3
+  "judge_version": 4
  },
  "wrong": {
   "no-queue": {
    "verdict": "Overloaded",
    "passed": 1,
    "total": 5,
-   "cost_inr": 140000,
+   "cost_inr": 200000,
    "worst_p99_ms": {
-    "SEND": 655.6
+    "SEND": 662.3
    },
    "worst_p50_ms": {
-    "SEND": 163.9
+    "SEND": 165.6
    },
    "failed": {
     "test": "t02-match-starts",
@@ -73,36 +73,36 @@
     "reason": "overloaded",
     "request": "SEND",
     "phase": 1,
-    "expected": "at most 2,500 calls a second",
-    "actual": "5,000 calls a second",
-    "message": "db received 5,000 calls a second but can serve 2,500.",
+    "expected": "at most 10,000 calls a second",
+    "actual": "12,000 calls a second",
+    "message": "db received 12,000 calls a second but can serve 10,000.",
     "blame": {
      "part": "db",
      "line": 3,
-     "rho": 2,
-     "note": "db is at 200 % of its capacity"
+     "rho": 1.2,
+     "note": "db is at 120 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 2.22,
-      "rho": 0.1
+      "ms": 2.27,
+      "rho": 0.12
      },
      {
       "part": "api",
-      "ms": 53.33,
-      "rho": 0.625
+      "ms": 60.01,
+      "rho": 0.6667
      },
      {
       "part": "db",
       "ms": 600,
-      "rho": 2
+      "rho": 1.2
      }
     ]
    },
    "also": [],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 655.6,
+   "rank_p99_ms": 662.3,
    "tests": [
     {
      "id": "t01-steady",
@@ -136,29 +136,29 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "one-small-worker": {
    "verdict": "Too Slow",
-   "passed": 1,
+   "passed": 0,
    "total": 5,
-   "cost_inr": 147000,
+   "cost_inr": 207000,
    "worst_p99_ms": {
-    "SEND": 55.6
+    "SEND": 23.2
    },
    "worst_p50_ms": {
-    "SEND": 13.9
+    "SEND": 5.8
    },
    "failed": {
-    "test": "t02-match-starts",
-    "title": "The match starts",
+    "test": "t01-steady",
+    "title": "A steady hour",
     "hidden": false,
     "reason": "backlog",
     "request": "SEND",
     "phase": 1,
     "expected": "done within 180 s",
-    "actual": "waited 540 s",
-    "message": "SEND was still waiting 540 s after it was accepted; the promise is 180 s. worker can do 500 a second but 5,000 arrive.",
+    "actual": "waited 600 s",
+    "message": "SEND was still waiting 600 s after it was accepted; the promise is 180 s. worker can do 500 a second but 1,000 arrive.",
     "blame": {
      "part": "worker",
      "line": 4,
@@ -168,18 +168,18 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.22,
-      "rho": 0.1
+      "ms": 2.02,
+      "rho": 0.01
      },
      {
       "part": "api",
-      "ms": 53.33,
-      "rho": 0.625
+      "ms": 21.18,
+      "rho": 0.0556
      },
      {
       "part": "queue",
-      "ms": 6.67,
-      "rho": 0.25,
+      "ms": 5.26,
+      "rho": 0.05,
       "bg": true
      },
      {
@@ -190,27 +190,27 @@
      },
      {
       "part": "db",
-      "ms": 37.5,
-      "rho": 0.2,
+      "ms": 31.58,
+      "rho": 0.05,
       "bg": true
      }
     ]
    },
    "also": [],
-   "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 55.6,
+   "tip": "More capacity in \"worker\" would fix this.",
+   "rank_p99_ms": 23.2,
    "tests": [
     {
      "id": "t01-steady",
      "title": "A steady hour",
      "hidden": false,
-     "verdict": "Passed"
+     "verdict": "Too Slow"
     },
     {
      "id": "t02-match-starts",
      "title": "The match starts",
      "hidden": false,
-     "verdict": "Too Slow"
+     "verdict": null
     },
     {
      "id": "t03-a-worker-dies",
@@ -232,18 +232,18 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "async-replica": {
    "verdict": "Data Lost",
    "passed": 3,
    "total": 5,
-   "cost_inr": 156000,
+   "cost_inr": 228000,
    "worst_p99_ms": {
-    "SEND": 55.6
+    "SEND": 62.3
    },
    "worst_p50_ms": {
-    "SEND": 13.9
+    "SEND": 15.6
    },
    "failed": {
     "test": "t04-database-fails",
@@ -253,8 +253,8 @@
     "request": "SEND",
     "phase": 2,
     "expected": "no acknowledged write lost",
-    "actual": "about 2000 lost",
-    "message": "When db failed, about 2,000 acknowledged writes were lost. They were only on the primary.",
+    "actual": "about 4000 lost",
+    "message": "When db failed, about 4,000 acknowledged writes were lost. They were only on the primary.",
     "blame": {
      "part": "db",
      "line": 5,
@@ -265,7 +265,7 @@
    },
    "also": [],
    "tip": "Making \"db\" wait for its replicas would fix this.",
-   "rank_p99_ms": 55.6,
+   "rank_p99_ms": 62.3,
    "tests": [
     {
      "id": "t01-steady",
@@ -299,15 +299,15 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "too-few-servers": {
    "verdict": "Overloaded",
    "passed": 1,
    "total": 5,
-   "cost_inr": 132000,
+   "cost_inr": 144000,
    "worst_p99_ms": {
-    "SEND": 402.2
+    "SEND": 402.3
    },
    "worst_p50_ms": {
     "SEND": 100.6
@@ -320,29 +320,29 @@
     "request": "SEND",
     "phase": 1,
     "expected": "at most 4,000 calls a second",
-    "actual": "5,000 calls a second",
-    "message": "api received 5,000 calls a second but can serve 4,000.",
+    "actual": "12,000 calls a second",
+    "message": "api received 12,000 calls a second but can serve 4,000.",
     "blame": {
      "part": "api",
      "line": 2,
-     "rho": 1.25,
-     "note": "api is at 125 % of its capacity"
+     "rho": 3,
+     "note": "api is at 300 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 2.22,
-      "rho": 0.1
+      "ms": 2.27,
+      "rho": 0.12
      },
      {
       "part": "api",
       "ms": 400,
-      "rho": 1.25
+      "rho": 3
      },
      {
       "part": "queue",
-      "ms": 6.67,
-      "rho": 0.25,
+      "ms": 12.5,
+      "rho": 0.6,
       "bg": true
      },
      {
@@ -353,15 +353,15 @@
      },
      {
       "part": "db",
-      "ms": 150,
-      "rho": 0.8,
+      "ms": 50,
+      "rho": 0.4,
       "bg": true
      }
     ]
    },
    "also": [],
-   "tip": "More capacity in \"api\" would fix this.",
-   "rank_p99_ms": 402.2,
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 402.3,
    "tests": [
     {
      "id": "t01-steady",
@@ -395,15 +395,15 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "many-workers": {
    "verdict": "Over Budget",
    "passed": 0,
    "total": 5,
-   "cost_inr": 288000,
+   "cost_inr": 348000,
    "worst_p99_ms": {
-    "SEND": 23.4
+    "SEND": 23.2
    },
    "worst_p50_ms": {
     "SEND": 5.8
@@ -415,9 +415,9 @@
     "reason": "budget",
     "request": null,
     "phase": null,
-    "expected": "≤ ₹1,75,000",
-    "actual": "₹2,88,000",
-    "message": "This design costs ₹2,88,000 a month; the budget is ₹1,75,000.",
+    "expected": "≤ ₹2,60,000",
+    "actual": "₹3,48,000",
+    "message": "This design costs ₹3,48,000 a month; the budget is ₹2,60,000.",
     "blame": {
      "part": "worker",
      "line": 4,
@@ -428,7 +428,7 @@
    },
    "also": [],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 23.4,
+   "rank_p99_ms": 23.2,
    "tests": [
     {
      "id": "t01-steady",
@@ -462,7 +462,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   }
  }
 }

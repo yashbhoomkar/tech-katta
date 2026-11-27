@@ -1,26 +1,26 @@
 {
- "judge_version": 3,
+ "judge_version": 4,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
   "total": 5,
-  "cost_inr": 182000,
+  "cost_inr": 284000,
   "worst_p99_ms": {
-   "GET_MESSAGES": 98.9,
-   "SEND_MESSAGE": 98.9
+   "GET_MESSAGES": 82.2,
+   "SEND_MESSAGE": 82.2
   },
   "worst_p50_ms": {
-   "GET_MESSAGES": 24.7,
-   "SEND_MESSAGE": 24.7
+   "GET_MESSAGES": 20.6,
+   "SEND_MESSAGE": 20.6
   },
   "tightest": {
    "promise": "budget",
    "request": null,
    "test": "t01-lunch",
-   "margin": 0.1911,
-   "text": "Tightest promise: budget, 19 % to spare."
+   "margin": 0.1394,
+   "text": "Tightest promise: budget, 14 % to spare."
   },
-  "rank_p99_ms": 98.9,
+  "rank_p99_ms": 82.2,
   "tests": [
    {
     "id": "t01-lunch",
@@ -54,21 +54,21 @@
    }
   ],
   "warnings": [],
-  "judge_version": 3
+  "judge_version": 4
  },
  "wrong": {
   "one-copy-each-way": {
    "verdict": "Wrong Answer",
    "passed": 0,
    "total": 5,
-   "cost_inr": 182000,
+   "cost_inr": 284000,
    "worst_p99_ms": {
-    "GET_MESSAGES": 34.6,
-    "SEND_MESSAGE": 34.6
+    "GET_MESSAGES": 34.2,
+    "SEND_MESSAGE": 34.2
    },
    "worst_p50_ms": {
-    "GET_MESSAGES": 8.6,
-    "SEND_MESSAGE": 8.6
+    "GET_MESSAGES": 8.5,
+    "SEND_MESSAGE": 8.5
    },
    "failed": {
     "test": "t01-lunch",
@@ -90,7 +90,7 @@
    },
    "also": [],
    "tip": "Asking more copies on each read from \"kv\" would fix this.",
-   "rank_p99_ms": 34.6,
+   "rank_p99_ms": 34.2,
    "tests": [
     {
      "id": "t01-lunch",
@@ -124,20 +124,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "write-all-read-one": {
    "verdict": "Unavailable",
    "passed": 3,
    "total": 5,
-   "cost_inr": 182000,
+   "cost_inr": 284000,
    "worst_p99_ms": {
-    "GET_MESSAGES": 98.9,
-    "SEND_MESSAGE": 98.9
+    "GET_MESSAGES": 82.2,
+    "SEND_MESSAGE": 82.2
    },
    "worst_p50_ms": {
-    "GET_MESSAGES": 24.7,
-    "SEND_MESSAGE": 24.7
+    "GET_MESSAGES": 20.6,
+    "SEND_MESSAGE": 20.6
    },
    "failed": {
     "test": "t04-a-node-dies",
@@ -158,13 +158,13 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.44,
-      "rho": 0.18
+      "ms": 2.3,
+      "rho": 0.132
      },
      {
       "part": "api",
-      "ms": 36.36,
-      "rho": 0.45
+      "ms": 34.04,
+      "rho": 0.4125
      },
      {
       "part": "kv",
@@ -182,7 +182,7 @@
     }
    ],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 98.9,
+   "rank_p99_ms": 82.2,
    "tests": [
     {
      "id": "t01-lunch",
@@ -216,20 +216,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "write-one-read-all": {
    "verdict": "Data Lost",
    "passed": 3,
    "total": 5,
-   "cost_inr": 182000,
+   "cost_inr": 284000,
    "worst_p99_ms": {
-    "GET_MESSAGES": 98.9,
-    "SEND_MESSAGE": 98.9
+    "GET_MESSAGES": 82.2,
+    "SEND_MESSAGE": 82.2
    },
    "worst_p50_ms": {
-    "GET_MESSAGES": 24.7,
-    "SEND_MESSAGE": 24.7
+    "GET_MESSAGES": 20.6,
+    "SEND_MESSAGE": 20.6
    },
    "failed": {
     "test": "t04-a-node-dies",
@@ -239,8 +239,8 @@
     "request": "SEND_MESSAGE",
     "phase": 2,
     "expected": "no acknowledged write lost",
-    "actual": "about 3000 lost",
-    "message": "When kv failed, about 3,000 acknowledged writes were lost. They were only on the primary.",
+    "actual": "about 7200 lost",
+    "message": "When kv failed, about 7,200 acknowledged writes were lost. They were only on the primary.",
     "blame": {
      "part": "kv",
      "line": 3,
@@ -262,7 +262,7 @@
     }
    ],
    "tip": "Waiting for more copies on each write to \"kv\" would fix this.",
-   "rank_p99_ms": 98.9,
+   "rank_p99_ms": 82.2,
    "tests": [
     {
      "id": "t01-lunch",
@@ -296,20 +296,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "sql-messages": {
    "verdict": "Overloaded",
    "passed": 1,
    "total": 5,
-   "cost_inr": 212000,
+   "cost_inr": 284000,
    "worst_p99_ms": {
-    "GET_MESSAGES": 282.9,
-    "SEND_MESSAGE": 682.9
+    "GET_MESSAGES": 266.6,
+    "SEND_MESSAGE": 666.6
    },
    "worst_p50_ms": {
-    "GET_MESSAGES": 70.7,
-    "SEND_MESSAGE": 170.7
+    "GET_MESSAGES": 66.6,
+    "SEND_MESSAGE": 166.6
    },
    "failed": {
     "test": "t02-dinner",
@@ -318,30 +318,30 @@
     "reason": "overloaded",
     "request": "GET_MESSAGES",
     "phase": 2,
-    "expected": "at most 4,615 calls a second",
-    "actual": "15,000 calls a second",
-    "message": "db received 15,000 calls a second but can serve 4,615.",
+    "expected": "at most 12,941 calls a second",
+    "actual": "22,000 calls a second",
+    "message": "db received 22,000 calls a second but can serve 12,941.",
     "blame": {
      "part": "db",
      "line": 3,
-     "rho": 3.25,
-     "note": "db is at 325 % of its capacity"
+     "rho": 1.7,
+     "note": "db is at 170 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 2.86,
-      "rho": 0.3
+      "ms": 2.56,
+      "rho": 0.22
      },
      {
       "part": "api",
-      "ms": 80,
-      "rho": 0.75
+      "ms": 64,
+      "rho": 0.6875
      },
      {
       "part": "db",
       "ms": 200,
-      "rho": 3.25
+      "rho": 1.7
      }
     ]
    },
@@ -349,16 +349,16 @@
     {
      "reason": "p99",
      "request": "GET_MESSAGES",
-     "message": "GET_MESSAGES took 282.9 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 325 % of capacity."
+     "message": "GET_MESSAGES took 266.6 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 170 % of capacity."
     },
     {
      "reason": "p99",
      "request": "SEND_MESSAGE",
-     "message": "SEND_MESSAGE took 682.9 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 325 % of capacity."
+     "message": "SEND_MESSAGE took 666.6 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 170 % of capacity."
     }
    ],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 282.9,
+   "rank_p99_ms": 266.6,
    "tests": [
     {
      "id": "t01-lunch",
@@ -392,20 +392,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "random-ids": {
    "verdict": "Wrong Answer",
    "passed": 0,
    "total": 5,
-   "cost_inr": 182000,
+   "cost_inr": 284000,
    "worst_p99_ms": {
-    "GET_MESSAGES": 34.6,
-    "SEND_MESSAGE": 34.6
+    "GET_MESSAGES": 34.2,
+    "SEND_MESSAGE": 34.2
    },
    "worst_p50_ms": {
-    "GET_MESSAGES": 8.6,
-    "SEND_MESSAGE": 8.6
+    "GET_MESSAGES": 8.5,
+    "SEND_MESSAGE": 8.5
    },
    "failed": {
     "test": "t01-lunch",
@@ -427,7 +427,7 @@
    },
    "also": [],
    "tip": "More bits in the ids of \"ids\" would fix this.",
-   "rank_p99_ms": 34.6,
+   "rank_p99_ms": 34.2,
    "tests": [
     {
      "id": "t01-lunch",
@@ -461,20 +461,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "big-cluster": {
    "verdict": "Over Budget",
    "passed": 0,
    "total": 5,
-   "cost_inr": 322000,
+   "cost_inr": 494000,
    "worst_p99_ms": {
-    "GET_MESSAGES": 33.9,
-    "SEND_MESSAGE": 33.9
+    "GET_MESSAGES": 33.5,
+    "SEND_MESSAGE": 33.5
    },
    "worst_p50_ms": {
-    "GET_MESSAGES": 8.5,
-    "SEND_MESSAGE": 8.5
+    "GET_MESSAGES": 8.4,
+    "SEND_MESSAGE": 8.4
    },
    "failed": {
     "test": "t01-lunch",
@@ -483,9 +483,9 @@
     "reason": "budget",
     "request": null,
     "phase": null,
-    "expected": "≤ ₹2,25,000",
-    "actual": "₹3,22,000",
-    "message": "This design costs ₹3,22,000 a month; the budget is ₹2,25,000.",
+    "expected": "≤ ₹3,30,000",
+    "actual": "₹4,94,000",
+    "message": "This design costs ₹4,94,000 a month; the budget is ₹3,30,000.",
     "blame": {
      "part": "kv",
      "line": 3,
@@ -495,8 +495,8 @@
     "trace": []
    },
    "also": [],
-   "tip": "A smaller \"kv\" would fix this.",
-   "rank_p99_ms": 33.9,
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 33.5,
    "tests": [
     {
      "id": "t01-lunch",
@@ -530,7 +530,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   }
  }
 }

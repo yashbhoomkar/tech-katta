@@ -1,17 +1,17 @@
 {
- "judge_version": 3,
+ "judge_version": 4,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
   "total": 5,
   "cost_inr": 152000,
   "worst_p99_ms": {
-   "GET_FEED": 58.5,
-   "POST": 56.4
+   "GET_FEED": 58.2,
+   "POST": 56.1
   },
   "worst_p50_ms": {
    "GET_FEED": 12.2,
-   "POST": 14.1
+   "POST": 14
   },
   "tightest": {
    "promise": "p50",
@@ -20,7 +20,7 @@
    "margin": 0.1286,
    "text": "Tightest promise: GET_FEED p50, 13 % to spare."
   },
-  "rank_p99_ms": 58.5,
+  "rank_p99_ms": 58.2,
   "tests": [
    {
     "id": "t01-morning",
@@ -54,7 +54,7 @@
    }
   ],
   "warnings": [],
-  "judge_version": 3
+  "judge_version": 4
  },
  "wrong": {
   "short-ttl-no-invalidate": {
@@ -63,12 +63,12 @@
    "total": 5,
    "cost_inr": 152000,
    "worst_p99_ms": {
-    "GET_FEED": 64.4,
-    "POST": 62.4
+    "GET_FEED": 64.2,
+    "POST": 62.1
    },
    "worst_p50_ms": {
     "GET_FEED": 16.1,
-    "POST": 15.6
+    "POST": 15.5
    },
    "failed": {
     "test": "t02-dinner-peak",
@@ -89,8 +89,8 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.43,
-      "rho": 0.176
+      "ms": 2.19,
+      "rho": 0.088
      },
      {
       "part": "api",
@@ -112,7 +112,7 @@
    },
    "also": [],
    "tip": "More capacity in \"api\" would fix this.",
-   "rank_p99_ms": 64.4,
+   "rank_p99_ms": 64.2,
    "tests": [
     {
      "id": "t01-morning",
@@ -146,7 +146,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "long-ttl-no-invalidate": {
    "verdict": "Wrong Answer",
@@ -215,7 +215,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "sql-feeds": {
    "verdict": "Overloaded",
@@ -223,8 +223,8 @@
    "total": 5,
    "cost_inr": 162000,
    "worst_p99_ms": {
-    "GET_FEED": 249,
-    "POST": 646.9
+    "GET_FEED": 248.7,
+    "POST": 646.6
    },
    "worst_p50_ms": {
     "GET_FEED": 12.2,
@@ -249,8 +249,8 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.43,
-      "rho": 0.176
+      "ms": 2.19,
+      "rho": 0.088
      },
      {
       "part": "api",
@@ -274,11 +274,11 @@
     {
      "reason": "p99",
      "request": "GET_FEED",
-     "message": "GET_FEED took 249.0 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 132 % of capacity."
+     "message": "GET_FEED took 248.7 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 132 % of capacity."
     }
    ],
    "tip": "Bigger machines for \"db\" would fix this.",
-   "rank_p99_ms": 249,
+   "rank_p99_ms": 248.7,
    "tests": [
     {
      "id": "t01-morning",
@@ -312,7 +312,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "quick-writes": {
    "verdict": "Data Lost",
@@ -320,12 +320,12 @@
    "total": 5,
    "cost_inr": 152000,
    "worst_p99_ms": {
-    "GET_FEED": 58.5,
-    "POST": 56.4
+    "GET_FEED": 58.2,
+    "POST": 56.1
    },
    "worst_p50_ms": {
     "GET_FEED": 12.2,
-    "POST": 14.1
+    "POST": 14
    },
    "failed": {
     "test": "t04-a-node-dies",
@@ -353,7 +353,7 @@
     }
    ],
    "tip": "Waiting for more copies on each write to \"kv\" would fix this.",
-   "rank_p99_ms": 58.5,
+   "rank_p99_ms": 58.2,
    "tests": [
     {
      "id": "t01-morning",
@@ -387,7 +387,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "big-everything": {
    "verdict": "Over Budget",
@@ -395,8 +395,8 @@
    "total": 5,
    "cost_inr": 368000,
    "worst_p99_ms": {
-    "GET_FEED": 33.3,
-    "POST": 31.3
+    "GET_FEED": 33.2,
+    "POST": 31.2
    },
    "worst_p50_ms": {
     "GET_FEED": 6.3,
@@ -422,7 +422,7 @@
    },
    "also": [],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 33.3,
+   "rank_p99_ms": 33.2,
    "tests": [
     {
      "id": "t01-morning",
@@ -456,7 +456,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   }
  }
 }
