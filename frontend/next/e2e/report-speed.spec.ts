@@ -24,7 +24,7 @@ async function setupPage(page: Page) {
 const CORS = { "access-control-allow-origin": "http://localhost:4173", "access-control-allow-credentials": "true" };
 
 /** one fresh phone: the page loaded and idle (the Report code and the fonts are ready), then the CPU slowed; returns the cold and the warm time in ms */
-async function run(browser: Browser, path: string) {
+async function run(browser: Browser, path: string, steps: string[]) {
   const ctx = await browser.newContext({ baseURL: "http://localhost:4173", viewport: { width: 320, height: 579 }, deviceScaleFactor: 3.375, isMobile: true, hasTouch: true });
   try {
     await ctx.addInitScript(() => Object.defineProperty(navigator, "webdriver", { get: () => false }));
@@ -54,6 +54,7 @@ async function run(browser: Browser, path: string) {
       if (wait) { await expect(page.locator("[data-tab=visual]")).toBeVisible(); await page.waitForTimeout(wait); await page.locator("[data-tab=visual]").tap(); }
       await page.waitForFunction(() => (window as unknown as { __t1: number }).__t1 > 0, undefined, { timeout: 60_000, polling: 50 });
       const ms = await page.evaluate(() => { const w = window as unknown as { __t0: number; __t1: number }; return w.__t1 - w.__t0; });
+      if (!wait) steps.push(await page.evaluate(() => JSON.stringify((window as unknown as { __tkReportPerf: unknown }).__tkReportPerf)));
       await page.locator(".tk-rp-x").tap();
       await expect(page.locator(".tk-report-pop")).toHaveCount(0);
       await page.waitForTimeout(300);
@@ -67,9 +68,9 @@ async function run(browser: Browser, path: string) {
 for (const path of PAGES) {
   test(`the Report picture is fast on a slow phone: ${path} (warm ${BUDGET.warm} ms, cold ${BUDGET.cold} ms, CPU ${RATE}x)`, async ({ browser }) => {
     test.setTimeout(420_000);
-    const cold: number[] = [], warm: number[] = [];
-    for (let i = 0; i < RUNS; i++) { const r = await run(browser, path); cold.push(r.cold); warm.push(r.warm); }
-    const line = `REPORT SPEED ${path} at ${RATE}x: cold ${cold.join("/")} median ${median(cold)} ms (budget ${BUDGET.cold * SLACK}), warm ${warm.join("/")} median ${median(warm)} ms (budget ${BUDGET.warm * SLACK})`;
+    const cold: number[] = [], warm: number[] = [], steps: string[] = []; // steps: where the time of each cold capture went (ms), for when a budget is missed
+    for (let i = 0; i < RUNS; i++) { const r = await run(browser, path, steps); cold.push(r.cold); warm.push(r.warm); }
+    const line = `REPORT SPEED ${path} at ${RATE}x: cold ${cold.join("/")} median ${median(cold)} ms (budget ${BUDGET.cold * SLACK}), warm ${warm.join("/")} median ${median(warm)} ms (budget ${BUDGET.warm * SLACK}); capture steps of the cold runs ${steps.join(" ")}`;
     console.log(line); test.info().annotations.push({ type: "speed", description: line });
     if (RATE === 4) { expect(median(warm), line).toBeLessThanOrEqual(BUDGET.warm * SLACK); expect(median(cold), line).toBeLessThanOrEqual(BUDGET.cold * SLACK); }
   });
