@@ -114,7 +114,7 @@ export function openReport(opener, held, capMod, first) {
     let release = firstHold || hold(); firstHold = null; // the page's 3D stops drawing for as long as the capture takes: the capture has the CPU
     try {
       const cap = capMod || await import('./feedback-capture.js'); performance.mark('tk-report:capture-start');
-      await new Promise((r) => { const t = setTimeout(r, 120); requestAnimationFrame(() => setTimeout(() => { clearTimeout(t); r(); }, 0)); }); // the popup's first frame is drawn first (or, on a page too busy to draw one, 120 ms pass); then the page is read
+      // (no wait: the work starts at once; it yields between its steps)
       const shot = await cap.capturePage({ geometry, grabbed, alive: () => mine === token && open === root });
       performance.mark('tk-report:capture-end'); if (mine === token) state.shot = shot;
     } catch (e) { if (mine === token) state.shotErr = String(e?.message || e).slice(0, 160); }

@@ -10,7 +10,6 @@
 //  - the page is drawn once, at the size it will be sent (not drawn big and shrunk), and the PNG is encoded only when the report is sent (encodePng).
 // The result is the visible window only, at the screen's pixel ratio but at most 2, at most 1600 px on its long side, as a PNG under 4 MB (the only format
 // BugDrop's worker takes). Times of the steps are kept in window.__tkReportPerf (for tests and for finding what is slow).
-import { loadedWorld } from './feedback-hold.js';
 import { fitSize, pixelRatioFor, dataUrlBytes, MAX_BYTES, MAX_SIDE, fontBlocks, pickFontFaces, STYLE_PROPS, INHERITED, canSkipStyle } from './feedback-core.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -51,25 +50,18 @@ export const preload = () => Promise.all([load(), warmFonts()]);
 
 const BLANK = 'data:,';
 
-/** each visible canvas answers html-to-image's toDataURL() with its picture: a 3D one was copied at the press (feedback-hold.js grab), any other is read when asked.
- *  Returns the function that puts the canvases' own toDataURL back. */
-async function readCanvases(pr, grabbed) {
-  const undo = [], canvases = Array.from(document.querySelectorAll('canvas'));
-  const world = loadedWorld(); // set by world.js when it loads; a page with only flat canvases never loads it
-  for (const c of canvases) {
-    const r = c.getBoundingClientRect();
-    if (r.width <= 4 || r.height <= 4 || !intersects(r, 0)) continue;
-    const cs = getComputedStyle(c); if (cs.visibility === 'hidden' || cs.display === 'none') continue;
-    const own = Object.getOwnPropertyDescriptor(c, 'toDataURL');
-    let url = grabbed?.get(c) || null; // a 3D canvas was copied at the press already
-    c.toDataURL = () => {
-      if (url !== null) return url;
-      try { url = (world?.snapshotOf(c, Math.round(r.width * pr)) || c).toDataURL('image/png'); } catch { url = BLANK; } // a canvas from another origin cannot be read: drawn blank, it must not fail the picture
-      return (url = url.length < 200 ? BLANK : url);
-    };
-    undo.push(() => { if (own) Object.defineProperty(c, 'toDataURL', own); else delete c.toDataURL; });
-  }
-  return () => undo.forEach((f) => f());
+/** What html-to-image gets when it asks a canvas for its picture (toDataURL), for the length of the capture: a 3D canvas that was copied at the press (feedback-hold.js grab) gives
+ *  that copy; a canvas that is not on the screen gives nothing (it is cloned blank: reading a WebGL canvas waits for the GPU, a second now and then, for a picture nobody sees,
+ *  and one made after the capture began is covered too); any other is read as it is. Returns the function that puts toDataURL back. */
+function readCanvases(grabbed) {
+  const proto = HTMLCanvasElement.prototype, real = proto.toDataURL;
+  proto.toDataURL = function (...a) {
+    if (grabbed?.has(this)) return grabbed.get(this);
+    const r = this.getBoundingClientRect();
+    if (r.width <= 4 || r.height <= 4 || !intersects(r, 0) || getComputedStyle(this).visibility === 'hidden') return BLANK;
+    try { const u = real.apply(this, a); return u.length < 200 ? BLANK : u; } catch { return BLANK; } // from another origin: cloned blank, it must not fail the picture
+  };
+  return () => { proto.toDataURL = real; };
 }
 
 /** what an element with no styling of its own has for each property we copy (read in a throwaway iframe), so a declaration that says the same is left off the clone */
@@ -128,10 +120,11 @@ export async function capturePage({ geometry, grabbed, alive = () => true } = {}
   let restore = () => {}, skipper = null;
   try {
     const W = geometry?.w || innerWidth, H = geometry?.h || innerHeight, sx = geometry?.x ?? scrollX, sy = geometry?.y ?? scrollY;
+    perf.grabbed = grabbed?.size ?? -1;
     const pr = pixelRatioFor(devicePixelRatio);
     const { toSvg } = await load(); lap('load');
     const blocks = await Promise.race([warmFonts(), new Promise((r) => setTimeout(() => r([]), 1500))]); lap('fonts'); // a font file that will not come must not hold the picture back
-    restore = await readCanvases(pr, grabbed); lap('canvases'); await tick(); // between the steps the page gets its turn (a touch, the popup's drawing)
+    restore = readCanvases(grabbed); lap('canvases'); await tick(); // between the steps the page gets its turn (a touch, the popup's drawing)
     const used = { families: new Set(), weights: new Set(), chars: new Set() };
     const out = fitSize(Math.round(W * pr), Math.round(H * pr), MAX_SIDE);
     const opts = {
