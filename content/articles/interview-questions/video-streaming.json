@@ -203,7 +203,7 @@
   ],
   "practice": {
     "v": 2,
-    "brief": "Each test sends what players do: fetch video segments (about 500 KB each, the same popular videos again and again), read a video's details and playlist, and now and then a chef uploads a video: its parts go straight to storage, and it is transcoded into every quality within half an hour.",
+    "brief": "Each test sends what players do: fetch video segments (about 500 KB each, the same popular videos again and again), read a video's details and playlist, and now and then a chef uploads a video: its parts go straight to storage, and it is transcoded into every quality within half an hour (the article's target is watchable within a few minutes; the tests allow a looser half hour, so the canvas stays small).",
     "entities": {
       "segments": {
         "rows": 5000000000,
