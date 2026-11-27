@@ -107,3 +107,43 @@ test("the fonts' CSS is made once per page: Latin files only, fetched once, and 
   await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
   expect(hits.length, "the capture fetched no font").toBe(before);
 });
+
+// The same, the way a person really does it: the page has been open for 7 s (not waited on for "ready" or calm frames), then real touch taps with the CPU slowed. The time is
+// from the moment the browser received the Visual tap (the pointerdown's own timeStamp, which is the input's time, not when the page got round to it) to the picture being in the
+// popup, both read in the page: a page too busy to take the tap is caught (this is what found /home taking 1.3 s to answer a tap while its 3D scene went on drawing behind the
+// popup). The driver's own clock is checked too, with wider budgets. Budgets in the page: cold 600 ms, warm 150 ms (CI 1.5x).
+test(`the Report picture is fast for real taps after 7 s on the page: /home (warm 150 ms, cold 600 ms, CPU ${RATE}x)`, async ({ browser }) => {
+  test.setTimeout(420_000);
+  const one = async (wait: number) => {
+    const ctx = await browser.newContext({ baseURL: "http://localhost:4173", viewport: { width: 320, height: 579 }, deviceScaleFactor: 3.375, isMobile: true, hasTouch: true });
+    try {
+      const page = await ctx.newPage();
+      await setupPage(page);
+      await page.goto("/home?feedback=on");
+      await expect(page.locator(".tk-report")).toBeVisible({ timeout: 30_000 });
+      await page.waitForTimeout(7000);
+      await page.evaluate(() => {
+        const w = window as unknown as { __in: number; __t1: number };
+        w.__in = 0; w.__t1 = 0;
+        document.addEventListener("pointerdown", (e) => { if ((e.target as Element).closest("[data-tab=visual]")) w.__in = e.timeStamp; }, true);
+        new MutationObserver(() => { if (!w.__t1 && w.__in && document.querySelector(".tk-mk-stage canvas")) w.__t1 = performance.now(); }).observe(document.body, { childList: true, subtree: true });
+      });
+      const cdp = await ctx.newCDPSession(page);
+      await cdp.send("Emulation.setCPUThrottlingRate", { rate: RATE });
+      await page.locator(".tk-report").tap();
+      if (wait) await page.waitForTimeout(wait);
+      const t0 = Date.now();
+      await page.locator("[data-tab=visual]").tap();
+      await page.waitForFunction(() => (window as unknown as { __t1: number }).__t1 > 0, undefined, { timeout: 60_000, polling: 50 });
+      const driver = Date.now() - t0; // the same, on the test's clock: the driver's own waiting for the page to take the tap is in it
+      return { inPage: Math.round(await page.evaluate(() => { const w = window as unknown as { __in: number; __t1: number }; return w.__t1 - w.__in; })), driver };
+    } finally { await ctx.close(); }
+  };
+  const cold: number[] = [], warm: number[] = [], dCold: number[] = [], dWarm: number[] = [];
+  for (let i = 0; i < RUNS; i++) { const c = await one(0), w = await one(1000); cold.push(c.inPage); dCold.push(c.driver); warm.push(w.inPage); dWarm.push(w.driver); }
+  const line = `REPORT SPEED real taps /home at ${RATE}x: in the page cold ${cold.join("/")} median ${median(cold)} ms (budget ${600 * SLACK}), warm ${warm.join("/")} median ${median(warm)} ms (budget ${150 * SLACK}); on the driver's clock cold ${dCold.join("/")} median ${median(dCold)} (budget ${1100 * SLACK}), warm ${dWarm.join("/")} median ${median(dWarm)} (budget ${400 * SLACK})`;
+  console.log(line); test.info().annotations.push({ type: "speed", description: line });
+  if (RATE === 4) { expect(median(warm), line).toBeLessThanOrEqual(150 * SLACK); expect(median(cold), line).toBeLessThanOrEqual(600 * SLACK);
+    // the driver's clock has its own waiting in it (frames of a throttled page), so its budgets are wider; a page that keeps drawing behind the popup is far over them (1.0 and 1.25 s)
+    expect(median(dWarm), line).toBeLessThanOrEqual(400 * SLACK); expect(median(dCold), line).toBeLessThanOrEqual(1100 * SLACK); }
+});

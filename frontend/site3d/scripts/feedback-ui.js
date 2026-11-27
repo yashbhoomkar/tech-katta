@@ -37,7 +37,7 @@ export function openReport(opener, held, capMod, first) {
   // ---- closing: ✕, Esc, a tap outside, a swipe down (phones), Back. A history entry is taken while the popup is open; the page's own sheets ignore a Back that only pops it
   let popped = false;
   const close = () => {
-    if (!open) return; open = null; token++; state.shot = null; ed = null; removeEventListener('keydown', key); removeEventListener('popstate', pop); root.remove();
+    if (!open) return; open = null; token++; state.shot = null; ed = null; holds.splice(0).forEach((f) => f()); removeEventListener('keydown', key); removeEventListener('popstate', pop); root.remove();
     if (!popped && history.state?.tkReport) { try { history.back(); } catch { /* none */ } }
     try { (opener || prevFocus)?.focus?.({ preventScroll: true }); } catch { /* gone */ }
   };
@@ -107,18 +107,19 @@ export function openReport(opener, held, capMod, first) {
   // ---- the screenshot: started as the popup opens (the capture leaves the popup and the button out itself); kept for this popup only, dropped when it closes.
   // Quick feedback never waits for it, and Visual shows it at once if it is ready, else a spinner until it is.
   let token = 0;
-  let firstHold = held, firstRead = first; // the hold taken when Report was pressed belongs to the first capture
+  const holds = held ? [held] : []; // the page's 3D worlds stay stopped for as long as the popup is up (the popup covers them): a world drawing at 4x CPU starves the touches and the frames the popup needs
+  let firstRead = first;
   async function capture() {
     const mine = ++token; state.capturing = true; state.shot = null; ed = null; state.shotErr = ''; state.msg = ''; if (state.tab === 'visual') paint();
     const { geometry, grabbed } = firstRead || { geometry: { w: innerWidth, h: innerHeight, x: scrollX, y: scrollY }, grabbed: grab(pixelRatioFor(devicePixelRatio)) }; firstRead = null; // what the person was looking at when they asked
-    let release = firstHold || hold(); firstHold = null; // the page's 3D stops drawing for as long as the capture takes: the capture has the CPU
+    if (!holds.length) holds.push(hold());
     try {
       const cap = capMod || await import('./feedback-capture.js'); performance.mark('tk-report:capture-start');
       // (no wait: the work starts at once; it yields between its steps)
       const shot = await cap.capturePage({ geometry, grabbed, alive: () => mine === token && open === root });
-      performance.mark('tk-report:capture-end'); if (mine === token) state.shot = shot;
+      performance.mark('tk-report:capture-end'); if (mine === token) { state.shot = shot; ed = createEditor(shot); } // the editor is made now, so the tab only has to show it
     } catch (e) { if (mine === token) state.shotErr = String(e?.message || e).slice(0, 160); }
-    finally { release(); if (mine === token) { state.capturing = false; if (open && state.tab === 'visual' && state.view === 'form') paint(); } }
+    finally { if (mine === token) { state.capturing = false; if (open && state.tab === 'visual' && state.view === 'form') paint(); } }
   }
 
   // ---- sending
