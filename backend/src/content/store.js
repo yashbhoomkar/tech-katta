@@ -7,7 +7,7 @@ import path from 'node:path';
 import { validateContent } from './validate.js';
 import { existsSync } from 'node:fs';
 import { loadProblems } from '../practice/problems.js';
-import { publicArticle, publicLab } from './public.js';
+import { publicArticle, publicLab, publicChallenge, isFree } from './public.js';
 
 const readJson = async (file) => {
   try { return JSON.parse(await readFile(file, 'utf8')); }
@@ -78,6 +78,7 @@ export function buildBodies({ site, examples, articles, lab, stories = {} }) {
   const full = new Map(articles.map((a) => [a.slug, { ...served(a), example }]));
   // A problem's wrong designs, for the gallery in the Solution tab (context 36, step 13): GET /v1/articles/<slug>/wrong.
   const wrongs = new Map(articles.filter((a) => a.practice?.wrong?.length).map((a) => [a.slug, { slug: a.slug, designs: a.practice.wrong.map((w) => ({ name: w.name, why: w.why, fails: w.fails, nodes: w.nodes, edges: w.edges })) }]));
+  const freeSlugs = new Set(articles.filter(isFree).map((a) => a.slug));
   const publics = new Map(articles.map((a) => [a.slug, publicArticle(a)]));
   const solutions = new Map(articles.filter((a) => a.practice?.reference).map((a) => [a.slug, { slug: a.slug, nodes: a.practice.reference.nodes, edges: a.practice.reference.edges }]));
   return {
@@ -92,8 +93,13 @@ export function buildBodies({ site, examples, articles, lab, stories = {} }) {
     lab,
     // what a signed-out visitor gets instead of the full Lab catalogue and the full articles (tech-katta-context 52)
     publicLab: publicLab(lab),
+    // the design canvas's engine (component catalogue, prices, evaluator settings; no article text) with only the challenges' public
+    // parts: what the free sample problem needs to run signed out (GET /v1/lab/engine). The challenges' hints and designs stay behind the sign-in.
+    engineLab: { ...(({ challenges: _c, ...rest }) => rest)(lab), challenges: (lab.challenges || []).map(publicChallenge), locked: true },
     stories: { stories },
     publicArticle: (slug) => publics.get(slug) || null,
+    /** the free sample: these articles (and a free problem's solution and wrong designs) are served in full to everyone */
+    isFree: (slug) => freeSlugs.has(slug),
     list(section) {
       if (!lists.has(section)) lists.set(section, { articles: articles.filter((a) => !section || a.section === section).map(summary) });
       return lists.get(section);

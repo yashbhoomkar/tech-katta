@@ -4,7 +4,7 @@
   "group": "core",
   "no": "CONCEPT // 01",
   "tag": "FOUNDATIONS",
-  "access": "paid",
+  "access": "free",
   "date": "9 Nov 2026",
   "title": "Networking essentials: how machines reach each other",
   "dek": "Layers and addresses, one request from tap to answer, TCP or UDP, HTTP, the API styles built on it, pushing updates, phone-to-phone calls, spreading load, layer 4 or 7, distance, and what to do when calls fail.",

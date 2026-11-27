@@ -4,7 +4,7 @@
   "group": "tools",
   "no": "COMPONENT // 01",
   "tag": "IN-MEMORY STORE",
-  "access": "paid",
+  "access": "free",
   "date": "8 Nov 2026",
   "title": "Redis: one fast server, many data structures",
   "dek": "Most people meet Redis as a cache, but it is a server of data structures kept in memory: strings, hashes, sorted sets, streams. Here is what each is for, why one command never interrupts another, how it keeps data across a restart, and how a cluster splits keys over machines.",
