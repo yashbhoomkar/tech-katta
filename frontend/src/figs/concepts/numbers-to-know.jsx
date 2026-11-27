@@ -46,27 +46,27 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // FIG: data sizes against one machine.
 function ShardMathFig({still,uid=""}){
 const sx=gb=>190+(Math.log10(gb)-2)*140, x0=190;
-const R=[["5 crore users × 5 KB",250,"250 GB"],["50 crore users × 5 KB",2500,"2.5 TB"],["orders, one year",3600,"3.6 TB"],["orders, five years",18000,"18 TB"]];
+const R=[["5 crore users × 5 KB",250,"250 GB"],["50 crore users × 5 KB",2500,"2.5 TB"],["orders, one year",7300,"7 TB"],["orders, five years",36500,"36 TB"]];
 const row=i=><Bar key={i} y={60+i*30} label={R[i][0]} v={R[i][1]} sx={sx} x0={x0} t={R[i][2]}/>;
 const base=<Axis sx={sx} y={196} ticks={[[100,"100 GB"],[1000,"1 TB"],[10000,"10 TB"],[100000,"100 TB"]]}/>;
 const s1=<g>{row(0)}{row(1)}</g>,s2=<g>{row(2)}{row(3)}</g>;
 const s3=<g><line x1={sx(60000)} y1={50} x2={sx(60000)} y2={186} stroke={RED} strokeWidth="2"/><T x={sx(60000)-4} y={48} t="one machine: 60 TB SSD" a="end" c={RED}/></g>;
 const s4=<g><T x={10} y={230} t="all of it fits one machine; shard for write rate or many years of history, not user count" c={BLUE}/></g>;
-const caps=[["1 · Zotato's users, even at 50 crore, are a few terabytes at most",BLUE],["2 · a year of orders is a few terabytes; five years under twenty",BLUE],["3 · one large machine holds 60 TB of local SSD",RED],["4 · so the arithmetic, not the user count, decides when to shard",BLUE]];
-return <Fig still={still} h={240} id={`nst${uid}`} caps={caps} title="Data sizes against what one machine holds, on a log scale. Five crore users at 5 KB each are 250 GB, and fifty crore are 2.5 TB. A year of orders is about 3.6 TB and five years about 18 TB. One large machine holds 60 TB of local SSD, so all of it fits; shard for write rate or many years of history, not because the user count sounds big."
+const caps=[["1 · Zotato's users, even at 50 crore, are a few terabytes at most",BLUE],["2 · a year of orders is about 7 TB; five years about 36 TB",BLUE],["3 · one large machine holds 60 TB of local SSD",RED],["4 · so the arithmetic, not the user count, decides when to shard",BLUE]];
+return <Fig still={still} h={240} id={`nst${uid}`} caps={caps} title="Data sizes against what one machine holds, on a log scale. Five crore users at 5 KB each are 250 GB, and fifty crore are 2.5 TB. A year of orders is about 7 TB and five years about 36 TB. One large machine holds 60 TB of local SSD, so all of it fits; shard for write rate or many years of history, not because the user count sounds big."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // FIG: write rates against one primary.
 function WritesFig({still,uid=""}){
 const sx=v=>190+Math.log10(v)*68, x0=190;
-const R=[["menu edits at peak",10,"~10/s",BLUE],["orders at peak",600,"~600/s",BLUE],["order status updates",3000,"~3,000/s",BLUE],["rider location pings",2e5,"~2 lakh/s",RED]];
+const R=[["menu edits at peak",10,"~10/s",BLUE],["orders at peak",600,"~600/s",BLUE],["order status updates",3000,"~3,000/s",BLUE],["rider location pings",75000,"~75,000/s",RED]];
 const row=i=><Bar key={i} y={66+i*30} label={R[i][0]} v={R[i][1]} sx={sx} x0={x0} t={R[i][2]} c={R[i][3]}/>;
 const base=<Axis sx={sx} y={196} ticks={[[1,"1"],[10,"10"],[100,"100"],[1000,"1,000"],[1e4,"10,000"],[1e5,"1 lakh"],[1e6,"10 lakh"]]}/>;
 const zone=<g><rect x={x0} y={56} width={sx(1e4)-x0} height={130} fill={BLUE} opacity="0.06"/><T x={sx(1e4)-4} y={52} t="one primary, comfortably" a="end" c={BLUE}/></g>;
 const s1=<g>{zone}{row(0)}{row(1)}</g>,s2=row(2),s3=row(3);
 const s4=<g><T x={10} y={230} t="most writes fit one database; only the extreme needs an LSM store, batching or sharding" c={INK}/></g>;
-const caps=[["1 · menu edits and orders: tens to hundreds of writes a second",BLUE],["2 · even order status updates stay well inside one primary",BLUE],["3 · rider pings at lakhs a second are the exception",RED],["4 · match the tool to the number: most features need no write pipeline",INK]];
-return <Fig still={still} h={240} id={`nwt${uid}`} caps={caps} title="Write rates against one primary database, on a log scale. Menu edits are about 10 writes a second at peak, orders about 600, and order status updates about 3,000, all comfortably within one primary's range of up to about ten thousand. Rider location pings at about 2 lakh a second are the exception that needs an LSM-based store, batching or sharding."
+const caps=[["1 · menu edits and orders: tens to hundreds of writes a second",BLUE],["2 · even order status updates stay well inside one primary",BLUE],["3 · rider pings at tens of thousands a second are the exception",RED],["4 · match the tool to the number: most features need no write pipeline",INK]];
+return <Fig still={still} h={240} id={`nwt${uid}`} caps={caps} title="Write rates against one primary database, on a log scale. Menu edits are about 10 writes a second at peak, orders about 600, and order status updates about 3,000, all comfortably within one primary's range of up to about ten thousand. Rider location pings at about 75,000 a second are the exception that needs an LSM-based store, batching or sharding."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 export const FIGS={

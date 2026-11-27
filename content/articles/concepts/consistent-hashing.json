@@ -369,7 +369,7 @@
         [
           "Used by",
           "Cassandra, Dynamo-style stores, cache clients",
-          "Redis Cluster, many sharded SQL setups, Kafka partitions"
+          "Redis Cluster, many sharded SQL setups (Kafka partitions are fixed slots too, but adding partitions to a topic remaps keys)"
         ]
       ]
     },

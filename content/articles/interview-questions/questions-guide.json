@@ -15,7 +15,7 @@
     },
     {
       "t": "p",
-      "x": "Every worked question follows the six steps in 'How to answer a system design question': requirements, the numbers that matter, entities and API, a high-level design, deep dives, and what's expected at each level. In the workspace, the same question has example tests to run while you design, more tests that run when you submit, hints that cost points, and the worked answer as its solution."
+      "x": "Every worked question follows the five steps in 'How to answer a system design question': requirements, the numbers that matter, entities and API, a high-level design and deep dives; that article also says what is expected at each level. In the workspace, the same question has example tests to run while you design, more tests that run when you submit, hints that cost points, and the worked answer as its solution."
     },
     {
       "t": "h2",
@@ -128,6 +128,24 @@
         ]
       ],
       "label": "Medium questions"
+    },
+    {
+      "t": "h2",
+      "x": "Hard"
+    },
+    {
+      "t": "table",
+      "label": "Hard questions",
+      "head": [
+        "Question",
+        "What it trains"
+      ],
+      "rows": [
+        [
+          "Design live streaming for IND vs PAK",
+          "3.5 crore viewers at once: a CDN in front, capacity started before the crowd arrives, and failures that reach everyone"
+        ]
+      ]
     },
     {
       "t": "h2",

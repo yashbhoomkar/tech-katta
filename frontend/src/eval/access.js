@@ -214,7 +214,7 @@ export function dialect(step, t, id, match) {
   if (id === 'cache') {
     const k = `${t.name}:${where.map(([, v]) => v).join(':')}`;
     if (step.op === 'incr') return `INCR ${k}`;
-    if (step.op === 'rank') return step.of ? `ZREVRANK ${t.name} ${where.map(([, v]) => v).join(':')}` : `ZREVRANGE ${t.name} 0 ${(step.limit || 10) - 1} WITHSCORES`;
+    if (step.op === 'rank') return step.of ? `ZREVRANK ${t.name} ${where.map(([, v]) => v).join(':')}` : `ZRANGE ${t.name} 0 ${(step.limit || 10) - 1} REV WITHSCORES`;
     if (step.near) return `GEOSEARCH ${t.name} FROMLONLAT ${step.near.at[1]} ${step.near.at[0]} BYRADIUS ${step.near.km} km ASC`;
     if (step.op === 'put') { const key = (t.key || []).map((x) => vals(step.values).find(([n]) => n === x)?.[1]).join(':'); return `HSET ${t.name}:${key} ${vals(step.values).map(([n, v]) => `${n} ${q(v)}`).join(' ')}`; }
     if (step.op === 'update') return `HSET ${k} ${[...vals(step.set).map(([n, v]) => `${n} ${q(v)}`), ...vals(step.add).map(([n, v]) => `${n} +${v}`)].join(' ')}`;

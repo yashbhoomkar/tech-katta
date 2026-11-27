@@ -59,7 +59,7 @@ An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` 
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code
 - `table {head, rows, label?}` (`label` names it for screen readers) ·
-- `lab {x, to, go?}` "Try it on the canvas" card: `to` is a dashboard route, `problems/<problem slug>` (an article with `practice`) or `problems/challenge/<challenge id>` (one of `lab.json`'s challenges); both are checked; `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
+- `analogy {x}` a one-line everyday comparison, shown in its own tinted box · `lab {x, to, go?}` "Try it on the canvas" card: `to` is a dashboard route, `problems/<problem slug>` (an article with `practice`) or `problems/challenge/<challenge id>` (one of `lab.json`'s challenges); both are checked; `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
 
 ## Problems: tests for an Interview Question (`practice`)
 
