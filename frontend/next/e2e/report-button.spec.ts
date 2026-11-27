@@ -24,7 +24,7 @@ async function reachable(page: Page, what: string) {
   expect(r, `${what}: the Report button is drawn`).not.toBeNull();
   expect(r?.inside, `${what}: inside the screen`).toBe(true);
   expect(r?.hit, `${what}: not covered (something else is at its centre: ${r?.over})`).toBe(true);
-  expect(r?.w, `${what}: wide enough to press`).toBeGreaterThanOrEqual(28);
+  expect(r?.w, `${what}: wide enough to press (it is 24 px so that it sits in the page margin and covers nothing; its target is taller instead)`).toBeGreaterThanOrEqual(24);
   expect(r?.h, `${what}: tall enough to press`).toBeGreaterThanOrEqual(44);
 }
 

@@ -1717,3 +1717,11 @@ body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
 
 /* doc 53 phase 3: a problem on a phone is a focus screen: the site's top and bottom bars step aside (the workspace has its own header and switch) */
 @media (max-width: 900px) { body.ws-phone .top, body.ws-phone .tabbar { display: none !important; } body.ws-phone main { padding-bottom: 0; } }
+
+/* ---- the landing screen on a phone (owner, tech-katta-feedback#11: "The button on the right most is half visible") ---- */
+/* 1. nothing in the top bar may run past the screen: the hero has the same "Start preparing" button right below it, so on a phone (and wherever the bar is full) the bar's copy goes */
+@media (max-width: 900px) { .top .top-cta, body .top .top-cta { display: none !important; } }
+.top { max-width: 100vw; box-sizing: border-box; }
+/* 3. the hint under the hero buttons is a solid pill, above the 3D scene's labels and its pulsing ring (a glass pill showed both through it) */
+.explore-hint { position: relative; z-index: 6; background: var(--card); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.eh-dot::after { inset: -4px; }

@@ -126,7 +126,12 @@ export function offerTour({ start, delay = 1500 }) {
     if (tourSeen() || document.querySelector('.tour-card') || scrollY > innerHeight * 0.35) return;
     // phones: in the hero's flow, under the hint, so it never covers the headline, the buttons or the hint itself
     const hintEl = document.querySelector('.explore-hint');
-    if (hintEl && matchMedia('(max-width: 760px)').matches) { el.classList.add('inline'); hintEl.after(el); } else document.body.appendChild(el);
+    if (hintEl && matchMedia('(max-width: 760px)').matches) {
+      el.classList.add('inline', 'compact'); hintEl.after(el);
+      // it is only shown when it fits clear of the tab bar (both buttons whole and tappable); on a small screen the hint's own "Take the tour" is the way in
+      const bar = document.querySelector('.tabbar')?.getBoundingClientRect(), box = el.getBoundingClientRect();
+      if (bar && bar.height && box.bottom > bar.top - 8) { el.remove(); return; }
+    } else document.body.appendChild(el);
     shown = true; addEventListener('scroll', onScroll, { passive: true });
     // never on top of the hint under the hero (it says the same thing): move to the top of the screen instead
     const hint = document.querySelector('.explore-hint')?.getBoundingClientRect(), o = el.getBoundingClientRect();
