@@ -6,11 +6,13 @@
 // starts: an article's title, summary and public part (its first 2 paragraphs and the names of its sections: the same
 // part the API gives a signed-out reader, backend/src/content/public.js), a problem's title, difficulty and the first lines
 // of its brief, links to its neighbours and to every section; a section's list of articles; on the home page every section
-// and article. Never the locked text: it is not in this file's input to the page at all. Plus structured data (JSON-LD):
-// the site, breadcrumbs and an Article. No paywall markup: the locked text is genuinely absent from the page.
+// and article. A gated article never has its locked text here (the preview above is all the page carries). The free sample
+// (articles with access "free": content/public.js isFree) is the exception: its page holds the full text, as the API serves it to
+// everyone. Plus structured data (JSON-LD): the site, breadcrumbs and an Article, with Google's paywall markup
+// (isAccessibleForFree, hasPart + cssSelector) so a preview is not mistaken for cloaking.
 import fs from "node:fs";
 import path from "node:path";
-import { publicParagraphs, sectionNames, briefLines } from "../backend/src/content/public.js";
+import { publicParagraphs, sectionNames, briefLines, isFree } from "../backend/src/content/public.js";
 
 export const SITE = "https://tech.katta.cc";
 export const OG_IMAGE = SITE + "/og-2026-11.png";
@@ -50,6 +52,28 @@ export function publicHtml(a) {
   if (a.practice) return `<p>${inl(briefLines(a.practice.brief || a.dek))}</p>`;
   return publicParagraphs(a.body).map((b) => `<p>${inl(b.x)}</p>`).join("");
 }
+
+// One block of a free article as plain HTML (the same blocks frontend/src/dashboard/blocks.jsx draws). A figure is its caption; the
+// worked-example aside is left out (it comes from the site copy, not from the article).
+export function blockHtml(b) {
+  if (!b || typeof b !== "object") return "";
+  switch (b.t) {
+    case "h2": return `<h2>${inl(b.x)}</h2>`;
+    case "h3": return `<h3>${inl(b.x)}</h3>`;
+    case "p": return `<p>${inl(b.x)}</p>`;
+    case "list": return `<ul>${(b.items || []).map((x) => `<li>${inl(x)}</li>`).join("")}</ul>`;
+    case "analogy": return `<aside><p><strong>In real life:</strong> ${inl(b.x)}</p></aside>`;
+    case "code": return `<figure><figcaption>${inl(b.label)}</figcaption><pre><code>${esc(b.x)}</code></pre></figure>`;
+    case "fig": return b.cap ? `<figure><figcaption>${inl(b.cap)}</figcaption></figure>` : "";
+    case "lab": return `<p>${inl(b.x)}</p>`;
+    case "table": return `<table>${b.label ? `<caption>${inl(b.label)}</caption>` : ""}<thead><tr>${(b.head || []).map((h) => `<th scope="col">${inl(h)}</th>`).join("")}</tr></thead><tbody>${(b.rows || []).map((r) => `<tr><th scope="row">${inl(r[0])}</th>${r.slice(1).map((x) => `<td>${inl(x)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    case "more": return `<section><h3>${inl(b.label)}</h3>${(b.body || []).map(blockHtml).join("")}</section>`;
+    case "type": return `<section><h3>${inl(b.name)}${b.kind ? ` (${inl(b.kind)})` : ""}</h3><p>${inl(b.what)}</p><dl><dt>Use it for</dt><dd>${inl(b.use)}</dd><dt>Avoid it for</dt><dd>${inl(b.avoid)}</dd>${b.ex ? `<dt>In the example system</dt><dd>${inl(b.ex)}</dd>` : ""}${b.like ? `<dt>In real life</dt><dd>${inl(b.like)}</dd>` : ""}</dl></section>`;
+    default: return "";
+  }
+}
+/** the whole text of a free article, as HTML */
+export const fullHtml = (a) => (a.body || []).map(blockHtml).join("");
 
 const ld = (data) => `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
 const ORG = { "@type": "Organization", "@id": SITE + "/#org", name: "Tech Katta", url: SITE + "/", logo: SITE + "/favicon.svg" };
@@ -91,17 +115,20 @@ export function pagesOf(site, articles) {
     const key = `${a.section}/${a.slug}`, label = labels[a.section] || a.section, url = urlOf(key), date = isoDate(a.date);
     const description = a.dek || a.title;
     const title = a.section === "interview-questions" && /^Design /.test(a.title) ? `${a.title}: System Design Interview | Tech Katta` : `${a.title} | Tech Katta`;
-    const page = { key, title, description, date };
+    const page = { key, title, description, date, ...(isFree(a) ? { free: true } : {}) };
     if (a.body) {
-      const heads = a.practice ? [] : sectionNames(a.body);
+      const free = isFree(a), heads = a.practice || free ? [] : sectionNames(a.body);
       const sib = ok.filter((x) => x.section === a.section && x.slug !== a.slug && x.group === a.group).slice(0, 12);
       page.body = `<main><nav aria-label="Breadcrumb"><a href="${SITE}/">Tech Katta</a> / <a href="${esc(urlOf(a.section))}">${esc(label)}</a></nav>`
         + `<article><p>${esc(a.no || "")}${a.tag ? ` · ${esc(a.tag)}` : ""}</p><h1>${esc(a.title)}</h1><p>${esc(description)}</p>${a.date ? `<p><time datetime="${date || ""}">${esc(a.date)}</time></p>` : ""}`
-        + publicHtml(a)
-        + (heads.length ? `<h2>In this article</h2><ol>${heads.map((h) => `<li>${inl(h)}</li>`).join("")}</ol>` : "")
+        + (free ? (a.practice ? `<p>${inl(briefLines(a.practice.brief || a.dek))}</p>` : "") + fullHtml(a) : publicHtml(a))
+        // the locked part of a gated page, named for the paywall markup below (cssSelector ".tk-locked"): its section names and the way in
+        + (free ? "" : `<div class="tk-locked">${heads.length ? `<h2>In this article</h2><ol>${heads.map((h) => `<li>${inl(h)}</li>`).join("")}</ol>` : ""}<p>${a.practice ? "The canvas, the tests and the worked solution" : "The rest of this article"} open${a.practice ? "" : "s"} free with a Google sign-in.</p></div>`)
         + `</article>${sib.length ? `<nav aria-label="More in ${esc(label)}"><h2>More in ${esc(label)}</h2><ul>${sib.map((x) => `<li>${link(x)}</li>`).join("")}</ul></nav>` : ""}</main>${nav}`;
       page.ld = [{ "@context": "https://schema.org", "@graph": [ORG, WEBSITE,
-        { "@type": a.section === "interview-questions" || a.section === "concepts" || a.section === "components" ? "TechArticle" : "Article", "@id": url + "#article", headline: a.title.slice(0, 110), description, url, mainEntityOfPage: url, image: OG_IMAGE, inLanguage: "en", ...(date ? { datePublished: date, dateModified: date } : {}), author: { "@id": SITE + "/#org" }, publisher: { "@id": SITE + "/#org" }, isPartOf: { "@id": SITE + "/#website" }, articleSection: label },
+        { "@type": a.section === "interview-questions" || a.section === "concepts" || a.section === "components" ? "TechArticle" : "Article", "@id": url + "#article", headline: a.title.slice(0, 110), description, url, mainEntityOfPage: url, image: OG_IMAGE, inLanguage: "en", ...(date ? { datePublished: date, dateModified: date } : {}), author: { "@id": SITE + "/#org" }, publisher: { "@id": SITE + "/#org" }, isPartOf: { "@id": SITE + "/#website" }, articleSection: label,
+          // Google's markup for content behind a sign-in (developers.google.com/search/docs/appearance/structured-data/paywalled-content)
+          ...(free ? { isAccessibleForFree: true } : { isAccessibleForFree: false, hasPart: { "@type": "WebPageElement", isAccessibleForFree: false, cssSelector: ".tk-locked" } }) },
         crumbs([["Tech Katta", SITE + "/"], [label, urlOf(a.section)], [a.title, url]])] }];
     }
     pages.push(page);
@@ -183,8 +210,10 @@ export function renderHome(html, site, articles) {
 }
 
 // pages: keys, or [{key, date}] for a <lastmod>
+// The free sample comes first (right after the home page), then the rest, each with its own <lastmod> where it has a date.
 export function sitemap(pages) {
-  const list = [{ key: null }, { key: "" }, ...pages.map((p) => (typeof p === "string" ? { key: p } : p))];
+  const all = pages.map((p) => (typeof p === "string" ? { key: p } : p));
+  const list = [{ key: null }, ...all.filter((p) => p.free), { key: "" }, ...all.filter((p) => !p.free)];
   const loc = (k) => (k === null ? SITE + "/" : urlOf(k));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${list.map((p) => `  <url><loc>${esc(loc(p.key))}</loc>${p.date ? `<lastmod>${p.date}</lastmod>` : ""}</url>`).join("\n")}\n</urlset>\n`;
 }
@@ -192,7 +221,7 @@ export function sitemap(pages) {
 // For AI assistants and their crawlers (llmstxt.org): what the site is and its public pages, like fanout.sh.
 export function llmsTxt(site, pages) {
   const secs = pages.filter((p) => p.ld && !p.key.includes("/"));
-  return `# Tech Katta\n\n> ${site.hero?.title || "System design, explained."} ${site.hero?.description || ""}\n\nArticles show a public preview; the full text is free after signing in with Google.\n\n`
+  return `# Tech Katta\n\n> ${site.hero?.title || "System design, explained."} ${site.hero?.description || ""}\n\nA few articles and one design problem are free in full; the other articles show a public preview, and the rest is free after signing in with Google.\n\n`
     + secs.map((s) => `## ${s.title.replace(/ \| Tech Katta$/, "")}\n\n- [${s.title.replace(/ \| Tech Katta$/, "")}](${urlOf(s.key)}): ${s.description}\n${pages.filter((p) => p.key.startsWith(s.key + "/") && p.body).map((p) => `- [${p.title.replace(/ \| Tech Katta$/, "")}](${urlOf(p.key)}): ${p.description}`).join("\n")}\n`).join("\n");
 }
 
@@ -221,7 +250,7 @@ export default function articlePages(contentDir, api = "https://tech-api.katta.c
       fs.writeFileSync(path.join(outDir, "dashboard", "index.html"), render(base, { key: "", title: "Dashboard | Tech Katta", description: null }));
       const home = path.join(outDir, "index.html");
       fs.writeFileSync(home, renderHome(fs.readFileSync(home, "utf8"), content.site, content.articles));
-      fs.writeFileSync(path.join(outDir, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date }))));
+      fs.writeFileSync(path.join(outDir, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date, free: p.free }))));
       fs.writeFileSync(path.join(outDir, "llms.txt"), llmsTxt(content.site, pages));
       console.log(`article-pages: ${pages.length} pages, the home page, sitemap.xml and llms.txt, from the ${from}`);
     },
