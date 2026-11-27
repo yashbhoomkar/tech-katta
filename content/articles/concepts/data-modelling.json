@@ -77,15 +77,15 @@
         [
           "6. Shard?",
           "Only if one machine can't hold it; key on the main access pattern",
-          "Orders by city if they outgrow one primary"
+          "Orders by city and zone if they outgrow one primary (a city alone is too lumpy)"
         ]
       ]
     },
     {
       "t": "code",
       "label": "Zotato's core schema",
-      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at",
-      "say": "Zotato's core schema: users with a unique phone; restaurants owned by a user; dishes belonging to a restaurant with a positive price; orders linking a user and a restaurant with a status, total and time; order items keyed by order and dish with a positive quantity and the price paid; ratings keyed by order with one to five stars; and deliveries keyed by order with a rider and pickup and delivery times."
+      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at\nriders       id PK · name · phone UNIQUE · city",
+      "say": "Zotato's core schema: users with a unique phone; restaurants owned by a user; dishes belonging to a restaurant with a positive price; orders linking a user and a restaurant with a status, total and time; order items keyed by order and dish with a positive quantity and the price paid; ratings keyed by order with one to five stars; deliveries keyed by order with a rider and pickup and delivery times; and riders with a name, a unique phone and a city."
     },
     {
       "t": "p",
@@ -320,8 +320,8 @@
     {
       "t": "code",
       "label": "Zotato's schema",
-      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at",
-      "say": "Zotato's schema: users, restaurants, dishes, orders, order items, ratings and deliveries, with their keys, links and checks."
+      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at\nriders       id PK · name · phone UNIQUE · city",
+      "say": "Zotato's schema: users, restaurants, dishes, orders, order items, ratings, deliveries and riders, with their keys, links and checks."
     },
     {
       "t": "list",

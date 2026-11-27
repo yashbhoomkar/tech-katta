@@ -197,7 +197,7 @@
     },
     {
       "t": "p",
-      "x": "Distance is the reason. If the origin is in North Virginia and the user is in Pune, every round trip takes 250 to 300 ms; from an edge in Mumbai it takes 20 to 40 ms. For a screen with forty photos, that is the difference between instant and sluggish."
+      "x": "Distance is the reason. If the origin is in North Virginia and the user is in Pune, every round trip takes about 200 ms (more on a poor mobile network); from an edge in Mumbai it takes 20 to 40 ms. For a screen with forty photos, that is the difference between instant and sluggish."
     },
     {
       "t": "list",

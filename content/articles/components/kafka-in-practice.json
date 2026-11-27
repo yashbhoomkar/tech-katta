@@ -96,6 +96,10 @@
               "More subscribers"
             ]
           ]
+        },
+        {
+          "t": "p",
+          "x": "The line between queue and stream is softening. Kafka 4.0 added share groups, in which several consumers take messages from the same partition and acknowledge each one, a queue-style way to use Kafka. Classic consumer groups, one owner per partition and replay by offset, remain the model for ordered streams."
         }
       ]
     },

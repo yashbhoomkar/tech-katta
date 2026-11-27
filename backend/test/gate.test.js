@@ -66,7 +66,7 @@ test('signed out, an article is its header, its first 2 paragraphs (100-150 word
 });
 
 test('signed out, a problem is its title, difficulty and the first lines of its brief; no hint, test, reference or solution', async () => {
-  const problems = ARTICLES.filter((a) => a.practice).slice(0, 3); assert.equal(problems.length, 3);
+  const problems = ARTICLES.filter((a) => a.practice && a.access !== 'free').slice(0, 3); assert.equal(problems.length, 3);
   for (const a of problems) {
     const text = await (await get(`/v1/articles/${a.slug}`)).text(), p = JSON.parse(text);
     assert.equal(p.kind, 'problem'); assert.equal(p.locked, true); assert.equal(p.title, a.title); assert.deepEqual(p.body, []);
@@ -92,7 +92,7 @@ test('the site copy carries no article text (the worked example travels inside t
 });
 
 test('a problem\'s solution and wrong designs, and the practice problem itself, need a session', async () => {
-  const withRef = ARTICLES.find((a) => a.practice?.reference); assert.ok(withRef);
+  const withRef = ARTICLES.find((a) => a.practice?.reference && a.access !== 'free'); assert.ok(withRef);
   for (const suffix of ['/solution', '/wrong']) assert.equal((await get(`/v1/articles/${withRef.slug}${suffix}`)).status, 401, suffix);
   assert.equal((await get('/v1/articles/not-a-real-article')).status, 404);
   assert.equal((await get('/v1/practice/problems/url-shortener/editorial')).status, 401);
@@ -130,7 +130,7 @@ test('with sign-in not configured the API still serves only the public part; OPE
       for (let i = 0; i < 100; i += 1) { try { if ((await fetch(url + '/health')).ok) break; } catch {} await new Promise((r) => setTimeout(r, 50)); }
       const p = await (await fetch(`${url}/v1/articles/caching`)).json();
       assert.equal(p.locked, true, JSON.stringify(env));
-      assert.equal((await fetch(`${url}/v1/articles/${ARTICLES.find((x) => x.practice?.reference).slug}/solution`)).status, 401);
+      assert.equal((await fetch(`${url}/v1/articles/${ARTICLES.find((x) => x.practice?.reference && x.access !== 'free').slug}/solution`)).status, 401);
     } finally { off.kill('SIGTERM'); }
   }
 });
@@ -162,8 +162,47 @@ test('the sign-in flag off (SIGNIN_REQUIRED=0) serves every text without sign-in
       assert.equal(cfg.required, open ? false : undefined, JSON.stringify(env));
       const p = await (await fetch(`${url}/v1/articles/caching`)).json();
       assert.equal(!!p.locked, !open, JSON.stringify(env));
-      assert.equal((await fetch(`${url}/v1/articles/${ARTICLES.find((x) => x.practice?.reference).slug}/solution`)).status, open ? 200 : 401);
+      assert.equal((await fetch(`${url}/v1/articles/${ARTICLES.find((x) => x.practice?.reference && x.access !== 'free').slug}/solution`)).status, open ? 200 : 401);
       assert.equal((await fetch(`${url}/v1/stories`)).status, open ? 200 : 401);
     } finally { srv.kill('SIGTERM'); }
   }
+});
+
+// the free sample (access "free"): served in full to anyone; everything else as before
+const FREE = ARTICLES.filter((a) => a.access === 'free');
+test('the free sample is served in full signed out: every block, no locked flag, the whole text', async () => {
+  assert.deepEqual(FREE.map((a) => a.slug).sort(), ['discord-messages', 'how-to-answer', 'networking-essentials', 'redis', 'url-shortener']);
+  for (const a of FREE) {
+    const r = await get(`/v1/articles/${a.slug}`); assert.equal(r.status, 200, a.slug);
+    const p = await r.json();
+    assert.equal(p.locked, undefined, `${a.slug}: not locked`);
+    assert.equal(p.body.length, a.body.length, `${a.slug}: every block`);
+    assert.deepEqual(p.body.at(-1), a.body.at(-1), `${a.slug}: the last block`);
+    assert.equal(p.access, 'free');
+  }
+});
+
+test('the free problem runs signed out: its tests, hints, canvas start, and its solution and wrong designs; the engine catalogue is open, its challenges\' hints are not', async () => {
+  const a = FREE.find((x) => x.practice); assert.equal(a.slug, 'url-shortener');
+  const p = await (await get(`/v1/articles/${a.slug}`)).json();
+  assert.ok(p.practice.tests.length > 0 && p.practice.start, 'tests and starting design');
+  assert.equal(p.practice.reference, undefined, 'the reference only through /solution');
+  for (const suffix of ['/solution', '/wrong']) assert.equal((await get(`/v1/articles/${a.slug}${suffix}`)).status, 200, suffix);
+  const eng = await get('/v1/lab/engine'); assert.equal(eng.status, 200);
+  const text = await eng.text(), lab = JSON.parse(text);
+  assert.ok(lab.components?.length || Object.keys(lab.components || {}).length, 'the component catalogue'); assert.ok(lab.eval, 'the evaluator catalogue');
+  for (const c of LAB.challenges) { assert.ok(!text.includes(String(c.hint).slice(0, 40)), `${c.id}: the hint leaked`); }
+  assert.deepEqual(Object.keys(lab.challenges[0]).sort(), ['brief', 'id', 'level', 'title']);
+  // /v1/lab itself is unchanged signed out
+  const pub = JSON.parse(await (await get('/v1/lab')).text()); assert.equal(pub.components, undefined);
+});
+
+test('gated articles are still only their public part, and a gated problem\'s solution and wrong designs are still a 401', async () => {
+  for (const slug of ['caching', 'kafka-in-practice', 'ticket-booking', 'news-feed']) {
+    const p = await (await get(`/v1/articles/${slug}`)).json(); assert.equal(p.locked, true, slug);
+  }
+  for (const slug of ['ticket-booking', 'news-feed']) for (const suffix of ['/solution', '/wrong']) assert.equal((await get(`/v1/articles/${slug}${suffix}`)).status, 401, slug + suffix);
+  // nothing else about the free sample opens the rest: signed-out submissions to the server and the stories are still behind the sign-in
+  assert.equal((await get('/v1/stories')).status, 401);
+  assert.equal((await call('/v1/me/submissions', { method: 'POST', body: { slug: 'url-shortener', design: {} } })).status, 401);
 });

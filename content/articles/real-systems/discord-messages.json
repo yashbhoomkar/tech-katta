@@ -4,7 +4,7 @@
   "group": "case-studies",
   "no": "CASE // 02",
   "tag": "MESSAGE STORAGE",
-  "access": "paid",
+  "access": "free",
   "date": "9 Nov 2026",
   "title": "Discord: trillions of messages, from Cassandra to ScyllaDB",
   "dek": "Discord's message store had grown to 177 Cassandra nodes that kept paging the on-call team. The fix was a service in front of the database that merges identical reads, a move to ScyllaDB, and a copy of trillions of messages that took nine days.",
