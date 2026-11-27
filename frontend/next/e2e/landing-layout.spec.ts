@@ -18,7 +18,12 @@ async function open(page: Page, path: string, theme: string) {
   await page.route(`${API}/v1/events`, (r) => r.fulfill({ status: 204, headers: CORS }));
   await page.goto(path);
   await expect(page.locator(".tk-report")).toBeVisible({ timeout: 30_000 });
-  await page.waitForTimeout(2800);
+  // ready when the fonts are in and the Report tab has stopped moving for 1.5 s (it finds its resting height again whenever the page changes; on a slow machine that is later): a signal, not a sleep
+  await page.evaluate(() => document.fonts.ready);
+  await expect.poll(async () => {
+    const top = () => page.locator(".tk-report").evaluate((e) => Math.round(e.getBoundingClientRect().top));
+    const a = await top(); await page.waitForTimeout(1500); return (await top()) === a;
+  }, { timeout: 60_000, intervals: [0] }).toBe(true);
 }
 
 /** every top-bar element is inside the screen */
