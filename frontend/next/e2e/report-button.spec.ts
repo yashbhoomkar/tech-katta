@@ -42,8 +42,10 @@ for (const [label, path] of PAGES) {
     await reachable(page, path);
   });
 }
-// the same pages on a wide screen (the desktop project has no @phone tag)
-for (const [label, path] of PAGES) {
+// the same on a wide screen (the desktop project has no @phone tag), for one page of each kind: the phone run above has all eighteen, and every extra WebGL page
+// makes the shared CI runner's browser more likely to crash in the two slow 3D tests
+const WIDE = new Set(["/", "/home", "/problems", "/problems/url-shortener", "/problems/sandbox", "/problems/challenge/one-server", "/simulator/ind-vs-pak", "/privacy", "/no-such-page", "/health", "/analytics"]);
+for (const [label, path] of PAGES.filter(([, p]) => WIDE.has(p))) {
   test(`on ${label} the Report button is there and nothing covers it`, async ({ page }) => {
     await visit(page);
     await page.goto(path);
@@ -198,6 +200,22 @@ for (const theme of ["dark", "light"] as const) {
     expect(got[0].description).not.toContain("capture failed");
   });
 }
+
+test("the 3D renderer does not keep its drawing buffer for the screenshot: one frame is drawn again and read when it is taken", async ({ page }) => {
+  test.setTimeout(120_000);
+  await setup(page, "dark", "3d");
+  await worker(page);
+  await page.goto("/problems/sandbox");
+  await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 });
+  await page.waitForTimeout(2500);
+  const kept = await page.evaluate(() => { const c = document.querySelector(".d3 canvas") as HTMLCanvasElement, gl = (c.getContext("webgl2") ?? c.getContext("webgl")) as WebGLRenderingContext | null; return gl ? gl.getContextAttributes()?.preserveDrawingBuffer : "no context"; });
+  expect(kept, "preserveDrawingBuffer is off").toBe(false);
+  await page.locator(".tk-report").click();
+  await page.locator("[data-tab=visual]").click();
+  await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
+  const a = await analyse(page, await page.evaluate(() => { const r = (document.querySelector(".d3 canvas") as HTMLElement).getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; }));
+  expect(a?.region ?? 0, "the canvas area of the picture is not blank").toBeGreaterThan(5);
+});
 
 test.describe("a low-end phone: 320×579 at 3.375x", () => {
   test.use({ viewport: { width: 320, height: 579 }, deviceScaleFactor: 3.375, isMobile: true, hasTouch: true });
