@@ -1,7 +1,7 @@
 // The Report popup's pure parts (site3d/scripts/feedback-core.js): what the address means, the title and body, the request, the rate limit, sizes, the fallback.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { feedbackParam, feedbackWanted, cleanUrl, titleOf, categoryOf, detailsText, descriptionOf, payloadOf, canSend, fitSize, pixelRatioFor, dataUrlBytes, issueUrl, REPO, ENDPOINT } from "../scripts/feedback-core.js";
+import { feedbackParam, feedbackWanted, cleanUrl, titleOf, categoryOf, detailsText, descriptionOf, payloadOf, canSend, fitSize, pixelRatioFor, dataUrlBytes, issueUrl, REPO, ENDPOINT, MARK_COLORS, toImagePoint, lineWidthFor, textSizeFor, boxOf, arrowHead, tooSmall } from "../scripts/feedback-core.js";
 
 test("the address turns it on or off; otherwise this browser's choice; on by default", () => {
   assert.equal(feedbackParam("?feedback=on"), "on");
@@ -80,4 +80,31 @@ test("the prefilled issue holds the report, and a long one is cut for GitHub's a
   assert.ok(u.searchParams.get("body").includes("Page: https://tech.katta.cc/home"));
   assert.ok(issueUrl({ title: "t", description: "a".repeat(9000) }).length < 8000);
   assert.ok(issueUrl().startsWith("https://github.com/yashbhoomkar/tech-katta-feedback/issues/new"));
+});
+
+test("markup geometry: a touch maps into the picture's own pixels and stays inside it", () => {
+  const rect = { left: 10, top: 20, width: 100, height: 200 };
+  assert.deepEqual(toImagePoint(60, 120, rect, 640, 1280), { x: 320, y: 640 });
+  assert.deepEqual(toImagePoint(-50, 999, rect, 640, 1280), { x: 0, y: 1280 });
+});
+
+test("markup geometry: lines and labels are about 3 and 16 screen pixels wherever the picture is shown", () => {
+  assert.equal(Math.round(lineWidthFor(640, 100)), 16); // a 100 px preview of a 640 px picture: capped at w/40
+  assert.equal(lineWidthFor(640, 320), 6); // 2 picture pixels per screen pixel
+  assert.equal(lineWidthFor(640, 640), 3);
+  assert.equal(lineWidthFor(640, 6400), 3); // never thinner than 3
+  assert.equal(textSizeFor(640, 320), 32);
+  assert.equal(textSizeFor(640, 6400), 14);
+});
+
+test("markup geometry: boxes in any drag direction, arrow heads at the tip, strays are too small", () => {
+  assert.deepEqual(boxOf({ x: 50, y: 40 }, { x: 10, y: 90 }), { x: 10, y: 40, w: 40, h: 50 });
+  const [l, r] = arrowHead({ x: 0, y: 0 }, { x: 100, y: 0 }, 20);
+  assert.ok(l.x < 100 && r.x < 100 && Math.abs(l.y + r.y) < 1e-9 && Math.abs(l.y) > 1);
+  assert.equal(tooSmall({ x: 0, y: 0 }, { x: 3, y: 4 }), true);
+  assert.equal(tooSmall({ x: 0, y: 0 }, { x: 30, y: 2 }), false);
+});
+
+test("the pen colours: red first, yellow, blue", () => {
+  assert.deepEqual(Object.keys(MARK_COLORS), ["red", "yellow", "blue"]);
 });

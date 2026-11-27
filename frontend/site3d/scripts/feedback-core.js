@@ -60,3 +60,29 @@ export function issueUrl({ title = '', description = '' } = {}) {
   const body = (description + '\n\n(If you had a screenshot, add it here.)').slice(0, 1800);
   return `https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
 }
+
+// ---- the markup editor's pure geometry (feedback-markup.js draws with it)
+/** the three pen colours: red first (what people reach for), yellow and blue; the Highlight tool is always yellow and Hide always black */
+export const MARK_COLORS = { red: '#e5251b', yellow: '#f5c400', blue: '#2563eb' };
+export const HIDE_COLOR = '#111111';
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+/** a pointer position on the screen -> a point in the picture (its own pixels), kept inside it; `rect` is the canvas as shown */
+export function toImagePoint(clientX, clientY, rect, w, h) {
+  const rw = Math.max(1, rect.width), rh = Math.max(1, rect.height);
+  return { x: clamp(((clientX - rect.left) * w) / rw, 0, w), y: clamp(((clientY - rect.top) * h) / rh, 0, h) };
+}
+/** picture pixels per screen pixel for a picture of width `w` shown `shownW` wide */
+export const scaleOf = (w, shownW) => w / Math.max(1, shownW);
+/** a line about 3 screen pixels thick wherever the picture is shown (the preview is small, the full screen is large), never under 3 picture pixels or over w/40 */
+export const lineWidthFor = (w, shownW) => Math.max(3, Math.min(3 * scaleOf(w, shownW), w / 40));
+/** a label about 16 screen pixels tall */
+export const textSizeFor = (w, shownW) => Math.max(14, Math.min(16 * scaleOf(w, shownW), w / 12));
+/** the rectangle two corners make, whichever way it was dragged */
+export function boxOf(a, b) { return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) }; }
+/** the two ends of an arrow's head: `len` long, either side of the line, at its tip b */
+export function arrowHead(a, b, len, spread = Math.PI / 7) {
+  const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  return [ang - spread, ang + spread].map((t) => ({ x: b.x - len * Math.cos(t), y: b.y - len * Math.sin(t) }));
+}
+/** whether a drag from a to b is too small to be a shape (a stray touch): shorter than `min` picture pixels on both sides */
+export const tooSmall = (a, b, min = 6) => Math.abs(b.x - a.x) < min && Math.abs(b.y - a.y) < min;
