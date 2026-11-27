@@ -44,9 +44,13 @@ library, no more and no less, in our own words, figures and examples (don't name
 - A topic with several parts keeps them as `h2` parts with `h3` sections. Figures live in one module per sub-tab or,
   for a long article, per article: `frontend/src/figs/<section>/<name>.jsx` (see `fig` below).
 
-`access` is `"free"` or `"paid"`: who can read it once subscriptions start. It is data only for now (nothing is
-locked and nothing shows it). Free: only How to answer, until the owner picks more. Everything else is paid, and an article with
-`practice` (a problem) must be paid (the validator checks it). The challenges and videos are paid too.
+`access` is `"free"` or `"paid"`. A **free** article is the free sample: the API serves it in full to anyone, signed out too (and its
+solution and wrong designs, for a problem), the pre-rendered page for search engines carries its full text, and the lists show a small
+"Free" label. Everything else is **paid**: signed out, a reader gets only its public part (`backend/src/content/public.js`), and search
+engines get that part plus paywall markup. The sample (chosen 2026-11-27): How to answer, Networking essentials (Concepts), Redis
+(Components), Discord messages (Real systems) and the URL shortener, the one free problem: its canvas, tests, hints and solution open signed
+out (the validator allows at most one free problem). To change the sample, change the `access` fields and the lists in the tests
+(`backend/test/content.test.js`, `gate.test.js`, `frontend/src/seo.test.js`). The challenges and videos are paid.
 
 An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
@@ -55,7 +59,7 @@ An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` 
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code
 - `table {head, rows, label?}` (`label` names it for screen readers) ·
-- `lab {x, to, go?}` "Try it on the canvas" card: `to` is a dashboard route, `problems/<problem slug>` (an article with `practice`) or `problems/challenge/<challenge id>` (one of `lab.json`'s challenges); both are checked; `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
+- `analogy {x}` a one-line everyday comparison, shown in its own tinted box · `lab {x, to, go?}` "Try it on the canvas" card: `to` is a dashboard route, `problems/<problem slug>` (an article with `practice`) or `problems/challenge/<challenge id>` (one of `lab.json`'s challenges); both are checked; `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
 
 ## Problems: tests for an Interview Question (`practice`)
 

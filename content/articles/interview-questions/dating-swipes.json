@@ -61,7 +61,7 @@
         "Swipes: 50 lakh people × 100 is 50 crore a day. That averages about 5,800 a second. About 40% of it comes in the three evening hours, about 18,500 a second, so plan for 20,000.",
         "Each swipe is small: two user ids, a yes or no and a time, about 24 bytes. 50 crore a day is about 12 GB a day, over 4 TB a year. Split it across machines by pair from the start.",
         "Decks: 200 profile ids × 8 bytes is 1.6 KB a person. For 50 lakh daily users that's 8 GB, which fits in memory on a small Redis cluster.",
-        "Seen filter: remembering 10,000 profiles with a 1% error needs about 12 KB per person. Store it with the person and load it when building their deck.",
+        "Seen filter: remembering 10,000 profiles with a 1% error needs about 12 KB per person. Store it with the person and load it when building their deck. A person who swipes 100 times a day fills 10,000 profiles in about 100 days, so give the filter a growth plan: rebuild it larger from the pair rows (the history) when it nears full, or keep a filter per time window and drop the oldest.",
         "Matches are few by comparison: if a third of swipes are right and one right swipe in fifty completes a match, that's about 33 lakh matches a day, around 120 a second at the busiest. The push queue is never busy."
       ]
     },

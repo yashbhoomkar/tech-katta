@@ -342,14 +342,16 @@ export function validateContent({ site, examples, articles, lab, evalCat }) {
     if (!sections.has(a.section)) problems.push(`${at}: unknown section ${a.section}`);
     for (const key of ['no', 'tag', 'date', 'title', 'dek']) if (!isText(a[key])) problems.push(`${at}: needs ${key}`);
     if (a.group !== undefined && !groupIds.get(a.section)?.has(a.group)) problems.push(`${at}: unknown group ${a.group} for section ${a.section}`);
-    // who can read it once subscriptions start: a few articles are free, everything with practice (the
-    // problems), the Lab and the videos are for subscribers
+    // who can read it without signing in: `free` is the free sample (one article per Learn section and one canvas
+    // problem, in full, to everyone and to search engines); everything else is `paid`, behind the sign-in
     if (a.access !== 'free' && a.access !== 'paid') problems.push(`${at}: access must be "free" or "paid"`);
-    else if (a.access === 'free' && a.practice !== undefined) problems.push(`${at}: a problem (an article with practice) must be paid`);
     checkBlocks(a.body, at, problems, targets);
     // practice designs are checked against the Lab catalogue, so only when it is given
     if (a.practice !== undefined && lab) validatePractice(a.practice, evalCat ? { ...lab, eval: evalCat } : lab, `${at} practice`, problems);
   }
+  // the free sample has one canvas problem (the URL shortener); a second free problem would hand the whole Problems section away
+  const freeProblems = list(articles).filter((a) => a && a.access === 'free' && a.practice !== undefined);
+  if (freeProblems.length > 1) problems.push(`articles: at most one problem (an article with practice) may be free, found ${freeProblems.map((a) => a.slug).join(', ')}`);
   return problems;
 }
 

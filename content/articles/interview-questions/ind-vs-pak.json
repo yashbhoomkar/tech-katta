@@ -56,10 +56,10 @@
     {
       "t": "list",
       "items": [
-        "Viewers: 3.5 crore at the peak, in the last over at 10:18 pm (the real record, India v Pakistan, 14 October 2023, as reported by the broadcaster). At the 7 pm toss the audience jumps from about 10 lakh to 1.4 crore within 15 minutes.",
+        "Viewers: 3.5 crore at the peak, the figure reported for India v Pakistan on 14 October 2023 (a record at the time; a later World Cup match passed it). That game was played in daylight, so the match night here is a model evening, not its real timeline: the toss at 7 pm, when the audience jumps from about 10 lakh to 1.4 crore within 15 minutes, and the peak in the last over at 10:18 pm.",
         "Requests: a player fetches a 4-second segment every 4 seconds, so 3.5 crore players make 87.5 lakh requests a second. Playlists, refreshed as often, are a few hundred bytes and almost always answered at the edge.",
         "Bandwidth: at about 1.5 Mbps each (most watch on phones, at 480p or 720p), 3.5 crore players pull about 50 Tbps. That is more than one CDN carries in India; big broadcasters split it across several.",
-        "Origin: if the edges answer 99 in 100, your servers see 87,500 requests a second at the peak. At 2,500 a second per server that is 35 servers flat out; plan for 40, in two groups.",
+        "Origin: take the pessimistic planning case, that the edges answer only 99 in 100 (with request collapsing and an origin shield the real figure is far lower, thousands a second), and your servers see 87,500 requests a second at the peak. At 2,500 a second per server that is 35 servers flat out; plan for 40, in two groups.",
         "Writes: one camera feed in 6 sizes makes 6 new segments and 6 updated playlists every 4 seconds. Writes are tiny; this is the most read-heavy system in the library."
       ]
     },
@@ -181,7 +181,7 @@
   ],
   "practice": {
     "v": 2,
-    "brief": "Each test sends what 3.5 crore players ask for: a 4-second segment of the match every 4 seconds, and the playlist that lists the newest segments, following the match night (quiet all day, a jump at the 7 pm toss, a dip at the innings break and the peak in the last over at 10:18 pm, 87.5 lakh requests a second). This is live: the newest segments are the same for everyone, and each request first checks that the match is live, so a CDN can answer most of them, but every new segment comes from your servers first and their failures reach every viewer.",
+    "brief": "Each test sends what 3.5 crore players ask for: a 4-second segment of the match every 4 seconds, and the playlist that lists the newest segments, following a model evening match (quiet all day, a jump at a 7 pm toss, a dip at the innings break and the peak in the last over at 10:18 pm, 87.5 lakh requests a second; the real 14 October 2023 game was played in daylight, so only the 3.5 crore is real). This is live: the newest segments are the same for everyone, and each request first checks that the match is live, so a CDN can answer most of them, but every new segment comes from your servers first and their failures reach every viewer.",
     "entities": {
       "segments": {
         "rows": 30000000,
