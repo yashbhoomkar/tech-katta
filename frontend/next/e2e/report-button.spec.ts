@@ -305,7 +305,7 @@ test("the popup says reports are public, above Send, on both tabs", async ({ pag
     await page.locator(`[data-tab=${tab}]`).click();
     const note = page.locator(".tk-rp-public");
     await expect(note).toHaveText("Reports are public on GitHub. Don't include personal details.");
-    expect(await page.evaluate(() => { const n = document.querySelector(".tk-rp-public")!, b = document.querySelector("[data-send]")!; return !!(n.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING); }), "above Send").toBe(true);
+    expect(await page.evaluate(() => { const n = document.querySelector(".tk-rp-public"), b = document.querySelector("[data-send]"); return !!n && !!b && !!(n.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING); }), "above Send").toBe(true);
   }
 });
 
@@ -346,7 +346,7 @@ test("Visual screenshots cover typed values, the signed-in person's name and any
   const got = await worker(page);
   await page.goto("/privacy");
   await expect(page.locator(".tk-report")).toBeVisible();
-  const BOX = { field: [20, 100], private: [20, 160], name: [20, 220], other: [20, 280] } as const;
+  const BOX: Record<string, number[]> = { field: [20, 100], private: [20, 160], name: [20, 220], other: [20, 280] };
   await page.evaluate((b) => {
     const put = (tag: string, at: readonly number[], css: string, html = "") => { const e = document.createElement(tag); e.style.cssText = `position:fixed;left:${at[0]}px;top:${at[1]}px;width:300px;height:40px;z-index:5;${css}`; e.innerHTML = html; document.body.appendChild(e); return e; };
     (put("input", b.field, "background:#ff00ff;color:#fff;border:0;font-size:20px") as HTMLInputElement).value = "4111 1111 1111 1111";
@@ -359,18 +359,19 @@ test("Visual screenshots cover typed values, the signed-in person's name and any
   await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
   await sendNow(page);
   await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
-  const shot = got[0].screenshot!;
+  const shot = got[0].screenshot ?? "";
+  expect(shot.startsWith("data:image/png")).toBe(true);
   const px = await page.evaluate(async ([url, box]) => {
     const img = new Image(); img.src = url as string; await img.decode();
-    const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const g = c.getContext("2d")!; g.drawImage(img, 0, 0);
+    const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const g = c.getContext("2d") as CanvasRenderingContext2D; g.drawImage(img, 0, 0);
     const k = img.width / innerWidth, out: Record<string, string[]> = {};
-    for (const [name, at] of Object.entries(box as Record<string, number[]>)) {
+    for (const [name, at] of Object.entries(box)) {
       const seen = new Set<string>();
       for (const fx of [0.1, 0.5, 0.9]) for (const fy of [0.2, 0.5, 0.8]) { const d = g.getImageData(Math.round((at[0] + 300 * fx) * k), Math.round((at[1] + 40 * fy) * k), 1, 1).data; seen.add(`${d[0]},${d[1]},${d[2]}`); }
       out[name] = [...seen];
     }
     return out;
-  }, [shot, BOX] as const);
+  }, [shot, BOX] as [string, Record<string, number[]>]);
   // the covered places are one solid colour, the page's own colours (magenta, cyan, yellow) are nowhere in them; the control is untouched
   for (const k of ["field", "private", "name"]) expect(px[k], `${k} is covered by one solid block`).toEqual(["31,35,40"]);
   expect(px.other.every((c) => c !== "31,35,40") && px.other.includes("0,255,0"), "the rest of the page is still in the picture").toBe(true);
