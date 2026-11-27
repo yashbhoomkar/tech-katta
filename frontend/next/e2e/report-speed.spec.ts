@@ -30,10 +30,6 @@ async function run(browser: Browser, path: string) {
     await ctx.addInitScript(() => Object.defineProperty(navigator, "webdriver", { get: () => false }));
     const page = await ctx.newPage();
     await setupPage(page);
-    if (process.env.PERF_DEBUG) await page.addInitScript(() => { (window as any).__ev = []; const lg = (k: string, v: unknown) => (window as any).__ev.push([Math.round(performance.now()), k, String(v).slice(0, 60)]);
-      const T = HTMLCanvasElement.prototype.toDataURL; HTMLCanvasElement.prototype.toDataURL = function (...a: any[]) { const t = performance.now(); const r = (T as any).apply(this, a); lg("TDU-native", `${this.width}x${this.height} ${Math.round(performance.now() - t)}ms top=${Math.round(this.getBoundingClientRect().left)} len=${r.length}`); return r; };
-      const f = window.fetch; window.fetch = function (u: any, ...a: any[]) { lg("fetch", u); return (f as any).call(this, u, ...a).finally(() => lg("fetch-done", u)); };
-      const d = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src")!; Object.defineProperty(HTMLImageElement.prototype, "src", { get() { return d.get!.call(this); }, set(v) { lg("img-src", String(v).slice(0, 25)); this.addEventListener("load", () => lg("img-load", "")); return d.set!.call(this, v); } }); });
     await page.goto(`${path}?feedback=on`);
     await expect(page.locator(".tk-report")).toBeVisible({ timeout: 30_000 });
     if (path.endsWith("/sandbox")) { await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 }); await page.waitForTimeout(2000); }
@@ -54,7 +50,6 @@ async function run(browser: Browser, path: string) {
         // cold: Visual is pressed in the very task in which the popup appears (the quickest a person could possibly be)
         if (instant) { const mo = new MutationObserver(() => { const t = document.querySelector("[data-tab=visual]") as HTMLElement | null; if (t) { mo.disconnect(); w.__t0 = performance.now(); t.click(); } }); mo.observe(document.body, { childList: true, subtree: true }); }
       }, wait === 0);
-      if (process.env.PERF_DEBUG && !wait) { await cdp.send("Profiler.enable"); await cdp.send("Profiler.setSamplingInterval", { interval: 300 }); await cdp.send("Profiler.start"); }
       await page.locator(".tk-report").tap();
       if (wait) { await expect(page.locator("[data-tab=visual]")).toBeVisible(); await page.waitForTimeout(wait); await page.locator("[data-tab=visual]").tap(); }
       await page.waitForFunction(() => (window as unknown as { __t1: number }).__t1 > 0, undefined, { timeout: 60_000, polling: 50 });
@@ -62,8 +57,6 @@ async function run(browser: Browser, path: string) {
       await page.locator(".tk-rp-x").tap();
       await expect(page.locator(".tk-report-pop")).toHaveCount(0);
       await page.waitForTimeout(300);
-      if (process.env.PERF_DEBUG && !wait) { const { profile } = await cdp.send("Profiler.stop") as any; const by = new Map<string, number>(), nodes = new Map<number, any>(profile.nodes.map((n: any) => [n.id, n])); profile.samples.forEach((id: number, i: number) => { const n = nodes.get(id); const k = `${n.callFrame.functionName || "(anon)"} ${String(n.callFrame.url).split("/").pop()}:${n.callFrame.lineNumber}`; by.set(k, (by.get(k) || 0) + profile.timeDeltas[i] / 1000); }); const par = new Map<number, number>(); profile.nodes.forEach((n: any) => (n.children || []).forEach((c: number) => par.set(c, n.id))); const chain = (id: number) => { const o: string[] = []; for (let i = 0; i < 4 && id; i++) { const n = nodes.get(id); o.push(`${n.callFrame.functionName || "anon"}:${String(n.callFrame.url).split("/").pop()}:${n.callFrame.lineNumber}`); id = par.get(id) as number; } return o.join(" < "); }; const tdu: Record<string, number> = {}; profile.samples.forEach((id: number, i: number) => { if (nodes.get(id).callFrame.functionName === "toDataURL") { const k = chain(par.get(id) as number); tdu[k] = (tdu[k] || 0) + profile.timeDeltas[i] / 1000; } }); console.log("TDU", JSON.stringify(tdu)); console.log("PROFILE", [...by.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, v]) => `${Math.round(v)}ms ${k}`).join(" | ")); }
-      if (process.env.PERF_DEBUG) console.log("DEBUG", path, wait ? "warm" : "cold", Math.round(ms), JSON.stringify(await page.evaluate(() => ({ ev: (window as any).__ev.filter((e: any) => e[0] > performance.getEntriesByName("tk-report:tap").slice(-1)[0].startTime - 50), ...(window as any).__tkReportPerf, m: Object.fromEntries(performance.getEntriesByType("mark").filter((x) => x.name.startsWith("tk-report")).map((x) => [x.name.slice(10), Math.round(x.startTime)])) }))));
       return Math.round(ms);
     };
     const cold = await once(0), warm = await once(1000);
