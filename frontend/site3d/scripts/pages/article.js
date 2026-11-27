@@ -63,7 +63,7 @@ function fromPrerender(slug) {
     if (!art) return null;
     const h1 = art.querySelector('h1'), ps = [...art.querySelectorAll(':scope > p')].filter((p) => !p.querySelector('time'));
     if (!h1 || ps.length < 2) return null;
-    return { section: '', slug, title: h1.textContent, dek: ps[1].textContent, body: ps.slice(2).map((p) => ({ t: 'p', x: p.textContent })), headings: [...art.querySelectorAll(':scope > ol li')].map((li) => li.textContent), kind: 'article', locked: true };
+    return { section: '', slug, title: h1.textContent, dek: ps[1].textContent, body: ps.slice(2).map((p) => ({ t: 'p', x: p.textContent })), headings: [...art.querySelectorAll('.tk-locked ol li')].map((li) => li.textContent), kind: 'article', locked: true };
   } catch { return null; }
 }
 

@@ -1,5 +1,5 @@
 # Tech Katta: system design, explained. Search engines and AI assistants are welcome.
-# Articles show a public preview; the full text needs a (free) sign-in. Discovery files list public summaries only.
+# A free sample (five articles and one design problem) is open in full; the other articles show a public preview and the rest needs a (free) sign-in.
 User-agent: *
 Allow: /
 Disallow: /analytics/

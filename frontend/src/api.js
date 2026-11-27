@@ -18,7 +18,9 @@ export async function fetchApi(path,init={}){if(GATED.test(path)){try{return awa
 export function getJSON(path,{timeout=8000,retries=1}={}){
 if(cache.has(path))return cache.get(path);
 const p=(async()=>{let err;for(let i=0;i<=retries;i++){const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),timeout);
-try{const r=await fetchApi(path,{signal:ctl.signal});if(r.ok)return await r.json();err=Object.assign(new Error(`HTTP ${r.status}`),{status:r.status});if(r.status<500)break}
+try{const r=await fetchApi(path,{signal:ctl.signal});if(r.ok){const body=await r.json();
+// signed out, the Lab catalogue is only its public part; the design canvas of a free problem needs the engine (no article text, no challenge hints)
+if(path==="/v1/lab"&&body?.locked){const e=await fetchApi("/v1/lab/engine",{signal:ctl.signal});if(e.ok)return await e.json()}return body}err=Object.assign(new Error(`HTTP ${r.status}`),{status:r.status});if(r.status<500)break}
 catch(e){err=e}finally{clearTimeout(t)}if(i<retries)await new Promise(res=>setTimeout(res,600))}
 cache.delete(path);throw err})();
 cache.set(path,p);return p}

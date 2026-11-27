@@ -7,7 +7,7 @@
 // started marks in tk-progress-v1 ("solved:<slug>", "practice:<slug>", a challenge's stars), submissions in
 // tk-subs-v1 (the best score, ignoring copied solutions). Nothing here writes to them.
 import { createWorld } from '../world.js';
-import { listArticles, listNow, splitTitle, apiFetch } from '../articles.js';
+import { listArticles, listNow, splitTitle, apiFetch, FREE } from '../articles.js';
 import { recipeFor, PREVIEW } from '../figures.js';
 import { ensureStories } from '../articles.js';
 import { accountState } from '../account.js';
@@ -73,7 +73,7 @@ export function mount(view, _p, { reduced }) {
                   <a class="lesson${r.solved ? ' done' : ''}" href="/problems/${esc(a.slug)}" data-preview="${esc(a.slug)}">
                     <span class="st" role="img" aria-label="${r.solved ? 'Solved' : r.started ? 'Started' : 'Not started'}">${r.solved ? '<i class="tk" aria-hidden="true"></i>' : r.started ? '<i class="half" aria-hidden="true"></i>' : ''}</span>
                     <span class="l-n mono">${String(n).padStart(2, '0')}</span>
-                    <span class="l-main"><b>${esc(h)}</b><span class="muted">${esc(meta || a.dek || '')}</span></span>
+                    <span class="l-main"><b>${esc(h)}${a.access === 'free' ? FREE : ''}</b><span class="muted">${esc(meta || a.dek || '')}</span></span>
                     <span class="l-tag mono">Open the canvas →</span>
                   </a></li>`; }).join('')}
               </ol>

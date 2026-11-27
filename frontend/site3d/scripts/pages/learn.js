@@ -2,7 +2,7 @@
 // groups them. Beside the list, a live 3D preview of each article's figure rebuilds as you hover (wide screens) or as
 // a row passes the middle of the screen (phones, where the preview stays at the top).
 import { createWorld } from '../world.js';
-import { listArticles, listNow, splitTitle, SECTIONS } from '../articles.js';
+import { listArticles, listNow, splitTitle, SECTIONS, FREE } from '../articles.js';
 import { recipeFor, RECIPES, PREVIEW } from '../figures.js';
 import { ensureStories } from '../articles.js';
 import { accountState } from '../account.js';
@@ -64,7 +64,7 @@ export function mount(view, [sectionId], { reduced }) {
                   <a class="lesson${isRead ? ' done' : ''}" href="/learn/${a.section}/${a.slug}" data-preview="${a.slug}">
                     <span class="st" role="img" aria-label="${isRead ? 'Done' : 'Not started'}">${isRead ? '<i class="tk" aria-hidden="true"></i>' : ''}</span>
                     <span class="l-n mono">${String(i + 1).padStart(2, '0')}</span>
-                    <span class="l-main"><b>${esc(h)}</b><span class="muted">${esc(rest || a.dek)}</span></span>
+                    <span class="l-main"><b>${esc(h)}${a.access === 'free' ? FREE : ''}</b><span class="muted">${esc(rest || a.dek)}</span></span>
                     <span class="l-tag mono">${esc(tagText(a.tag))}</span>
                   </a></li>`; }).join('')}
               </ol>
