@@ -1,9 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import { localApi } from "./api";
+import { expectTabClear } from "./report-tab";
 
 // The landing screen and the Report tab on every phone width (owner, tech-katta-feedback#11: "The button on the right most is half visible"):
 //  - nothing in the top bar runs past the screen, at any width from 320 to 1440;
-//  - the Report tab covers no text and no control (it is 24 px wide and sits in the page margin);
+//  - the Report tab is the owner's blue side tab on the right edge (at most 20 px wide, in the page margin): it covers no control and no more than 4 px of any text (report-tab.ts);
 //  - the hint under the hero buttons is a solid pill, and nothing of the 3D scene shows through or over it;
 //  - the first-visit tour offer, when it is shown, has both buttons whole, clear of the tab bar, and they work.
 const API = "https://tech-api.katta.cc", CORS = { "access-control-allow-origin": "http://localhost:4173", "access-control-allow-credentials": "true" };
@@ -33,32 +34,8 @@ async function topBarInside(page: Page, what: string) {
   expect(r.over, `${what}: the top bar scrolls sideways`).toBeLessThanOrEqual(0);
 }
 
-/** the Report tab overlaps no text and no control */
-async function tabCoversNothing(page: Page, what: string) {
-  const hits = await page.evaluate(() => {
-    const tab = document.querySelector(".tk-report") as HTMLElement, t = tab.getBoundingClientRect(), out: string[] = [];
-    // in the tab bar: the bar floats over the page by design (the page keeps room under it); the tab must be whole inside it and overlap no other item of it
-    const bar = tab.parentElement?.classList.contains("tabbar") ? tab.parentElement : null;
-    if (bar) {
-      const bb = bar.getBoundingClientRect();
-      if (t.left < bb.left - 0.5 || t.right > bb.right + 0.5 || t.top < bb.top - 0.5 || t.bottom > bb.bottom + 0.5 || t.right > innerWidth || t.bottom > innerHeight) out.push("the Report item is not whole inside the tab bar");
-      Array.from(bar.children).forEach((c) => { if (c === tab) return; const r = c.getBoundingClientRect(); if (r.width && r.left < t.right - 0.5 && r.right > t.left + 0.5 && r.top < t.bottom && r.bottom > t.top) out.push(`it overlaps ${(c.textContent || "").trim()}`); });
-      return out;
-    }
-    const hit = (b: DOMRect) => b.width > 0 && b.height > 0 && b.left < t.right && b.right > t.left && b.top < t.bottom && b.bottom > t.top;
-    const shown = (e: Element) => { for (let n: Element | null = e; n && n !== document.body; n = n.parentElement) { const cs = getComputedStyle(n); if (cs.display === "none" || cs.visibility === "hidden" || Number(cs.opacity) < 0.05) return false; } return true; };
-    const skip = (e: Element) => !!e.closest(".tk-report, .tk-report-pop, canvas, script, style");
-    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    for (let n = w.nextNode(); n; n = w.nextNode()) {
-      const p = n.parentElement; if (!p || !n.textContent?.trim() || skip(p) || !shown(p)) continue;
-      const rg = document.createRange(); rg.selectNodeContents(n);
-      for (const b of Array.from(rg.getClientRects())) if (hit(b)) { out.push(`text "${n.textContent.trim().slice(0, 24)}" at ${Math.round(b.left)},${Math.round(b.top)}`); break; }
-    }
-    document.querySelectorAll("a, button, input, textarea, select, [role=button], [tabindex]:not([tabindex=\"-1\"])").forEach((e) => { if (skip(e) || !shown(e)) return; if (hit(e.getBoundingClientRect())) out.push(`${e.tagName.toLowerCase()} ${(e.textContent || e.getAttribute("aria-label") || "").trim().slice(0, 24)}`); });
-    return out;
-  });
-  expect(hits, `${what}: the Report tab covers`).toEqual([]);
-}
+/** the Report tab: the owner's side tab on the right edge, in the margin, covering no control (report-tab.ts) */
+const tabCoversNothing = expectTabClear;
 
 for (const [w, h] of SIZES) {
   for (const theme of ["dark", "light"]) {

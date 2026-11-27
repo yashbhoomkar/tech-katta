@@ -12,18 +12,14 @@ const loadUi = () => (uiLoad ||= import('./feedback-ui.js').then((m) => (uiMod =
 
 const CSS = `
 :root { --tk-blue: #1d4ed8; } /* white on this blue is 6.7:1; on the dark pages it is the one bright thing at the screen's edge */
-.tk-report { position: fixed; z-index: 70; left: 0; top: 38%; width: 24px; height: 96px; margin: 0; padding: 0; border: 1px solid var(--line-2, rgb(128 128 128 / .5)); border-left: 0; border-radius: 0 10px 10px 0;
+.tk-report { position: fixed; z-index: 70; right: 0; left: auto; top: min(57%, calc(100% - 200px)); width: 20px; height: 92px; margin: 0; padding: 0; border: 1px solid var(--line-2, rgb(128 128 128 / .5)); border-right: 0; border-radius: 10px 0 0 10px;
   background: var(--tk-blue, #1d4ed8); color: #fff; font: 600 12px/1 var(--font, system-ui, sans-serif); letter-spacing: .04em; writing-mode: vertical-rl; cursor: pointer; box-shadow: var(--shadow-2, 0 2px 10px rgb(0 0 0 / .18)); -webkit-tap-highlight-color: transparent; }
-/* 24 px wide: the pages keep at least 24 px clear at each side (--gut), so the tab sits in the margin and covers no text or control; only the length (not the width) of its target is made bigger */
+/* the owner chose the blue tab on the right edge (tech-katta-feedback#11, #399): at most 20 px wide, so it sits in the 16 px page margin (a few px of a text box at most), flush to the edge, at about 57 % of the height:
+   clear of the top bar and the tab bar. Its target grows up and down only, never further into the page. */
 .tk-report::before { content: ""; position: absolute; inset: -6px 0 -6px 0; }
+.tk-report { transition: top .2s; } @media (max-width: 760px) { .tk-report { width: 16px; font-size: 11px; } } /* the phones' page margin is 16 px: the tab is no wider */
+@media (prefers-reduced-motion: reduce) { .tk-report { transition: none; } }
 .tk-report:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 2px; } .tk-report[aria-busy] { opacity: .6; }
-@media (min-width: 901px) { .tk-report { left: auto; right: 0; top: auto; bottom: 96px; border: 1px solid var(--line-2, rgb(128 128 128 / .5)); border-right: 0; border-radius: 10px 0 0 10px; } }
-.tabbar.has-report { width: min(460px, calc(100vw - 20px)); box-sizing: border-box; }
-.tabbar.has-report > a, .tabbar.has-report > .tk-report { flex: 1 1 0; min-width: 0; padding-left: 4px; padding-right: 4px; }
-/* on a phone Report is the last item of the tab bar (nothing of the page is under it); on a page with no tab bar, and on a wide screen, it is the tab at the screen's edge */
-.tabbar .tk-report.in-bar { position: static; writing-mode: horizontal-tb; width: auto; height: auto; margin: 0; border: 0; border-radius: 14px; background: none; box-shadow: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px 6px; color: var(--ink-2); font: 600 12px var(--font, system-ui, sans-serif); letter-spacing: 0; }
-.tabbar .tk-report.in-bar::before { display: none; } .tabbar .tk-report.in-bar svg { stroke: var(--tk-blue, #1d4ed8); }
-@media (max-height: 500px) and (max-width: 999px) { .tabbar .tk-report.in-bar { flex-direction: row; padding: 8px 14px; } .tabbar .tk-report.in-bar span { display: none; } }
 .tk-report-pop { position: fixed; z-index: 2147483000; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: var(--scrim, rgb(0 0 0 / .45)); }
 .tk-rp-box { box-sizing: border-box; width: 100%; max-width: 480px; max-height: 92%; display: flex; flex-direction: column; border-radius: 22px 22px 0 0; background: var(--card, var(--bg, #fff)); color: var(--ink, #111); font: 15px/1.45 var(--font, system-ui, sans-serif); box-shadow: var(--shadow-3, 0 -12px 40px rgb(0 0 0 / .35)); padding-bottom: env(safe-area-inset-bottom, 0px); animation: tk-rp-rise .22s ease-out; transition: transform .2s; }
 @keyframes tk-rp-rise { from { transform: translateY(24px); opacity: .6; } }
@@ -92,15 +88,30 @@ export function startFeedback() {
     } catch (e) { held(); throw e; }
   });
   document.body.appendChild(b);
-  // where it sits: in the tab bar when the page has one showing (phones and tablets), else at the screen's edge; looked at again when the page's kind or the window changes
-  const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4.5M5 5h12.5l-2.2 4 2.2 4H5"/></svg><span>Report</span>';
-  const place = () => {
-    const bar = document.querySelector('.tabbar'), inBar = !!bar && getComputedStyle(bar).display !== 'none';
-    if (inBar && b.parentElement !== bar) { b.classList.add('in-bar'); b.innerHTML = ICON; bar.classList.add('has-report'); bar.appendChild(b); }
-    else if (!inBar && b.parentElement !== document.body) { b.classList.remove('in-bar'); b.textContent = 'Report'; b.parentElement?.classList.remove('has-report'); document.body.appendChild(b); }
+  // Its resting height is about 55 % of the screen; where a control (a button, a link, an input) reaches the right margin at that height, it rests at the nearest height where none does
+  // (anywhere between the top bar and the tab bar). Looked at again when the page, the window or the scroll changes.
+  const CONTROLS = 'a, button, input, select, textarea, [role=button], [tabindex]:not([tabindex="-1"]), .progress, .hud, .alerts'; // and the story pages' step counter and the figures' readouts, which sit at the right edge
+  const INERT = /^(ASIDE|SECTION|DIV|MAIN|ARTICLE|NAV|HEADER|FOOTER|PRE|UL|OL|TABLE|SPAN|P)$/; // a scrolling panel made focusable is not a control
+  const rest = () => {
+    const W = innerWidth, H = innerHeight, tw = b.offsetWidth || 20, th = b.offsetHeight || 92;
+    const shown = (q) => { const e = document.querySelector(q); if (!e || getComputedStyle(e).display === 'none') return null; const r = e.getBoundingClientRect(); return r.height ? r : null; };
+    const top = shown('.top'), bar = shown('.tabbar');
+    const lo = Math.max(top && top.top < 1 ? top.bottom + 8 : 0, H * 0.3), hi = Math.max(lo, (bar ? bar.top : H) - th - 8);
+    const want = Math.min(Math.max(H * 0.55, lo), hi);
+    const rects = [];
+    for (const e of document.querySelectorAll(CONTROLS)) {
+      if (e === b || e.closest('.tk-report-pop') || (INERT.test(e.tagName) && e.hasAttribute('tabindex'))) continue;
+      const r = e.getBoundingClientRect();
+      if (r.width && r.height && r.right > W - tw && r.left < W && r.bottom > lo && r.top < hi + th) rects.push(r);
+    }
+    const free = (t) => !rects.some((r) => r.bottom > t && r.top < t + th);
+    let at = want;
+    if (!free(want)) { for (let d = 8; want - d >= lo || want + d <= hi; d += 8) { if (want - d >= lo && free(want - d)) { at = want - d; break; } if (want + d <= hi && free(want + d)) { at = want + d; break; } } }
+    b.style.top = `${Math.round(at)}px`;
   };
-  place(); addEventListener('resize', place); addEventListener('popstate', place); addEventListener('orientationchange', place);
-  new MutationObserver(place).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-page'] });
+  let restT = 0; const soon = () => { clearTimeout(restT); restT = setTimeout(rest, 120); };
+  rest(); addEventListener('resize', soon); addEventListener('scroll', soon, { passive: true }); addEventListener('popstate', soon); addEventListener('orientationchange', soon);
+  new MutationObserver(soon).observe(document.body, { childList: true, subtree: true });
   // when the browser is idle: load the popup and the screenshot code, and work out the fonts once, so pressing Report has nothing left to fetch
   const warm = () => {
     // the mark 'tk-report:ready' says all of it is loaded and the fonts are worked out (the speed tests wait for it)
