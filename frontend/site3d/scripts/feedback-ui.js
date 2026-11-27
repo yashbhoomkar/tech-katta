@@ -101,18 +101,15 @@ export function openReport(opener) {
   };
   const status = () => { const s = body.querySelector('[data-status]'); if (s) s.textContent = state.msg; };
 
-  // ---- the screenshot: the popup and the button are hidden while the page is drawn
+  // ---- the screenshot: taken in the background from the moment the popup opens (the clone leaves out the popup and the button), so it is usually ready when the Visual tab is
   let token = 0;
-  async function capture() {
-    const mine = ++token; state.capturing = true; state.shot = null; ed = null; state.shotErr = ''; state.msg = ''; paint();
-    root.style.visibility = 'hidden'; const btn = document.querySelector('.tk-report'); if (btn) btn.style.visibility = 'hidden';
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // the page repaints without the popup
-    try {
-      const { capturePage } = await import('./feedback-capture.js');
-      const shot = await capturePage({ hide: [root, ...(btn ? [btn] : [])] });
-      if (mine === token) state.shot = shot;
-    } catch (e) { if (mine === token) state.shotErr = String(e?.message || e).slice(0, 160); }
-    finally { root.style.visibility = ''; if (btn) btn.style.visibility = ''; if (mine === token) { state.capturing = false; if (open) paint(); } }
+  function capture() {
+    const mine = ++token; state.capturing = true; state.shot = null; ed = null; state.shotErr = ''; state.msg = '';
+    if (open && state.tab === 'visual') paint();
+    import('./feedback-capture.js').then(({ capturePage }) => capturePage()).then(
+      (shot) => { if (mine === token) state.shot = shot; },
+      (e) => { if (mine === token) state.shotErr = String(e?.message || e).slice(0, 160); },
+    ).finally(() => { if (mine === token) { state.capturing = false; if (open && state.tab === 'visual') paint(); } });
   }
 
   // ---- sending
@@ -123,11 +120,11 @@ export function openReport(opener) {
     if (!rl.ok) { state.msg = `Please wait ${rl.wait} s before sending another report.`; status(); return; }
     const visual = state.tab === 'visual', text = visual ? state.note : state.quick;
     if (!visual && !text.trim()) return;
+    state.busy = true; let shotUrl = null, shotErr = '';
+    if (visual && state.shot) { try { shotUrl = (await (ed || (ed = createEditor(state.shot))).flatten()).dataUrl; } catch (e) { shotErr = String(e?.message || 'the picture could not be made'); } }
     const meta = pageMeta(), title = titleOf(text, meta.url), category = visual ? 'bug' : categoryOf(state.chip);
-    const description = descriptionOf({ text, meta, captureError: visual && !state.shot ? state.shotErr || 'unknown' : '' });
+    const description = descriptionOf({ text, meta, captureError: visual && !shotUrl ? shotErr || state.shotErr || 'unknown' : '' });
     const report = { title, description };
-    let shotUrl = null;
-    if (visual && state.shot) { shotUrl = state.shot.dataUrl; if (ed?.hasMarks()) { try { shotUrl = (await ed.flatten()).dataUrl; } catch { /* the plain picture goes */ } } }
     state.busy = true; state.msg = 'Sending…'; paint();
     try {
       const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 20_000);
@@ -149,7 +146,7 @@ export function openReport(opener) {
   root.querySelector('.tk-rp-tabs').addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { const other = root.querySelector(`[data-tab="${state.tab === 'quick' ? 'visual' : 'quick'}"]`); other.click(); other.focus(); } });
 
   open = root; document.body.appendChild(root); paint();
-  if (state.tab === 'visual') capture(); else body.querySelector('[data-msg]')?.focus({ preventScroll: true });
+  capture(); if (state.tab !== 'visual') body.querySelector('[data-msg]')?.focus({ preventScroll: true });
 }
 
 /** the repository's issue page for a person who would rather look (not linked from the popup; used by tests) */

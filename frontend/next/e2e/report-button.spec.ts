@@ -212,7 +212,7 @@ test("the 3D renderer does not keep its drawing buffer for the screenshot: one f
   expect(kept, "preserveDrawingBuffer is off").toBe(false);
   await page.locator(".tk-report").click();
   await page.locator("[data-tab=visual]").click();
-  await expect(page.locator(".tk-rp-shot img")).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
   const a = await analyse(page, await page.evaluate(() => { const r = (document.querySelector(".d3 canvas") as HTMLElement).getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; }));
   expect(a?.region ?? 0, "the canvas area of the picture is not blank").toBeGreaterThan(5);
 });

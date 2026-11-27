@@ -34,7 +34,7 @@ export function drawMark(g, m) {
 
 const btn = (cls, html, label, attrs = '') => `<button type="button" class="${cls}" aria-label="${label}" ${attrs}>${html}</button>`;
 
-/** { el, flatten(), hasMarks(), isFull(), exitFull() } for a screenshot { dataUrl, width, height } */
+/** { el, flatten(), hasMarks(), isFull(), exitFull() } for a screenshot { canvas, width, height } (drawn as it is: no PNG is made until it is sent) */
 export function createEditor(shot) {
   const marks = []; let act = null, text = null, full = false, tool = prefs.tool, color = prefs.color;
   const el = document.createElement('div'); el.className = 'tk-mk';
@@ -47,10 +47,8 @@ export function createEditor(shot) {
       <button type="button" class="tk-mk-t" data-undo aria-label="Undo"><i aria-hidden="true">↶</i><small>Undo</small></button>
       <button type="button" class="tk-mk-t" data-clear aria-label="Clear all marks"><i aria-hidden="true">✕</i><small>Clear</small></button></div>`;
   const stage = el.querySelector('.tk-mk-stage'), cv = el.querySelector('canvas'), g = cv.getContext('2d');
-  const img = new Image(); const ready = new Promise((r) => { img.onload = r; img.onerror = r; }); img.src = shot.dataUrl;
-
-  const redraw = () => { g.clearRect(0, 0, cv.width, cv.height); if (img.complete && img.naturalWidth) g.drawImage(img, 0, 0, cv.width, cv.height); marks.forEach((m) => drawMark(g, m)); if (act) drawMark(g, act.m); };
-  ready.then(redraw);
+  const redraw = () => { g.clearRect(0, 0, cv.width, cv.height); g.drawImage(shot.canvas, 0, 0, cv.width, cv.height); marks.forEach((m) => drawMark(g, m)); if (act) drawMark(g, act.m); };
+  redraw();
   const sync = () => {
     el.querySelectorAll('[data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === tool)));
     el.querySelectorAll('[data-color]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.color === color)));
@@ -112,7 +110,7 @@ export function createEditor(shot) {
 
   /** the picture with its marks, as a PNG data URL under the size limit (drawn smaller when it is over) */
   async function flatten() {
-    await ready; if (text) text.inp.blur(); act = null; redraw();
+    if (text) text.inp.blur(); act = null; redraw();
     let url = cv.toDataURL('image/png'), w = cv.width, h = cv.height, src = cv;
     while (dataUrlBytes(url) > MAX_BYTES && w > 320) {
       w = Math.round(w * 0.8); h = Math.round(h * 0.8);

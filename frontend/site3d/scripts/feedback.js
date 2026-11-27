@@ -75,4 +75,8 @@ export function startFeedback() {
     try { (await import('./feedback-ui.js')).openReport(b); } finally { b.removeAttribute('aria-busy'); }
   });
   document.body.appendChild(b);
+  // at idle after the page has loaded: the popup, the picture library and the fonts' CSS are fetched and made once, so a press of Report opens at once and the screenshot is quick
+  const idle = window.requestIdleCallback ? (f) => window.requestIdleCallback(f, { timeout: 4000 }) : (f) => setTimeout(f, 1500);
+  const warm = () => { import('./feedback-ui.js').catch(() => {}); import('./feedback-capture.js').then((m) => m.warmCapture()).catch(() => {}); };
+  if (document.readyState === 'complete') idle(warm); else addEventListener('load', () => idle(warm), { once: true });
 }
