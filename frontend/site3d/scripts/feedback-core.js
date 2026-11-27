@@ -52,6 +52,76 @@ export function fitSize(w, h, max = MAX_SIDE) {
 }
 /** the capture's pixel ratio: the screen's, at most 2 (a phone at 3.4x would draw an image it cannot hold) */
 export const pixelRatioFor = (dpr) => Math.max(1, Math.min(Number(dpr) || 1, 2));
+/** the CSS properties that change how a page looks, for the screenshot. html-to-image copies every computed property (563 in Chrome) onto every element, which
+ *  made the picture's SVG megabytes long; these ~170 draw the same page. (Nothing that only matters for interaction or motion: cursor, transition, animation.) */
+export const STYLE_PROPS = [
+  'display', 'position', 'top', 'right', 'bottom', 'left', 'z-index', 'float', 'clear', 'box-sizing', 'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
+  'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+  'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width', 'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
+  'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color', 'border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius',
+  'border-image-source', 'outline-width', 'outline-style', 'outline-color', 'outline-offset', 'overflow-x', 'overflow-y', 'opacity', 'visibility', 'transform', 'transform-origin', 'translate', 'rotate', 'scale',
+  'filter', 'backdrop-filter', '-webkit-backdrop-filter', 'mix-blend-mode', 'isolation', 'clip-path', 'clip', 'mask-image', '-webkit-mask-image', 'mask-size', 'mask-position', 'mask-repeat', '-webkit-mask-size', '-webkit-mask-position', '-webkit-mask-repeat',
+  'background-color', 'background-image', 'background-size', 'background-position-x', 'background-position-y', 'background-repeat', 'background-clip', 'background-origin', 'background-blend-mode', '-webkit-background-clip',
+  'box-shadow', 'text-shadow', 'color', 'color-scheme', 'accent-color', 'caret-color', 'font-family', 'font-size', 'font-weight', 'font-style', 'font-stretch', 'font-variant-caps', 'font-variant-numeric', 'font-variant-ligatures', 'font-feature-settings', 'font-variation-settings', 'font-kerning',
+  'line-height', 'letter-spacing', 'word-spacing', 'text-align', 'text-align-last', 'text-decoration-line', 'text-decoration-style', 'text-decoration-color', 'text-decoration-thickness', 'text-underline-offset', 'text-transform', 'text-indent', 'text-overflow',
+  'white-space', 'word-break', 'overflow-wrap', 'hyphens', 'tab-size', 'vertical-align', 'direction', 'writing-mode', 'text-orientation', 'unicode-bidi', '-webkit-text-fill-color', '-webkit-text-stroke-width', '-webkit-text-stroke-color', '-webkit-line-clamp', '-webkit-box-orient', 'line-break',
+  'flex-direction', 'flex-wrap', 'flex-grow', 'flex-shrink', 'flex-basis', 'order', 'justify-content', 'justify-items', 'justify-self', 'align-items', 'align-content', 'align-self', 'row-gap', 'column-gap',
+  'grid-template-columns', 'grid-template-rows', 'grid-template-areas', 'grid-auto-flow', 'grid-auto-columns', 'grid-auto-rows', 'grid-column-start', 'grid-column-end', 'grid-row-start', 'grid-row-end', 'aspect-ratio',
+  'object-fit', 'object-position', 'list-style-type', 'list-style-position', 'list-style-image', 'table-layout', 'border-collapse', 'border-spacing', 'caption-side', 'empty-cells', 'appearance',
+  'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'stop-color', 'stop-opacity', 'vector-effect', 'content',
+];
+
+/** CSS properties a child takes from its parent when it does not say; one that equals the parent's value need not be written on the clone (it inherits the same) */
+export const INHERITED = new Set(['color', 'color-scheme', 'accent-color', 'caret-color', 'font-family', 'font-size', 'font-weight', 'font-style', 'font-stretch', 'font-variant-caps', 'font-variant-numeric', 'font-variant-ligatures',
+  'font-feature-settings', 'font-variation-settings', 'font-kerning', 'line-height', 'letter-spacing', 'word-spacing', 'text-align', 'text-align-last', 'text-transform', 'text-indent', 'text-shadow', 'white-space', 'word-break', 'overflow-wrap', 'hyphens',
+  'tab-size', 'direction', 'writing-mode', 'text-orientation', 'visibility', 'list-style-type', 'list-style-position', 'list-style-image', 'border-collapse', 'border-spacing', 'caption-side', 'empty-cells', '-webkit-text-fill-color',
+  '-webkit-text-stroke-width', '-webkit-text-stroke-color', 'line-break', 'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'fill-rule']);
+/** a colour property that is only the text colour (currentcolor) does not need writing; and a colour of something that is not drawn does not either */
+export const COLOR_OF = { 'border-top-color': 'border-top-style', 'border-right-color': 'border-right-style', 'border-bottom-color': 'border-bottom-style', 'border-left-color': 'border-left-style', 'outline-color': 'outline-style',
+  'text-decoration-color': 'text-decoration-line', 'text-decoration-style': 'text-decoration-line', 'text-decoration-thickness': 'text-decoration-line', 'text-underline-offset': 'text-decoration-line', 'transform-origin': 'transform' };
+/** true when a declaration can be left off the clone: `value` is the element's computed value, `def` what an unstyled element of its tag has, `parent` what its parent has (or undefined), `get` reads another property of the element */
+export function canSkipStyle(prop, value, def, parent, get) {
+  if (prop === 'display' || prop === 'content') return false;
+  if (value === def) return true;
+  if (INHERITED.has(prop) && parent !== undefined && value === parent) return true;
+  const gate = COLOR_OF[prop];
+  if (gate) { const g = get(gate); if (g === 'none') return true; if (prop.endsWith('-color') && value === get('color')) return true; }
+  return false;
+}
+/** the @font-face blocks inside a font CSS text (the embedded CSS html-to-image makes), one string each */
+export const fontBlocks = (css = '') => css.match(/@font-face\s*\{[^}]*\}/g) || [];
+const unq = (v = '') => v.trim().replace(/^["']|["']$/g, '').toLowerCase();
+/** the code-point ranges of a unicode-range value ("U+0000-00FF, U+0131, U+4??"), as [lo, hi] pairs; none means every character */
+export function unicodeRanges(v = '') {
+  const out = []; v.replace(/u\+([0-9a-f?]+)(?:-([0-9a-f]+))?/gi, (_, a, b) => { out.push(a.includes('?') ? [parseInt(a.replace(/\?/g, '0'), 16), parseInt(a.replace(/\?/g, 'f'), 16)] : [parseInt(a, 16), parseInt(b || a, 16)]); return ''; });
+  return out;
+}
+/** which @font-face blocks a screenshot needs: those of a family and a weight that are on the screen (when a weight has no face of its own, the nearest one),
+ *  that have a character that is on the screen in their unicode-range. `used` is { families, weights, chars } (Sets of lower-case family names, numbers and
+ *  characters). A block that cannot be read is kept. */
+export function pickFontFaces(blocks, used) {
+  const cps = Array.from(used.chars || [], (c) => c.codePointAt(0)), wts = Array.from(used.weights || []);
+  const info = blocks.map((b) => {
+    const fam = /font-family:\s*([^;]+);/i.exec(b)?.[1], w = /font-weight:\s*([^;]+);/i.exec(b)?.[1]?.trim().toLowerCase();
+    const n = (w || '400').split(/\s+/).map((x) => (x === 'normal' ? 400 : x === 'bold' ? 700 : Number(x))).filter((x) => x > 0);
+    return { b, fam: fam ? unq(fam) : '', lo: n.length ? Math.min(...n) : 400, hi: n.length ? Math.max(...n) : 400 };
+  });
+  const want = new Set(); // "family|lo|hi" of the faces the screen's weights land on
+  for (const w of wts.length ? wts : [400]) {
+    const byFam = new Map(); info.forEach((i) => { if (i.fam) (byFam.get(i.fam) || byFam.set(i.fam, []).get(i.fam)).push(i); });
+    byFam.forEach((list, fam) => {
+      const dist = (i) => (w < i.lo ? i.lo - w : w > i.hi ? w - i.hi : 0), best = Math.min(...list.map(dist));
+      list.forEach((i) => { if (dist(i) === best) want.add(`${fam}|${i.lo}|${i.hi}`); });
+    });
+  }
+  return info.filter((i) => {
+    if (!i.fam) return true;
+    if (used.families && !used.families.has(i.fam)) return false;
+    if (!want.has(`${i.fam}|${i.lo}|${i.hi}`)) return false;
+    const r = unicodeRanges(/unicode-range:\s*([^;]+);/i.exec(i.b)?.[1] || '');
+    return !r.length || !cps.length || cps.some((c) => r.some(([a, z]) => c >= a && c <= z));
+  }).map((i) => i.b);
+}
 /** bytes of a data: URL's payload */
 export const dataUrlBytes = (u = '') => Math.floor(((u.split(',')[1] || '').length * 3) / 4);
 

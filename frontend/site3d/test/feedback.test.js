@@ -1,7 +1,7 @@
 // The Report popup's pure parts (site3d/scripts/feedback-core.js): what the address means, the title and body, the request, the rate limit, sizes, the fallback.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { feedbackParam, feedbackWanted, cleanUrl, titleOf, categoryOf, detailsText, descriptionOf, payloadOf, canSend, fitSize, pixelRatioFor, dataUrlBytes, issueUrl, REPO, ENDPOINT, MARK_COLORS, toImagePoint, lineWidthFor, textSizeFor, boxOf, arrowHead, tooSmall } from "../scripts/feedback-core.js";
+import { feedbackParam, feedbackWanted, cleanUrl, titleOf, categoryOf, detailsText, descriptionOf, payloadOf, canSend, fitSize, pixelRatioFor, dataUrlBytes, fontBlocks, unicodeRanges, pickFontFaces, canSkipStyle, STYLE_PROPS, issueUrl, REPO, ENDPOINT, MARK_COLORS, toImagePoint, lineWidthFor, textSizeFor, boxOf, arrowHead, tooSmall } from "../scripts/feedback-core.js";
 
 test("the address turns it on or off; otherwise this browser's choice; on by default", () => {
   assert.equal(feedbackParam("?feedback=on"), "on");
@@ -107,4 +107,41 @@ test("markup geometry: boxes in any drag direction, arrow heads at the tip, stra
 
 test("the pen colours: red first, yellow, blue", () => {
   assert.deepEqual(Object.keys(MARK_COLORS), ["red", "yellow", "blue"]);
+});
+
+test("a screenshot embeds only the font files its screen uses: the family, the weight and a character in the unicode-range", () => {
+  const face = (fam, w, range) => `@font-face { font-family: "${fam}"; font-style: normal; font-weight: ${w}; src: url(data:font/woff2;base64,AAAA) format("woff2"); unicode-range: ${range}; }`;
+  const css = [face("Instrument Sans", "400", "U+0000-00FF, U+0131"), face("Instrument Sans", "600", "U+0000-00FF, U+0131"), face("Instrument Sans", "400", "U+0400-045F, U+0490-0491"),
+    face("Instrument Sans", "400", "U+0102-0103, U+1EA0-1EF9"), face("Geist Mono", "100 900", "U+0000-00FF"), face("Other", "400", "U+0000-00FF")].join("\n");
+  const blocks = fontBlocks(css); assert.equal(blocks.length, 6);
+  const used = { families: new Set(["instrument sans", "geist mono"]), weights: new Set([400, 600]), chars: new Set(["a", "Z", "é", "5"]) };
+  const got = pickFontFaces(blocks, used);
+  assert.equal(got.length, 3); // Latin 400, Latin 600 and the variable mono; not Cyrillic, not Vietnamese, not the family that is not used
+  assert.ok(got.every((b) => !b.includes("Other") && !b.includes("0400")));
+  const cyr = pickFontFaces(blocks, { ...used, chars: new Set(["д"]) }); // Cyrillic text: only the Cyrillic block (weight 400)
+  assert.equal(cyr.length, 1); assert.ok(cyr[0].includes("U+0400"));
+  assert.deepEqual(unicodeRanges("U+0000-00FF, U+0131, U+4??"), [[0, 255], [0x131, 0x131], [0x400, 0x4ff]]);
+  // a weight with no face of its own lands on the nearest: 700 on a family that has 400 and 600 uses 600
+  const near = pickFontFaces(blocks, { families: new Set(["instrument sans"]), weights: new Set([700]), chars: new Set(["a"]) });
+  assert.equal(near.length, 1); assert.ok(near[0].includes("font-weight: 600"));
+});
+
+test("the vendored html-to-image keeps its one local change: a canvas becomes an <img> at once, without waiting a frame", async () => {
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(new URL("../scripts/vendor/html-to-image.esm.js", import.meta.url), "utf8");
+  assert.ok(src.includes('async function lt(t){let e=t.toDataURL();if(e==="data:,")return t.cloneNode(!1);let n=new Image;return n.src=e,n}'));
+});
+
+test("a declaration is left off the screenshot's clone only when the clone gets the same without it", () => {
+  const get = (m) => (k) => m[k];
+  assert.equal(canSkipStyle("display", "block", "block", undefined, get({})), false, "display is always written");
+  assert.equal(canSkipStyle("opacity", "1", "1", undefined, get({})), true, "the element's default");
+  assert.equal(canSkipStyle("opacity", "0.5", "1", undefined, get({})), false);
+  assert.equal(canSkipStyle("color", "rgb(1, 2, 3)", "rgb(0, 0, 0)", "rgb(1, 2, 3)", get({})), true, "inherited, and the parent has it");
+  assert.equal(canSkipStyle("color", "rgb(1, 2, 3)", "rgb(0, 0, 0)", "rgb(9, 9, 9)", get({})), false, "inherited, and the parent has another");
+  assert.equal(canSkipStyle("margin-top", "4px", "8px", "4px", get({})), false, "not inherited: the parent's value does not count");
+  assert.equal(canSkipStyle("border-top-color", "rgb(5, 5, 5)", "rgb(0, 0, 0)", undefined, get({ "border-top-style": "none" })), true, "no border drawn");
+  assert.equal(canSkipStyle("border-top-color", "rgb(5, 5, 5)", "rgb(0, 0, 0)", undefined, get({ "border-top-style": "solid", color: "rgb(5, 5, 5)" })), true, "currentcolor");
+  assert.equal(canSkipStyle("border-top-color", "rgb(5, 5, 5)", "rgb(0, 0, 0)", undefined, get({ "border-top-style": "solid", color: "rgb(1, 1, 1)" })), false);
+  assert.ok(STYLE_PROPS.includes("background-color") && STYLE_PROPS.length < 260 && new Set(STYLE_PROPS).size === STYLE_PROPS.length);
 });

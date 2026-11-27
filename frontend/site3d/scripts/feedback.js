@@ -3,8 +3,12 @@
 // the GitHub issue in yashbhoomkar/tech-katta-feedback. BugDrop's own script is no longer loaded. On for everyone by default (owner, 2026-11-26);
 // ?feedback=off hides the button in this browser, ?feedback=on shows it again. Not drawn in automated browsers (navigator.webdriver) unless a test says it is not one.
 import { feedbackParam, feedbackWanted } from './feedback-core.js';
+import { hold, grab } from './feedback-hold.js';
+import { pixelRatioFor } from './feedback-core.js';
 export { feedbackParam, feedbackWanted };
 const KEY = 'tk-feedback';
+let uiMod = null, uiLoad = null, capMod = null; // feedback-ui.js once loaded, and the promise of it while it loads
+const loadUi = () => (uiLoad ||= import('./feedback-ui.js').then((m) => (uiMod = m), (e) => { uiLoad = null; throw e; }));
 
 const CSS = `
 :root { --tk-blue: #1d4ed8; } /* white on this blue is 6.7:1; on the dark pages it is the one bright thing at the screen's edge */
@@ -71,8 +75,21 @@ export function startFeedback() {
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
   const b = document.createElement('button'); b.type = 'button'; b.className = 'tk-report'; b.textContent = 'Report'; b.setAttribute('aria-label', 'Report a problem');
   b.addEventListener('click', async () => {
-    b.setAttribute('aria-busy', 'true');
-    try { (await import('./feedback-ui.js')).openReport(b); } finally { b.removeAttribute('aria-busy'); }
+    performance.mark('tk-report:tap');
+    const geometry = { w: innerWidth, h: innerHeight, x: scrollX, y: scrollY }; // what the person is looking at
+    const grabbed = grab(pixelRatioFor(devicePixelRatio)); // first: the 3D canvases are copied, while they are fresh
+    const held = hold(); // then the page's 3D stops drawing, so what follows is not stuck behind its frames
+    try {
+      // the popup's code is normally loaded already (when the browser was idle): then the popup opens in this very task, with nothing to wait for
+      (uiMod || await loadUi()).openReport(b, held, capMod, { geometry, grabbed });
+    } catch (e) { held(); throw e; }
   });
   document.body.appendChild(b);
+  // when the browser is idle: load the popup and the screenshot code, and work out the fonts once, so pressing Report has nothing left to fetch
+  const warm = () => {
+    // the mark 'tk-report:ready' says all of it is loaded and the fonts are worked out (the speed tests wait for it)
+    Promise.all([loadUi(), import('./feedback-capture.js').then((m) => { capMod = m; return m.warmFonts(); })]).then(() => performance.mark('tk-report:ready')).catch(() => {});
+  };
+  const go = () => (window.requestIdleCallback ? requestIdleCallback(warm, { timeout: 2000 }) : setTimeout(warm, 1500));
+  if (document.readyState === 'complete') go(); else addEventListener('load', go, { once: true });
 }

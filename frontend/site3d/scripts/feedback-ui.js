@@ -1,9 +1,10 @@
 // The Report popup: a sheet on phones, a small dialog on wide screens, drawn by the site (not by BugDrop). Two tabs: Quick feedback (words only) and
-// Visual feedback (the page is photographed when the tab opens, with a note). Sending is a POST to BugDrop's hosted worker, which makes the GitHub issue in
+// Visual feedback (the page is photographed from the moment the Report button is pressed, so the picture is usually ready when the tab opens; with a note). Sending is a POST to BugDrop's hosted worker, which makes the GitHub issue in
 // yashbhoomkar/tech-katta-feedback. If that cannot be done (blocked, offline, refused) the popup offers a prefilled GitHub issue and Copy details.
 // Loaded the first time the Report button is pressed (feedback.js). The page's own sheets stay where they are: this one sits above them.
 import { createEditor } from './feedback-markup.js';
-import { ENDPOINT, REPO, GAP_MS, titleOf, categoryOf, descriptionOf, detailsText, payloadOf, canSend, cleanUrl, issueUrl } from './feedback-core.js';
+import { hold, grab } from './feedback-hold.js';
+import { pixelRatioFor, ENDPOINT, REPO, GAP_MS, titleOf, categoryOf, descriptionOf, detailsText, payloadOf, canSend, cleanUrl, issueUrl } from './feedback-core.js';
 
 const TAB_KEY = 'tk-report-tab', LAST_KEY = 'tk-report-at';
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch { /* blocked */ } } };
@@ -18,8 +19,10 @@ export function pageMeta() {
 }
 
 let open = null;
-export function openReport(opener) {
-  if (open) return;
+/** `held` (from feedback.js): lets the page's 3D go on again; the first capture's end calls it. `capMod`: feedback-capture.js, if it is loaded already (then nothing is waited for). `first`: { geometry, grabbed } read at the press, for the first capture. */
+export function openReport(opener, held, capMod, first) {
+  performance.mark('tk-report:open-start');
+  if (open) { held?.(); return; } // already up: nothing to hold
   const prevFocus = document.activeElement;
   const root = document.createElement('div'); root.className = 'tk-report-pop';
   root.innerHTML = `<div class="tk-rp-box" role="dialog" aria-modal="true" aria-labelledby="tk-rp-t">
@@ -34,7 +37,7 @@ export function openReport(opener) {
   // ---- closing: ✕, Esc, a tap outside, a swipe down (phones), Back. A history entry is taken while the popup is open; the page's own sheets ignore a Back that only pops it
   let popped = false;
   const close = () => {
-    if (!open) return; open = null; removeEventListener('keydown', key); removeEventListener('popstate', pop); root.remove();
+    if (!open) return; open = null; token++; state.shot = null; ed = null; removeEventListener('keydown', key); removeEventListener('popstate', pop); root.remove();
     if (!popped && history.state?.tkReport) { try { history.back(); } catch { /* none */ } }
     try { (opener || prevFocus)?.focus?.({ preventScroll: true }); } catch { /* gone */ }
   };
@@ -93,7 +96,7 @@ export function openReport(opener) {
       <p class="tk-rp-small">The picture shows this page as it is now. Draw on it to point at the problem, and use Hide to cover anything private. It goes to a public GitHub page.</p>
       <div class="tk-rp-foot"><p class="tk-rp-note" role="status" aria-live="polite" data-status></p>
       <div class="tk-rp-two"><button type="button" class="tk-rp-act" data-retake ${state.capturing ? 'disabled' : ''}>Retake</button><button type="button" class="tk-rp-act main" data-send ${state.capturing || state.busy ? 'disabled' : ''}>Send</button></div></div>`;
-    if (state.shot) { if (!ed) ed = createEditor(state.shot); body.querySelector('[data-editor]').replaceWith(ed.el); }
+    if (state.shot) { if (!ed) ed = createEditor(state.shot); body.querySelector('[data-editor]').replaceWith(ed.el); performance.mark('tk-report:preview'); }
     const note = body.querySelector('[data-note]'); note.value = state.note; note.addEventListener('input', () => { state.note = note.value; });
     body.querySelector('[data-retake]').addEventListener('click', () => capture());
     body.querySelector('[data-send]').addEventListener('click', () => send());
@@ -101,18 +104,21 @@ export function openReport(opener) {
   };
   const status = () => { const s = body.querySelector('[data-status]'); if (s) s.textContent = state.msg; };
 
-  // ---- the screenshot: the popup and the button are hidden while the page is drawn
+  // ---- the screenshot: started as the popup opens (the capture leaves the popup and the button out itself); kept for this popup only, dropped when it closes.
+  // Quick feedback never waits for it, and Visual shows it at once if it is ready, else a spinner until it is.
   let token = 0;
+  let firstHold = held, firstRead = first; // the hold taken when Report was pressed belongs to the first capture
   async function capture() {
-    const mine = ++token; state.capturing = true; state.shot = null; ed = null; state.shotErr = ''; state.msg = ''; paint();
-    root.style.visibility = 'hidden'; const btn = document.querySelector('.tk-report'); if (btn) btn.style.visibility = 'hidden';
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // the page repaints without the popup
+    const mine = ++token; state.capturing = true; state.shot = null; ed = null; state.shotErr = ''; state.msg = ''; if (state.tab === 'visual') paint();
+    const { geometry, grabbed } = firstRead || { geometry: { w: innerWidth, h: innerHeight, x: scrollX, y: scrollY }, grabbed: grab(pixelRatioFor(devicePixelRatio)) }; firstRead = null; // what the person was looking at when they asked
+    let release = firstHold || hold(); firstHold = null; // the page's 3D stops drawing for as long as the capture takes: the capture has the CPU
     try {
-      const { capturePage } = await import('./feedback-capture.js');
-      const shot = await capturePage({ hide: [root, ...(btn ? [btn] : [])] });
-      if (mine === token) state.shot = shot;
+      const cap = capMod || await import('./feedback-capture.js'); performance.mark('tk-report:capture-start');
+      await new Promise((r) => { const t = setTimeout(r, 120); requestAnimationFrame(() => setTimeout(() => { clearTimeout(t); r(); }, 0)); }); // the popup's first frame is drawn first (or, on a page too busy to draw one, 120 ms pass); then the page is read
+      const shot = await cap.capturePage({ geometry, grabbed, alive: () => mine === token && open === root });
+      performance.mark('tk-report:capture-end'); if (mine === token) state.shot = shot;
     } catch (e) { if (mine === token) state.shotErr = String(e?.message || e).slice(0, 160); }
-    finally { root.style.visibility = ''; if (btn) btn.style.visibility = ''; if (mine === token) { state.capturing = false; if (open) paint(); } }
+    finally { release(); if (mine === token) { state.capturing = false; if (open && state.tab === 'visual' && state.view === 'form') paint(); } }
   }
 
   // ---- sending
@@ -126,9 +132,11 @@ export function openReport(opener) {
     const meta = pageMeta(), title = titleOf(text, meta.url), category = visual ? 'bug' : categoryOf(state.chip);
     const description = descriptionOf({ text, meta, captureError: visual && !state.shot ? state.shotErr || 'unknown' : '' });
     const report = { title, description };
-    let shotUrl = null;
-    if (visual && state.shot) { shotUrl = state.shot.dataUrl; if (ed?.hasMarks()) { try { shotUrl = (await ed.flatten()).dataUrl; } catch { /* the plain picture goes */ } } }
     state.busy = true; state.msg = 'Sending…'; paint();
+    let shotUrl = null;
+    if (visual && state.shot) {
+      try { shotUrl = ed?.hasMarks() ? (await ed.flatten()).dataUrl : (await (await import('./feedback-capture.js')).encodePng(state.shot)).dataUrl; } catch { /* no picture goes; the words do */ }
+    }
     try {
       const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 20_000);
       const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payloadOf({ title, description, category, screenshot: shotUrl, meta })), signal: ctrl.signal }).finally(() => clearTimeout(timer));
@@ -144,12 +152,14 @@ export function openReport(opener) {
   root.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
     if (state.busy || b.dataset.tab === state.tab) return;
     state.tab = b.dataset.tab; state.msg = ''; store.set(TAB_KEY, state.tab); paint();
-    if (state.tab === 'visual' && !state.shot && !state.capturing && !state.shotErr) capture();
+    if (state.tab === 'visual' && !state.shot && !state.capturing && !state.shotErr) capture(); // normally already taken or on its way
   }));
   root.querySelector('.tk-rp-tabs').addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { const other = root.querySelector(`[data-tab="${state.tab === 'quick' ? 'visual' : 'quick'}"]`); other.click(); other.focus(); } });
 
-  open = root; document.body.appendChild(root); paint();
-  if (state.tab === 'visual') capture(); else body.querySelector('[data-msg]')?.focus({ preventScroll: true });
+  open = root; document.body.appendChild(root); paint(); performance.mark('tk-report:popup');
+  capture(); // from the first moment, whichever tab is open
+  // on a phone the keyboard would cover the sheet (and resize the page that is being photographed): the person taps the box when they are ready
+  if (state.tab !== 'visual' && matchMedia('(pointer: fine)').matches) body.querySelector('[data-msg]')?.focus({ preventScroll: true });
 }
 
 /** the repository's issue page for a person who would rather look (not linked from the popup; used by tests) */
