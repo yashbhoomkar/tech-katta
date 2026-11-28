@@ -11,14 +11,19 @@ const API = "https://tech-api.katta.cc", CORS = { "access-control-allow-origin":
 const SIZES: [number, number][] = [[320, 579], [360, 740], [390, 844], [402, 714], [430, 932], [768, 1024], [1366, 900]];
 
 async function open(page: Page, path: string, theme: string) {
-  await page.addInitScript((t) => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-theme", t); localStorage.removeItem("tk-tour-seen"); } catch { /* blocked */ } }, theme);
+  await page.addInitScript((t) => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-internal", "1"); } catch { /* blocked */ } try { localStorage.setItem("tk-theme", t); localStorage.removeItem("tk-tour-seen"); } catch { /* blocked */ } }, theme);
   await localApi(page, true);
   await page.route(`${API}/v1/auth/config`, (r) => r.fulfill({ json: { enabled: true, clientId: "test" }, headers: CORS }));
   await page.route(`${API}/v1/me`, (r) => r.fulfill({ status: 401, json: {}, headers: CORS }));
   await page.route(`${API}/v1/events`, (r) => r.fulfill({ status: 204, headers: CORS }));
   await page.goto(path);
   await expect(page.locator(".tk-report")).toBeVisible({ timeout: 30_000 });
-  await page.waitForTimeout(2800);
+  // ready when the fonts are in and the Report tab has stopped moving for 1.5 s (it finds its resting height again whenever the page changes; on a slow machine that is later): a signal, not a sleep
+  await page.evaluate(() => document.fonts.ready);
+  await expect.poll(async () => {
+    const top = () => page.locator(".tk-report").evaluate((e) => Math.round(e.getBoundingClientRect().top));
+    const a = await top(); await page.waitForTimeout(1500); return (await top()) === a;
+  }, { timeout: 60_000, intervals: [0] }).toBe(true);
 }
 
 /** every top-bar element is inside the screen */

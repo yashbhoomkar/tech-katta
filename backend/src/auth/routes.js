@@ -11,7 +11,7 @@
 //   POST /v1/me/submissions/review {slug, design}         — the interviewer's review of a canvas design (Interview
 //                                                           Questions), judged here; tech-katta-context/22 §12
 //   POST   /v1/events         {visitor, device, events} → 204  — usage events for analysis (events.js)
-//   GET    /v1/admin/summary?days=7   analytics summary (admin accounts only; also readable from
+//   GET    /v1/admin/summary?days=7   analytics summary, internal traffic left out unless &internal=1 (admin accounts only; also readable from
 //                                      ANALYTICS_ORIGIN, the dashboard at analytics.katta.cc)
 //   GET    /v1/admin/audience.csv     Meta Custom Audience file of the accounts that opted in (admin)
 //   POST   /v1/me/submissions {slug, design, answer, hints} → the problem judged again here, stored (result
@@ -164,7 +164,7 @@ export function accountRoutes({ enabled, clientId, signInRequired = true, accoun
       if (me?.renewedUntil) response.setHeader('Set-Cookie', cookie(token, Math.floor((me.renewedUntil.getTime() - Date.now()) / 1000)));
       if (pathname === '/v1/events' && method === 'POST') {
         if (limited(request, 'events', 60, 60_000)) return send(request, response, 429, { error: 'too_many_requests' });
-        await accounts.logEvents(cleanBatch(await readJson(request), { userId: me ? me.id : null }));
+        await accounts.logEvents(cleanBatch(await readJson(request), { userId: me ? me.id : null, internal: !!me?.user?.internal }));
         response.writeHead(204, { 'Cache-Control': 'no-store', ...cors(request) }); response.end(); return;
       }
       if (pathname === '/v1/me' && (method === 'GET' || method === 'HEAD')) return send(request, response, 200, { user: me ? me.user : null });
@@ -174,7 +174,7 @@ export function accountRoutes({ enabled, clientId, signInRequired = true, accoun
         if (method !== 'GET') return send(request, response, 405, { error: 'method_not_allowed' }, { Allow: 'GET' });
         if (pathname === '/v1/admin/summary') {
           const days = Math.min(Math.max(Math.round(Number(new URL(request.url || '/', 'http://x').searchParams.get('days')) || 7), 1), 395);
-          return send(request, response, 200, await accounts.summary(days));
+          return send(request, response, 200, await accounts.summary(days, { includeInternal: new URL(request.url || '/', 'http://x').searchParams.get('internal') === '1' }));
         }
         const csv = audienceCsv(await accounts.consentedUsers());
         response.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="tech-katta-meta-audience.csv"', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...cors(request) });

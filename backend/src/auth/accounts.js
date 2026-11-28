@@ -48,6 +48,14 @@ export function isAdmin(u, extra = (process.env.ADMIN_EMAILS || '')) {
   return ADMIN_EMAIL_SHA256.has(sha256(email)) || extra.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean).includes(email);
 }
 
+// Internal accounts (the owner and anyone who works on the site): admins, plus INTERNAL_EMAILS (comma separated). Their events are kept, marked `internal: true`, and the
+// admin summary leaves them out unless asked (events.js, admin.js).
+export function isInternal(u, extra = (process.env.INTERNAL_EMAILS || '')) {
+  if (isAdmin(u)) return true;
+  const email = String(u?.email || '').trim().toLowerCase();
+  return !!email && extra.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean).includes(email);
+}
+
 // What kind of failure a MongoDB error is, as a short name safe to show on /health: the driver's
 // error class or server code name (e.g. AuthenticationFailed, MongoServerSelectionError), a system
 // code (ENOTFOUND), and for "couldn't reach the cluster" the names of the per-server errors. Never
@@ -87,7 +95,7 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
   ]).catch((error) => { ready = null; throw error; }));
   const hash = (token) => createHmac('sha256', secret).update(String(token)).digest('hex');
   const clock = now;
-  const view = (u) => ({ name: u.name || '', email: u.email || '', picture: u.picture || '', adsConsent: !!u.adsConsent?.ads, ...(isAdmin(u) ? { admin: true } : {}) });
+  const view = (u) => ({ name: u.name || '', email: u.email || '', picture: u.picture || '', adsConsent: !!u.adsConsent?.ads, ...(isAdmin(u) ? { admin: true } : {}), ...(isInternal(u) ? { internal: true } : {}) });
 
   return {
     // Sign in (or sign up) with a verified Google profile; returns a new session token.
@@ -202,7 +210,7 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
       return value;
     },
     // The analytics summary for analytics.katta.cc (admin.js); the route checks the caller is an admin.
-    async summary(days) { await init(); return adminSummary({ events, users, submissions }, { days, now: clock() }); },
+    async summary(days, opts = {}) { await init(); return adminSummary({ events, users, submissions }, { days, now: clock(), ...opts }); },
     async ping() { await db.command({ ping: 1 }); },
     // "ok" or the kind of the last failure (errorKind); checked at most every 30 s, in the background,
     // so /health never waits on the database.

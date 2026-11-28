@@ -12,6 +12,7 @@ import { footer } from './landing.js';
 import { PLACES, icon, tally } from '../shell.js';
 import { gateNow, watchGate } from '../gating.js';
 import { signInCard, wireSignInCard } from '../signin.js';
+import { summary, chosenPath } from '../paths.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const P = (kind, x, z, name, concepts, extra = {}) => ({ kind, x, z, name, concepts, ...extra });
@@ -56,6 +57,15 @@ export function mount(view, _p, { reduced, go }) {
     // the canvas is the heart of the site: Home always points at the problem to open next (signed out: the first one, no progress shown)
     const sv = locked ? solveState(list, {}, {}) : solveState(list);
     const solveCard = sv.total ? `<a class="solve-card" href="${sv.next ? `/problems/${esc(sv.next.slug)}` : '/problems'}"><span class="mono">${sv.next ? (sv.started ? 'Continue solving' : 'Solve your first problem') : 'Every problem solved'}${sv.solved ? ` · ${sv.solved} of ${sv.total} solved` : ` · ${sv.total} problems`}</span><b>${esc(sv.next ? splitTitle(sv.next.title)[0] : 'See all problems')}</b><span class="muted">Draw it on the canvas, run the traffic, get judged.</span><span class="go">${sv.next ? (sv.started ? 'Continue' : 'Start') : 'Open'} →</span></a>` : '';
+    // your progress, from this browser only: problems solved, best scores, articles read, what to do next, and the test you fail most
+    const pg = locked ? null : summary(list, { read, chosen: chosenPath() });
+    const progPanel = !pg || !pg.total ? '' : `<section class="prog-panel" aria-label="Your progress">
+        <dl class="prog-stats"><div><dt class="mono">Problems solved</dt><dd><b>${pg.solved}</b> of ${pg.total}</dd></div><div><dt class="mono">Articles read</dt><dd><b>${pg.read}</b> of ${pg.articles}</dd></div>
+          <div><dt class="mono">Best score${pg.best.length > 1 ? 's' : ''}</dt><dd>${pg.best.length ? pg.best.slice(0, 3).map((b) => `<a href="/problems/${esc(b.a.slug)}" title="${esc(splitTitle(b.a.title)[0])}"><b>${b.score}</b></a>`).join(' · ') : '<span class="muted">none yet</span>'}</dd></div></dl>
+        ${pg.next ? `<p class="prog-row"><span class="mono">Next recommended</span><a href="${pg.next.a.section === 'interview-questions' && pg.next.a.group !== 'start' ? `/problems/${esc(pg.next.a.slug)}` : `/learn/${esc(pg.next.a.section)}/${esc(pg.next.a.slug)}`}"><b>${esc(splitTitle(pg.next.a.title)[0])}</b></a><span class="muted">${esc(pg.next.why)}</span></p>` : ''}
+        ${pg.weakest ? `<p class="prog-row"><span class="mono">Weakest area</span><a href="/problems/${esc(pg.weakest.slug)}"><b>${esc(pg.weakest.name)}</b></a><span class="muted">failed in ${pg.weakest.count} of your latest submission${pg.weakest.count === 1 ? '' : 's'}</span></p>` : ''}
+        ${pg.path ? '' : '<p class="prog-row"><a href="/start"><b>Not sure where to start?</b></a><span class="muted">Pick a path by experience</span></p>'}
+      </section>`;
     view.innerHTML = `
     <section class="dash">
       <div class="dash-stage">${posterHtml('home')}<canvas></canvas><div class="overlay" aria-hidden="true"></div></div>
@@ -63,6 +73,7 @@ export function mount(view, _p, { reduced, go }) {
         <div class="dash-head">
         <h1 class="headline"><span class="thin">The system you can explain</span><span class="heavy accent">${conceptsRead ? `${conceptsRead} of ${concepts.length} concepts done` : 'Grows as you learn'}</span></h1></div>
         ${solveCard}
+        ${progPanel}
         ${locked ? `<div class="dash-body"><p class="lead">Every part here is taught by a concept. Sign in and it turns amber as you start its concepts and green when you have finished them all.</p>${signInCard('dashboard')}</div>` : `<div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have finished them all. Tap a part to open its next concept. Progress is saved on this device.</p>
         ${nextConcept ? `<a class="next-card" href="/learn/concepts/${nextConcept.slug}"><span class="mono">${conceptsRead ? 'Continue' : 'Start here'} · Concept ${(nextConcept.no.match(/\d+/) || [''])[0]}</span><b>${esc(splitTitle(nextConcept.title)[0])}</b><span class="muted">${esc(nextConcept.dek)}</span><span class="go">Start →</span></a>`
           : `<a class="next-card" href="/learn/components"><span class="mono">All concepts done</span><b>Components next</b><span class="muted">The tools interviewers name, and when to pick each.</span><span class="go">Open →</span></a>`}</div>`}

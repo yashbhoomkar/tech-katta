@@ -126,6 +126,18 @@ test('repo content is valid', () => {
   assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab }), []);
 });
 
+// Trust on articles and the public changelog: optional fields, checked when present.
+test('sources must be real-looking https links and the changelog must be dated lines', () => {
+  const one = allArticles[0];
+  const withSources = (sources) => validateContent({ site, examples, articles: allArticles.map((a) => (a === one ? { ...a, sources } : a)), lab });
+  assert.deepEqual(withSources([{ label: 'A paper', url: 'https://example.org/paper.pdf' }]), []);
+  assert.ok(withSources([{ label: 'No scheme', url: 'example.org' }]).some((p) => p.includes('sources[0]')));
+  assert.ok(withSources([{ label: 'Plain http', url: 'http://example.org' }]).some((p) => p.includes('sources[0]')));
+  assert.ok(withSources([]).some((p) => p.includes('sources must be')));
+  assert.ok(validateContent({ site: { ...site, changelog: [{ date: '1 Dec 2026', items: [] }] }, examples, articles: allArticles, lab }).some((p) => p.includes('changelog')));
+  assert.ok(Array.isArray(site.changelog) && site.changelog.length >= 4);
+});
+
 // Free or paid: every article says which; the free sample is one article per Learn section and one canvas problem; the lists carry it.
 test('every article is free or paid, the free sample is the five chosen, and only one problem is free', async () => {
   const free = allArticles.filter((a) => a.access === 'free').map((a) => a.slug).sort();

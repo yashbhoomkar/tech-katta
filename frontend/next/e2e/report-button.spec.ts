@@ -12,7 +12,7 @@ async function sendNow(page: Page) {
   await page.locator("[data-send]").click();
 }
 async function visit(page: Page) {
-  await page.addInitScript(() => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-design-view", "2d"); } catch { /* blocked */ } });
+  await page.addInitScript(() => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-internal", "1"); } catch { /* blocked */ } try { localStorage.setItem("tk-design-view", "2d"); } catch { /* blocked */ } });
   await localApi(page, true);
   await page.route(`${API}/v1/auth/config`, (r) => r.fulfill({ json: { enabled: true, clientId: "test" }, headers: CORS }));
   await page.route(`${API}/v1/me`, (r) => r.fulfill({ json: { user: { name: "Asha" } }, headers: CORS }));
