@@ -13,6 +13,7 @@ import { PLACES, icon, tally } from '../shell.js';
 import { gateNow, watchGate } from '../gating.js';
 import { signInCard, wireSignInCard } from '../signin.js';
 import { summary, chosenPath } from '../paths.js';
+import { weeklyIncident } from '../weekly.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const P = (kind, x, z, name, concepts, extra = {}) => ({ kind, x, z, name, concepts, ...extra });
@@ -57,6 +58,9 @@ export function mount(view, _p, { reduced, go }) {
     // the canvas is the heart of the site: Home always points at the problem to open next (signed out: the first one, no progress shown)
     const sv = locked ? solveState(list, {}, {}) : solveState(list);
     const solveCard = sv.total ? `<a class="solve-card" href="${sv.next ? `/problems/${esc(sv.next.slug)}` : '/problems'}"><span class="mono">${sv.next ? (sv.started ? 'Continue solving' : 'Solve your first problem') : 'Every problem solved'}${sv.solved ? ` · ${sv.solved} of ${sv.total} solved` : ` · ${sv.total} problems`}</span><b>${esc(sv.next ? splitTitle(sv.next.title)[0] : 'See all problems')}</b><span class="muted">Draw it on the canvas, run the traffic, get judged.</span><span class="go">${sv.next ? (sv.started ? 'Continue' : 'Start') : 'Open'} →</span></a>` : '';
+    // this week's incident: one of the Warm-ups, a new one every ISO week, the same for everyone (weekly.js)
+    const wk = weeklyIncident(), inc = wk.incident, incBest = best[inc.id];
+    const incidentCard = `<a class="solve-card incident-card" href="/simulator/${esc(inc.id)}"><span class="mono">This week's incident · week ${wk.week}${incBest?.passed ? ' · survived' : ''}</span><b>${esc(inc.title)}</b><span class="muted">${esc(inc.brief)}</span><span class="go">${incBest?.passed ? 'Try again' : 'Fix it'} →</span></a><p class="muted dash-links">Revising? <a href="/drills">One-minute drills</a> · <a href="/guides">Decision guides</a></p>`;
     // your progress, from this browser only: problems solved, best scores, articles read, what to do next, and the test you fail most
     const pg = locked ? null : summary(list, { read, chosen: chosenPath() });
     const progPanel = !pg || !pg.total ? '' : `<section class="prog-panel" aria-label="Your progress">
@@ -73,6 +77,7 @@ export function mount(view, _p, { reduced, go }) {
         <div class="dash-head">
         <h1 class="headline"><span class="thin">The system you can explain</span><span class="heavy accent">${conceptsRead ? `${conceptsRead} of ${concepts.length} concepts done` : 'Grows as you learn'}</span></h1></div>
         ${solveCard}
+        ${incidentCard}
         ${progPanel}
         ${locked ? `<div class="dash-body"><p class="lead">Every part here is taught by a concept. Sign in and it turns amber as you start its concepts and green when you have finished them all.</p>${signInCard('dashboard')}</div>` : `<div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have finished them all. Tap a part to open its next concept. Progress is saved on this device.</p>
         ${nextConcept ? `<a class="next-card" href="/learn/concepts/${nextConcept.slug}"><span class="mono">${conceptsRead ? 'Continue' : 'Start here'} · Concept ${(nextConcept.no.match(/\d+/) || [''])[0]}</span><b>${esc(splitTitle(nextConcept.title)[0])}</b><span class="muted">${esc(nextConcept.dek)}</span><span class="go">Start →</span></a>`

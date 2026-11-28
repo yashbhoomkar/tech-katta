@@ -7,6 +7,8 @@ content/
 ├── site.json                    landing page, dashboard chrome, footer   → GET /v1/site
 │                                ("example": id of the example system below)
 ├── lab.json                     the design canvas's catalogue, challenges and example design → GET /v1/lab
+├── drills.json                  about 30 quick interview drills (question, short answer, article section, problem) → GET /v1/drills
+├── guides.json                  the decision guides (Redis or Kafka?, SQL or NoSQL? …)               → GET /v1/guides, /v1/guides/<slug>
 ├── eval.json                    the v2 evaluator's catalogue (served inside /v1/lab as `eval`); see below
 ├── examples/
 │   └── zotato.json              the example system articles explain things through
@@ -249,3 +251,11 @@ template only unfinished (E022/E029/E030). The API never serves hidden tests' nu
 editorial except through their endpoints. Before adding or changing a problem, run
 `node backend/scripts/sweep-problem.mjs <slug>` and paste its summary into the pull request; then
 `UPDATE_GOLDEN=1 npm test` in `frontend/` regenerates `src/tkd/golden/<slug>.json` (review the diff).
+
+
+## Quick drills and decision guides (`drills.json`, `guides.json`)
+
+Both are public (no sign-in) and are built **only from what the articles already say**; they never add a fact. The release is refused (`backend/src/content/validate-learn.js`) when a link goes nowhere.
+
+- `drills.json`: `{drills: [{id, q, a, article: "section/slug", section, problem}]}`. `q` is one question (at most 200 characters), `a` a short model answer (at most 600). `section` is the exact text of an `h2` or `h3` in the article; the API adds the anchor (the `h2` it sits under), the article's title and the problem's title. `problem` is an article with a `practice`. The /drills page shows one card at a time and remembers the cards seen in the browser (`tk-drills-v1`); nothing is stored on the server.
+- `guides.json`: `{guides: [{slug, title, dek, intro, picks: [{title, items}] (two or more), table: {label, head, rows}, example: {title, paragraphs}, articles: [{article, why}], problem, problemWhy}]}`. Each is a page at `/guides/<slug>`, listed at `/guides`, pre-rendered in full for search engines and in the sitemap.

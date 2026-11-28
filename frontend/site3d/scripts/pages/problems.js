@@ -103,7 +103,7 @@ export function mount(view, _p, { reduced }) {
                 </a></li>`; }).join('')}
             </ol>
           </div>
-          <p class="solve-more muted">Just want to play? <a href="/problems/sandbox">Sandbox: a free canvas</a>, no tests and no score.</p>
+          <p class="solve-more muted">Just want to play? <a href="/problems/sandbox">Sandbox: a free canvas</a>, no tests and no score. Warming up? <a href="/drills">One-minute drills</a>.</p>
         </div>
         <aside class="learn-preview" aria-hidden="true"><div class="preview-card"><canvas></canvas><div class="overlay"></div><p class="preview-cap"><span class="cap-t mono"></span><span class="cap-s"></span></p></div></aside>
       </div>

@@ -18,6 +18,9 @@ import { pageView, hostAnalytics } from './analytics.js';
 /** the browser tab and history say where you are */
 function titleFor(path, nav, mod) {
   const brand = 'Tech Katta';
+  if (/^\/drills\/?$/.test(path)) return `One-minute interview drills · ${brand}`;
+  if (/^\/guides\/?$/.test(path)) return `Decision guides · ${brand}`;
+  if (/^\/guides\/[\w-]+\/?$/.test(path)) return /Decision guides/.test(document.title) ? document.title : `Decision guides · ${brand}`;
   if (nav === 'home') return `${brand}: everything for your system design interview`;
   if (nav === 'me') return `Home · ${brand}`;
   if (nav === 'you') return `You · ${brand}`;
@@ -81,6 +84,7 @@ const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-wr
 const ROUTES = [
   [/^\/?$/, page('landing'), 'home'], [/^\/learn\/?$/, page('learn'), 'learn'], [SEC, page('learn'), 'learn'], [ART, page('article'), 'learn'],
   [/^\/simulator\/([\w-]+)$/, page('sim'), 'sim'], [/^\/home\/?$/, page('me'), 'me'], [/^\/problems\/?$/, page('problems'), 'problems'],
+  [/^\/drills\/?$/, page('drills'), 'learn'], [/^\/guides(?:\/[\w-]+)?\/?$/, page('guides'), 'learn'],
   [/^\/start\/?$/, page('start'), 'start'], [/^\/free\/?$/, page('free'), 'free'], [/^\/changelog\/?$/, page('changelog'), 'changelog'], [/^\/me\/?$/, page('you'), 'you'], [/^\/(privacy|terms)\/?$/, page('policy'), 'legal'], [/^\/learn\/quick-notes\/?$/, page('notes'), 'notes'],
   [/^\/(?:problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/, page('workspace'), 'problems'],
 ];
