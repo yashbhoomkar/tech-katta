@@ -3,7 +3,7 @@
 // account's are merged (lab/merge.js, the same rules the API uses) on sign-in, when the Lab opens,
 // and a few seconds after each change, so the same designs and stars show up on every device.
 import{current}from"./theme/mode.js";import{API}from"./api.js";import{STORE_KEY,STORE_VERSION,readStore}from"./lab/store.js";import{mergeLab}from"./lab/merge.js";
-import{readProgress,replaceProgress}from"./progress.js";import{track}from"./analytics.js";
+import{readProgress,replaceProgress}from"./progress.js";import{track,markStaff}from"./analytics.js";
 
 export const DELETED_KEY="tk-lab-deleted";// {design id: when it was deleted}, so deletions reach other devices
 // every account call gives up after 15 s, so a bad network shows "couldn't reach your account" instead of hanging
@@ -15,7 +15,7 @@ let data=null;try{data=await r.json()}catch{}if(!r.ok)throw Object.assign(new Er
 // unavailable: sign-in cannot be used right now (the API cannot be reached or does not take sign-ins). The text stays locked then; nothing opens.
 let state={ready:false,enabled:false,unavailable:false,required:true,user:null,clientId:null,syncing:false,error:null};
 const emit=()=>{try{dispatchEvent(new Event("tk-account"))}catch{}};
-const setState=p=>{state={...state,...p};emit()};
+const setState=p=>{if(p.user)markStaff(p.user);state={...state,...p};emit()};
 export const account=()=>state;
 // Whether sign-in is on, and who is signed in: both asked at once, as soon as the page starts and before
 // its content has arrived (prefetchAccount, from boot), so the account menu is ready about when the page

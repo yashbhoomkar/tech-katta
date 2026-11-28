@@ -14,7 +14,7 @@ globalThis.fetch = async (url, o) => { sent.push({ url, how: 'fetch', body: JSON
 globalThis.setTimeout = (f) => { pending = f; return 1; };
 globalThis.clearTimeout = () => { pending = null; };
 
-const { track, visitor, referrer } = await import('./analytics.js');
+const { track, visitor, referrer, markStaff } = await import('./analytics.js');
 
 test('events are batched with a stable visitor id, the device, the page and their age', async () => {
   const v = visitor();
@@ -63,4 +63,31 @@ test('automated browsers (navigator.webdriver) send nothing', () => {
   track('page_view', { section: 'home' });
   assert.equal(pending, null); assert.equal(sent.length, 0);
   navigator.webdriver = undefined;
+});
+
+test('an explicit internal mark (tk-internal) sends nothing, even where navigator.webdriver is hidden', async () => {
+  sent.length = 0; pending = null; navigator.doNotTrack = undefined; navigator.webdriver = false;
+  localStorage.setItem('tk-internal', '1');
+  track('page_view', { section: 'home' });
+  assert.equal(pending, null); assert.equal(sent.length, 0);
+  mem.delete('tk-internal');
+});
+
+test('?tk-internal=1 in the address sets the mark and sends nothing', () => {
+  sent.length = 0; pending = null; navigator.webdriver = false; location.search = '?x=1&tk-internal=1';
+  track('page_view', { section: 'home' });
+  assert.equal(mem.get('tk-internal'), '1'); assert.equal(pending, null); assert.equal(sent.length, 0);
+  location.search = ''; mem.delete('tk-internal');
+});
+
+test('a browser seen signed in as an internal account marks its later batches internal: true; other accounts do not', () => {
+  sent.length = 0; pending = null; navigator.webdriver = undefined;
+  markStaff({ name: 'A' });
+  track('page_view', { section: 'home' }); pending(); 
+  assert.equal(sent.at(-1).body.internal, undefined, 'an ordinary account leaves no mark');
+  markStaff({ name: 'Owner', internal: true });
+  assert.equal(mem.get('tk-staff'), '1');
+  track('page_view', { section: 'home' }); pending();
+  assert.equal(sent.at(-1).body.internal, true);
+  mem.delete('tk-staff');
 });
