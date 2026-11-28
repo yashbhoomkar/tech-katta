@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { localApi } from "./api";
+import { lite3d } from "./lite3d";
 
 // The real site, end to end: every address opens the right page, the workspace runs, the lock holds, search, theme, phones.
 
@@ -81,8 +82,10 @@ test("signed out: the workspace is locked and loads no island", async ({ page })
   await expect(page.locator(".signin")).toHaveCount(0);
 });
 
-test("a problem: run, submit, replay in 2D and 3D, and back", async ({ page }) => {
+test("a problem: run, submit, replay in 2D and 3D, and back @3d", async ({ page }) => {
+  test.slow(); // judging every test in the browser (9–14 s) and opening a replay (11–18 s) are real work
   await visitor(page, "in");
+  await lite3d(page);
   const errs = errors(page);
   await page.goto("/problems/url-shortener");
   await expect(page.locator(".ws-host .solve")).toBeVisible({ timeout: 40_000 });
