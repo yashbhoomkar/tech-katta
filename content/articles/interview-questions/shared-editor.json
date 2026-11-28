@@ -94,7 +94,7 @@
     },
     {
       "t": "p",
-      "x": "One owner per document makes ordering simple: there's exactly one place deciding which edit came first. A registry (kept with consensus, as in the consensus article) says which server owns which document, and moves ownership if a server dies."
+      "x": "One owner per document makes ordering simple: there's exactly one place deciding which edit came first. A registry (kept with consensus, as in the ZooKeeper article) says which server owns which document, and moves ownership if a server dies."
     },
     {
       "t": "h2",

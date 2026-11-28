@@ -169,7 +169,7 @@
       "items": [
         "MySQL's InnoDB stores the table itself as a B+ tree ordered by primary key (a clustered index), and every secondary index is a B+ tree pointing to primary keys.",
         "MongoDB, despite its document model, also uses B-trees for its indexes (B+ trees, a variant that keeps all entries in the leaves and links the leaves for fast scans). db.users.createIndex({ phone: 1 }) builds a B-tree from phone numbers to documents.",
-        "DynamoDB keeps items within a partition sorted by their sort key, which is what makes range queries within a partition efficient. Its storage engine isn't documented in detail and is generally understood to be LSM-style rather than a B-tree; the part 'LSM trees and hash indexes' below explains the difference."
+        "DynamoDB keeps items within a partition sorted by their sort key, which is what makes range queries within a partition efficient. Amazon's own paper (USENIX ATC 2022) describes each storage replica as a write-ahead log plus a B-tree that holds the key-value data, so it is a B-tree store, not an LSM one; the part 'LSM trees and hash indexes' below explains the difference."
       ]
     },
     {
@@ -259,7 +259,7 @@
     },
     {
       "t": "p",
-      "x": "So an LSM tree trades read speed and background work for very fast writes. It suits write-heavy data, especially time-ordered data such as metrics, logs, messages and locations. It is used by Cassandra and ScyllaDB, RocksDB and LevelDB (and the many systems built on RocksDB), Bigtable and HBase, and, by most accounts, DynamoDB's storage layer."
+      "x": "So an LSM tree trades read speed and background work for very fast writes. It suits write-heavy data, especially time-ordered data such as metrics, logs, messages and locations. It is used by Cassandra and ScyllaDB, RocksDB and LevelDB (and the many systems built on RocksDB), Bigtable and HBase. DynamoDB is not on this list: its storage replicas use a write-ahead log and a B-tree."
     },
     {
       "t": "h3",

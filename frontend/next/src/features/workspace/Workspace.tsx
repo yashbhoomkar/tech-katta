@@ -79,7 +79,7 @@ export function Workspace({ slug }: { slug: string }) {
   }, [slug]);
   return (
     <Frame slug={slug}>
-      <Solve slug={slug} tab={tab} s={site.problems?.solve} articles={articles} Block={Block} Article={Article} prep={withFigs} Lab={Lab} />
+      <Solve slug={slug} tab={tab} s={site.problems?.solve} acct={site.account} articles={articles} Block={Block} Article={Article} prep={withFigs} Lab={Lab} />
     </Frame>
   );
 }

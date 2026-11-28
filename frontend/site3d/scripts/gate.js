@@ -9,10 +9,12 @@
 // they are signed out and their card says sign-in is unavailable. Only the API's sign-in flag (required: false) or a local-development
 // flag (devOpen) opens the pages.
 //
+// `free`: the page is in the free sample (an article or problem with access "free"): open to everyone, signed out too
 // kind: "open" | "list" | "article" | "workspace" | "problem" | "personal"
-export function gateFor(kind, acc, { devOpen = false } = {}) {
+export function gateFor(kind, acc, { devOpen = false, free = false } = {}) {
   if (kind === 'open' || kind === 'list') return 'open';
   if (devOpen) return 'open';
+  if (free && (kind === 'article' || kind === 'problem')) return 'open';
   if (!acc.ready) return 'wait';
   if (acc.required === false) return 'open'; // the sign-in flag is off (the API's SIGNIN_REQUIRED=0): every page opens
   if (acc.user) return 'open';

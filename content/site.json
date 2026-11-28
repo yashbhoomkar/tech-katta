@@ -215,7 +215,7 @@
       [
         "× 500 B per link",
         "≈ 50 GB / day",
-        "About 18 TB a year. Plan for sharding."
+        "About 18 TB a year: one big machine copes for a while, but a few years' worth means archiving old links or sharding."
       ],
       [
         "× 3 at peak",
@@ -807,7 +807,7 @@
     "fail": "Not yet. Read why, change the design, and run again.",
     "open": "Open the full problem",
     "openHref": "/dashboard/problems/ind-vs-pak/",
-    "note": "Peak of 3.5 crore people watching at once: ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster. The app here is made up. Each player fetches a 4-second chunk every 4 seconds; capacities and prices are rules of thumb.",
+    "note": "Peak of 3.5 crore people watching at once: ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster (a record at the time). The match night and the app here are made up. Each player fetches a 4-second chunk every 4 seconds; capacities and prices are rules of thumb.",
     "lite": {
       "diagram": "Your design, from the viewers down to your servers",
       "viewers": "3.5 crore viewers",

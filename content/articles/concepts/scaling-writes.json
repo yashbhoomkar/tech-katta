@@ -18,7 +18,7 @@
     },
     {
       "t": "p",
-      "x": "A read can be answered by any copy; a write has to reach the primary and then every replica. Adding replicas adds read capacity and leaves write capacity where it was. A typical primary takes a few thousand writes a second, and the largest machines reach tens of thousands. That is the ceiling until you change how you write."
+      "x": "A read can be answered by any copy; a write has to reach the primary and then every replica. Adding replicas adds read capacity and leaves write capacity where it was. A well-tuned primary on fast storage takes about 10,000 simple writes a second (a few thousand when the rows are big, heavily indexed or written many to a transaction), and the largest machines go beyond that. That is the ceiling until you change how you write."
     },
     {
       "t": "h2",

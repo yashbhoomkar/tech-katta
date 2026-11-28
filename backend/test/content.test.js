@@ -126,13 +126,14 @@ test('repo content is valid', () => {
   assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab }), []);
 });
 
-// Free or paid: every article says which; a problem is never free; the lists carry it.
-test('every article is free or paid, and no problem is free', async () => {
+// Free or paid: every article says which; the free sample is one article per Learn section and one canvas problem; the lists carry it.
+test('every article is free or paid, the free sample is the five chosen, and only one problem is free', async () => {
   const free = allArticles.filter((a) => a.access === 'free').map((a) => a.slug).sort();
-  assert.deepEqual(free, ['how-to-answer']);
-  const problem = allArticles.find((a) => a.practice);
+  assert.deepEqual(free, ['discord-messages', 'how-to-answer', 'networking-essentials', 'redis', 'url-shortener']);
+  assert.deepEqual(allArticles.filter((a) => a.access === 'free' && a.practice).map((a) => a.slug), ['url-shortener']);
+  const problem = allArticles.find((a) => a.practice && a.access !== 'free');
   const check = (change) => validateContent({ site, examples, articles: allArticles.map((a) => (a === problem ? change(structuredClone(a)) : a)), lab });
-  assert.ok(check((a) => ({ ...a, access: 'free' })).some((p) => p.includes('must be paid')));
+  assert.ok(check((a) => ({ ...a, access: 'free' })).some((p) => p.includes('at most one problem')));
   assert.ok(check((a) => { delete a.access; return a; }).some((p) => p.includes('access must be')));
 });
 
