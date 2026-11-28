@@ -2,7 +2,8 @@
 // amber when you have started its concepts and green when all are done, so the system you can explain grows
 // as you learn. Tap a part (or its row) to open its next concept. No streaks, no badges.
 import { solveState } from '../solving.js';
-import { createWorld } from '../world.js';
+import { createWorld } from '../world-lazy.js';
+import { posterHtml, followTheme } from '../story.js';
 import { INCIDENTS } from '../sim.js';
 import { listArticles, listNow, splitTitle, SECTIONS } from '../articles.js';
 import { store } from '../store.js';
@@ -37,7 +38,7 @@ const SYSTEM = {
 const pd = (kind) => `<i class="pdot" style="--c:var(--${KIND_PASTEL[kind]})" aria-hidden="true"></i>`;
 
 export function mount(view, _p, { reduced, go }) {
-  let world = null, alive = true, offWire = null, offGate = null;
+  let world = null, alive = true, offWire = null, offGate = null; let offTheme = null;
   // signed out (or not known yet): no progress, no recent work, no counts; the sign-in card stands in their place
   const draw = (list) => {
     const locked = gateNow('personal') !== 'open';
@@ -57,7 +58,7 @@ export function mount(view, _p, { reduced, go }) {
     const solveCard = sv.total ? `<a class="solve-card" href="${sv.next ? `/problems/${esc(sv.next.slug)}` : '/problems'}"><span class="mono">${sv.next ? (sv.started ? 'Continue solving' : 'Solve your first problem') : 'Every problem solved'}${sv.solved ? ` · ${sv.solved} of ${sv.total} solved` : ` · ${sv.total} problems`}</span><b>${esc(sv.next ? splitTitle(sv.next.title)[0] : 'See all problems')}</b><span class="muted">Draw it on the canvas, run the traffic, get judged.</span><span class="go">${sv.next ? (sv.started ? 'Continue' : 'Start') : 'Open'} →</span></a>` : '';
     view.innerHTML = `
     <section class="dash">
-      <div class="dash-stage"><canvas></canvas><div class="overlay" aria-hidden="true"></div></div>
+      <div class="dash-stage">${posterHtml('home')}<canvas></canvas><div class="overlay" aria-hidden="true"></div></div>
       <div class="dash-copy">
         <div class="dash-head">
         <h1 class="headline"><span class="thin">The system you can explain</span><span class="heavy accent">${conceptsRead ? `${conceptsRead} of ${concepts.length} concepts done` : 'Grows as you learn'}</span></h1></div>
@@ -94,8 +95,9 @@ export function mount(view, _p, { reduced, go }) {
       armTimer = setTimeout(() => { delete resetBtn.dataset.armed; resetBtn.textContent = 'Clear my progress'; }, 4000);
     });
     const stage = view.querySelector('.dash-stage');
+    offTheme?.(); offTheme = followTheme(stage);
     world?.destroy(); world = null;
-    try { world = createWorld(stage.querySelector('canvas'), stage.querySelector('.overlay'), { reduced, label: 'Your system, part by part. Tap a part to open its next concept; the list under it does the same.' }); } catch { world = null; }
+    try { world = createWorld(stage.querySelector('canvas'), stage.querySelector('.overlay'), { reduced, label: 'Your system, part by part. Tap a part to open its next concept; the list under it does the same.', onFail: () => stage.classList.add('flat') }); } catch { world = null; }
     stage.classList.toggle('flat', !world);
     if (!world) return;
     world.setSystem(SYSTEM);
@@ -120,5 +122,5 @@ export function mount(view, _p, { reduced, go }) {
   draw(first);
   listArticles().then((l) => { if (alive && JSON.stringify(l) !== JSON.stringify(first)) draw(l); });
   offGate = watchGate('personal', () => { if (alive) window.tkRefresh?.(); });
-  return () => { alive = false; offGate?.(); offWire?.(); world?.destroy(); };
+  return () => { alive = false; offGate?.(); offWire?.(); offTheme?.(); world?.destroy(); };
 }

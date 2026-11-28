@@ -49,7 +49,7 @@ for (const p of ["index.html", "dashboard", "next", "llms.txt", "sitemap.xml"]) 
 
 // 2. the 3D site's files, and its page shell
 rmSync(path.join(dist, "3d"), { recursive: true, force: true });
-for (const d of ["scripts", "styles"]) cpSync(path.join(site3d, d), path.join(dist, "3d", d), { recursive: true });
+for (const d of ["scripts", "styles", "posters"]) cpSync(path.join(site3d, d), path.join(dist, "3d", d), { recursive: true });
 cpSync(path.join(frontend, "site3d-dist"), path.join(dist, "3d", "legacy"), { recursive: true });
 cpSync(path.join(frontend, "next", "dist-islands"), path.join(dist, "3d", "islands"), { recursive: true });
 // the Report button on the two pages the shell does not draw (it is on every other page through the shell's app.js)
@@ -107,6 +107,6 @@ writeFileSync(path.join(dist, "index.html"), renderHome(shell3d, site, articles)
 for (const [dir, title, canon] of [["learn", "Learn", "learn/concepts"], ["simulator", "Warm-ups", "simulator"], ["home", "Home", "home"]]) put(dir, shellFor(title, { canon }));
 
 // 4. the sitemap and the content map for AI assistants
-writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date }))));
+writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date, free: p.free }))));
 writeFileSync(path.join(dist, "llms.txt"), llmsTxt(site, pages));
 console.log(`switch: the 3D site answers every address; ${written} search-engine pages, ${workspace} workspace and static pages, the home page, sitemap.xml and llms.txt`);
