@@ -41,6 +41,7 @@ const ss = { get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catc
 // returns the public part. These answers depend on who asks, so they live in memory only and are forgotten when anyone signs in or out.
 const GATED = /^\/v1\/(lab|stories|articles\/[^?]+)$/;
 export async function apiFetch(path, init = {}) {
+  if (globalThis.tkGet && (!init.method || init.method === 'GET') && !init.body) return globalThis.tkGet(path, { signal: init.signal }); // one request per address (boot-theme.js)
   if (GATED.test(path)) { try { return await fetch(API + path, { ...init, credentials: 'include' }); } catch (e) { if (e?.name === 'AbortError') throw e; } }
   return fetch(API + path, init);
 }
@@ -50,7 +51,7 @@ async function getJson(path) {
   return r.json();
 }
 const forgetGated = () => { for (const k of [...mem.keys()]) if (k !== 'list') mem.delete(k); try { for (const k of Object.keys(sessionStorage)) if (k.startsWith('tk-r3d-a:')) sessionStorage.removeItem(k); } catch { /* blocked */ } };
-try { addEventListener('tk-account', forgetGated); document.addEventListener('tk-account', forgetGated); } catch { /* no window */ }
+try { addEventListener('tk-identity', forgetGated); } catch { /* no window */ } // only a change of person (account.js tkWho): the first answer of the account must not throw the page's text away
 
 /** every article's header (section, slug, group, no, tag, title, dek), live or the snapshot */
 let listAsk = null;

@@ -41,6 +41,18 @@ export function problemPublicHtml(p, { crumbs, kicker }) {
   </article>`;
 }
 
+/** the problem's brief while its workspace is still on the way (a problem's page, the gate open): the same words and classes as the public part, with no buttons and no card.
+ *  It is what a phone paints first (the workspace code is some 230 KB behind it); workspace.js takes it away when the canvas has drawn. p: { title, difficulty, brief, dek, tests } */
+export function briefHtml(p, { kicker = 'Problem' } = {}) {
+  return `<article class="page narrow public-article public-problem" data-public="brief" aria-busy="true">
+    <p class="kicker"><span>${esc(kicker)}</span>${p.difficulty ? `<i></i><span class="difficulty">${esc(p.difficulty)}</span>` : ''}</p>
+    <h1 class="headline"><span class="thin">${esc(p.title)}</span></h1>
+    ${p.dek ? `<p class="lead">${inline(p.dek)}</p>` : ''}
+    ${p.tests ? `<p class="meta mono">${p.tests} tests · Replay · Fixes explained</p>` : ''}
+    ${p.how ? `<p class="lead">${inline(p.how)}</p>` : p.brief && p.brief !== p.dek ? `<div class="prose public-prose"><p>${inline(p.brief)}</p></div>` : ''}
+  </article>`;
+}
+
 /** makes the locked page work: the gated buttons open the dialog, the inline card signs in. Returns a cleanup. */
 export function wirePublic(root) {
   const onClick = (e) => { const b = e.target.closest('[data-gated]'); if (b) { e.preventDefault(); requireSignIn('action'); } };

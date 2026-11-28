@@ -72,6 +72,36 @@ for (const [path, withBlocking] of [["/", true], ["/home", true], ["/learn/conce
   });
 }
 
+// A problem's page (task H): the brief is drawn from the shell while the workspace's code (some 230 KB) is still on the way, the workspace's files are fetched while the
+// gate is being asked, and the page reads each API address once (the article, the list, the site text and the Lab were each asked for two or three times).
+test("a problem's page on a budget phone: LCP <= 4 s, the brief first, each API address asked for once", async ({ browser }) => {
+  test.setTimeout(240_000);
+  const lcp: number[] = [];
+  const lcpEl: string[] = [];
+  let asked: Record<string, number> = {};
+  for (let i = 0; i < RUNS; i++) {
+    const { ctx, page } = await phone(browser);
+    const seen: Record<string, number> = {};
+    page.on("request", (r) => { const u = new URL(r.url()); if (u.origin === API && r.method() === "GET") { const p = u.pathname; seen[p] = (seen[p] || 0) + 1; } });
+    await page.addInitScript(() => {
+      new PerformanceObserver((l) => { const e = l.getEntries().at(-1) as PerformanceEntry & { element?: Element }; (window as unknown as { __el: string }).__el = e.element ? `${e.element.tagName.toLowerCase()}.${e.element.className}` : ""; }).observe({ type: "largest-contentful-paint", buffered: true });
+    });
+    try {
+      await page.goto("/problems/url-shortener", { waitUntil: "load" });
+      await page.waitForTimeout(WINDOW_MS);
+      const m = await read(page);
+      lcp.push(Math.round(m.lcp)); lcpEl.push(await page.evaluate(() => (window as unknown as { __el: string }).__el));
+      asked = seen;
+      await expect(page.locator(".solve")).toBeVisible(); // the workspace did arrive, and the brief is gone from under it
+      await expect(page.locator(".ws-brief")).toHaveCount(0);
+    } finally { await ctx.close(); }
+  }
+  const line = `FIRST VIEW /problems/url-shortener: LCP ${lcp.join("/")} median ${median(lcp)} ms (target ${4000 * SLACK}), element ${lcpEl[0]}`;
+  console.log(line); test.info().annotations.push({ type: "first-view", description: line });
+  expect(median(lcp), line).toBeLessThanOrEqual(4000 * SLACK);
+  for (const p of ["/v1/articles/url-shortener", "/v1/articles", "/v1/site", "/v1/lab", "/v1/auth/config", "/v1/me"]) expect(asked[p] ?? 0, `${p} asked for ${asked[p]} times: ${JSON.stringify(asked)}`).toBeLessThanOrEqual(1);
+});
+
 test("a tap on a link in the first seconds navigates within 300 ms (the landing, CPU 4x)", async ({ browser }) => {
   test.setTimeout(120_000);
   const ms: number[] = [];

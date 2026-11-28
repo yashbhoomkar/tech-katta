@@ -75,7 +75,7 @@ const staticGraph = (entry) => {
   walk(entry); return [...seen];
 };
 const base = staticGraph("scripts/app.js");
-const preloads = base.filter((f) => f !== "scripts/app.js").map((f) => `<link rel="modulepreload" href="/3d/${f}"/>`).join("");
+const preloads = base.filter((f) => f !== "scripts/app.js").map((f) => `<link rel="modulepreload" href="/3d/${f}"/>`).join("") + `<link rel="modulepreload" href="/3d/legacy/legacy.js"/>`; // the account (every page asks who is signed in, through this file: it used to start only after app.js had run)
 // the pages load when their address opens (app.js); the files of the page this address opens are named by a few lines at the end of boot-theme.js (the host's CSP allows no inline script), so
 // they are fetched with app.js and not one round trip after it
 const PAGE_AT = [["^/$", "landing"], ["^/home/?$", "me"], ["^/learn/(?:concepts|components|interview-questions|real-systems)/[\\w-]+/?$", "article"], ["^/learn(?:/|$)", "learn"], ["^/problems/?$", "problems"], ["^/simulator/", "sim"], ["^/(?:problems|practice)(?:/|$)", "workspace"]];
@@ -96,7 +96,7 @@ const islandFiles = (() => {
 // (not preloaded with the page: a signed-out visitor never loads the workspace. workspace.js names these when the gate says open: window.__tkIsland)
 const islandSet = islandFiles;
 const bootPath = path.join(dist, "3d", "scripts", "boot-theme.js");
-writeFileSync(bootPath, `${readFileSync(bootPath, "utf8")}\n// (added by hosting/switch.mjs) the files of this address's page, fetched together with app.js\n(function(){var p=location.pathname,M=${JSON.stringify(pageFiles)};window.__tkIsland=${JSON.stringify(islandSet.filter((f) => !base.includes(f)))};for(var i=0;i<M.length;i++){if(new RegExp(M[i][0]).test(p)){M[i][1].forEach(function(f){var l=document.createElement("link"),c=/\\.css$/.test(f);l.rel=c?"preload":"modulepreload";if(c)l.as="style";l.href="/3d/"+f;document.head.appendChild(l);});break;}}})();\n`);
+writeFileSync(bootPath, `${readFileSync(bootPath, "utf8")}\n// (added by hosting/switch.mjs) the files of this address's page, fetched together with app.js\n(function(){var p=location.pathname,M=${JSON.stringify(pageFiles)},I=window.__tkIsland=${JSON.stringify(islandSet.filter((f) => !base.includes(f)))};function pre(f){var l=document.createElement("link"),c=/\\.css$/.test(f);l.rel=c?"preload":"modulepreload";if(c){l.as="style";l.crossOrigin="";}l.href="/3d/"+f;document.head.appendChild(l);}for(var i=0;i<M.length;i++){if(new RegExp(M[i][0]).test(p)){M[i][1].forEach(pre);break;}}\n// a problem's page: the workspace's files are asked for as soon as the account's first answers are in (boot-theme.js asked for them at once), not after app.js, the account module and the gate have each run in turn. A visitor who has to sign in and has not gets none of them (a signed-out visitor never loads the workspace).\nif(/^\\/problems\\/(?!challenge\\/|sandbox\\/?$|shared\\/?$)[\\w-]+\\/?$/.test(p)&&window.tkGet){var J=function(r){return r.ok?r.json():null};Promise.all([window.tkGet("/v1/auth/config").then(J),window.tkGet("/v1/me").then(J)]).then(function(a){if((a[0]&&a[0].required===false)||(a[1]&&a[1].user))I.forEach(pre);}).catch(function(){});}})();\n`);
 const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}<meta name="tk-build" content="${buildId}"/>${preloads}</head>`);
 const NOINDEX = '<meta name="robots" content="noindex"/>';
 /** the shell with this title (and description, canonical address, noindex) */

@@ -4,9 +4,9 @@
 // (frontend/next/src/islands, built into /3d/islands/islands.js) loads only here; the page around it (sidebar, bottom bar,
 // title, the content lock) is the 3D site's.
 import { API, apiFetch, getArticle, listArticles, listNow, SECTIONS } from '../articles.js';
-import { gateNow, watchGate } from '../gating.js';
+import { gateNow, watchGate, siteNow, siteReady } from '../gating.js';
 import { signInCard, wireSignInCard } from '../signin.js';
-import { problemPublicHtml, wirePublic } from './public.js';
+import { problemPublicHtml, briefHtml, wirePublic } from './public.js';
 import { syncRail } from '../shell.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -39,27 +39,29 @@ function locked(title) {
 // a challenge's own name, for the tab title and the lock card (GET /v1/lab, once)
 let labP = null;
 const getLab = () => (labP ||= apiFetch('/v1/lab', { headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null));
-addEventListener('tk-account', () => { labP = null; });
+addEventListener('tk-identity', () => { labP = null; });
 const challengeName = (id) => getLab().then((l) => (l?.challenges || []).find((c) => c.id === id)?.title || null);
 
 export function mount(view, _params, ctx) {
   const path = location.pathname.replace(/(.)\/$/, '$1');
   const target = kindOf(path);
-  let alive = true, unmount = null, island = null, warm = false, ro = null, offPublic = null;
+  let alive = true, unmount = null, island = null, warm = false, ro = null, offPublic = null, stopBrief = null;
   /** which kind of gate this address has: a problem, a challenge or a practice problem shows its public part; the sandbox and shared designs only the card; the practice list is open */
   /** the free sample's problem (access "free" in the list): the workspace opens signed out too */
   const isFree = () => target.kind === 'problem' && listNow().some((x) => x.slug === target.slug && x.access === 'free');
   const gateKind = () => (target.kind === 'practice' ? (target.slug ? 'problem' : null) : target.kind === 'problem' || target.kind === 'challenge' ? 'problem' : 'workspace');
+  /** the line under the title that tells how to use the canvas: the workspace's own words (frontend/src/solve.jsx sv-how), so the brief and the canvas read the same */
+  const howOf = (a) => { const s = siteNow()?.problems?.solve; if (!s) return ''; const t = (a.practice?.v === 2 && s.howV2 ? s.howV2 : s.how) || ''; return matchMedia('(max-width:900px)').matches ? t.replace('add parts from the left', 'tap + Part to add parts') : t; };
   /** the public part of this address: { title, difficulty, brief } or null */
   const publicData = async () => {
     try {
-      if (target.kind === 'problem') { let a = await getArticle(target.slug); if (!a) { const h = listNow().find((x) => x.slug === target.slug); a = h && { title: h.title, group: h.group, brief: h.dek }; } if (!a) return null; const names = Object.fromEntries((SECTIONS.find((x) => x.id === 'interview-questions')?.groups || [])); return { title: a.title, difficulty: names[a.difficulty || a.group] || a.difficulty || '', brief: a.brief || a.dek }; }
+      if (target.kind === 'problem') { let a = await getArticle(target.slug); if (!a) { const h = listNow().find((x) => x.slug === target.slug); a = h && { title: h.title, group: h.group, brief: h.dek }; } if (!a) return null; const names = Object.fromEntries((SECTIONS.find((x) => x.id === 'interview-questions')?.groups || [])); return { title: a.title, difficulty: names[a.difficulty || a.group] || a.difficulty || '', brief: a.brief || a.dek, dek: a.dek, tests: a.practice?.tests?.length || listNow().find((x) => x.slug === target.slug)?.tests, how: howOf(a) }; }
       if (target.kind === 'challenge') { const l = await getLab(); const c = (l?.challenges || []).find((x) => x.id === target.id); return c ? { title: c.title, difficulty: l.levels?.[c.level] ?? c.level, brief: c.brief } : null; }
       if (target.kind === 'practice') { const r = await apiFetch(`/v1/practice/problems/${encodeURIComponent(target.slug)}`, { headers: { accept: 'application/json' } }); if (!r.ok) return null; const p = await r.json(); return { title: p.title, difficulty: p.difficulty ? p.difficulty[0].toUpperCase() + p.difficulty.slice(1) : '', brief: p.brief }; }
     } catch { /* offline: the card alone */ }
     return null;
   };
-  const stop = () => { try { unmount?.(); } catch (e) { console.warn(e); } unmount = null; ro?.disconnect(); ro = null; document.documentElement.style.removeProperty('--ws-bottom'); document.documentElement.style.removeProperty('--ws-top'); };
+  const stop = () => { stopBrief?.(); stopBrief = null; try { unmount?.(); } catch (e) { console.warn(e); } unmount = null; ro?.disconnect(); ro = null; document.documentElement.style.removeProperty('--ws-bottom'); document.documentElement.style.removeProperty('--ws-top'); };
 
   /** the bottom bar floats over the page on phones: the island ends above it */
   const reserve = () => {
@@ -78,7 +80,12 @@ export function mount(view, _params, ctx) {
     if (!alive) return;
     const g = gateKind() ? gateNow(gateKind(), { free: isFree() }) : 'open';
     document.body.classList.toggle('ws-locked', g !== 'open'); syncRail();
-    if (g === 'wait') { view.innerHTML = wait(); return; }
+    if (g === 'wait') {
+      view.innerHTML = wait();
+      // a problem: its brief is public, so it is drawn while the account is still being asked (the first paint is the problem's words, not a skeleton)
+      if (target.kind === 'problem') publicData().then((d) => { if (alive && d && view.querySelector('.ws-wait')) view.innerHTML = `<section class="ws"><div class="ws-brief">${briefHtml(d)}</div></section>`; });
+      return;
+    }
     if (g === 'preview' || g === 'locked') {
       // signed out: the public part of a problem or challenge (title, difficulty, the first lines of the brief) and the card; nothing else exists in the page
       const label = target.kind === 'challenge' ? 'Challenge' : target.kind === 'practice' ? 'Practice' : target.kind === 'problem' ? 'Problem' : { sandbox: 'Sandbox', shared: 'Shared design' }[target.kind] || 'Problem';
@@ -89,12 +96,21 @@ export function mount(view, _params, ctx) {
       else { view.innerHTML = locked({ sandbox: 'Sandbox', shared: 'Shared design' }[target.kind] || label); offPublic = wireSignInCard(view); }
       return;
     }
-    view.innerHTML = `<section class="ws"><div class="ws-host"></div></section>`;
+    if (target.kind === 'problem') await siteReady(); // the site text (asked for at boot) has the canvas's how-to line
+    const brief = target.kind === 'problem' ? await publicData() : null; // asked for with the page, so cached by now
+    if (!alive) return;
+    view.innerHTML = `<section class="ws">${brief ? `<div class="ws-brief">${briefHtml(brief)}</div>` : ''}<div class="ws-host${brief ? ' ws-pending' : ''}"></div></section>`;
     document.body.classList.toggle('ws-phone', target.kind === 'problem' || target.kind === 'challenge' || target.kind === 'sandbox'); // phones: the problem is a focus screen, the site's bars step aside (styles/app.css)
     reserve();
     const host = view.querySelector('.ws-host');
+    if (brief) { // the brief stays until the canvas's page has drawn under it (hidden meanwhile), then the workspace takes its place
+      const done = () => { mo.disconnect(); clearTimeout(late); host.classList.remove('ws-pending'); view.querySelector('.ws-brief')?.remove(); };
+      const mo = new MutationObserver(() => { if (host.querySelector('.solve')) done(); }), late = setTimeout(done, 12000);
+      mo.observe(host, { childList: true, subtree: true });
+      stopBrief = () => { mo.disconnect(); clearTimeout(late); };
+    }
     // the gate says open: the workspace's chunks are asked for all at once, not one level after the other (the list is the build's, from boot-theme.js)
-    if (target.kind === 'problem' && !island && !warm) { warm = true; for (const f of window.__tkIsland || []) { const l = document.createElement('link'), css = /\.css$/.test(f); l.rel = css ? 'preload' : 'modulepreload'; if (css) l.as = 'style'; l.href = `/3d/${f}`; document.head.appendChild(l); } }
+    if (target.kind === 'problem' && !island && !warm) { warm = true; for (const f of window.__tkIsland || []) { const l = document.createElement('link'), css = /\.css$/.test(f); l.rel = css ? 'preload' : 'modulepreload'; if (css) { l.as = 'style'; l.crossOrigin = ''; } l.href = `/3d/${f}`; document.head.appendChild(l); } }
     try {
       island ||= await import('/3d/islands/islands.js');
       if (!alive) return;
