@@ -139,6 +139,6 @@ writeFileSync(path.join(dist, "index.html"), renderHome(shell3d, site, articles)
 for (const [dir, title, canon] of [["learn", "Learn", "learn/concepts"], ["simulator", "Warm-ups", "simulator"], ["home", "Home", "home"]]) put(dir, shellFor(title, { canon }));
 
 // 4. the sitemap and the content map for AI assistants
-writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date }))));
+writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date, free: p.free }))));
 writeFileSync(path.join(dist, "llms.txt"), llmsTxt(site, pages));
 console.log(`switch: the 3D site answers every address; ${written} search-engine pages, ${workspace} workspace and static pages, the home page, sitemap.xml and llms.txt`);

@@ -47,6 +47,8 @@ export function mount(view, _params, ctx) {
   const target = kindOf(path);
   let alive = true, unmount = null, island = null, ro = null, offPublic = null;
   /** which kind of gate this address has: a problem, a challenge or a practice problem shows its public part; the sandbox and shared designs only the card; the practice list is open */
+  /** the free sample's problem (access "free" in the list): the workspace opens signed out too */
+  const isFree = () => target.kind === 'problem' && listNow().some((x) => x.slug === target.slug && x.access === 'free');
   const gateKind = () => (target.kind === 'practice' ? (target.slug ? 'problem' : null) : target.kind === 'problem' || target.kind === 'challenge' ? 'problem' : 'workspace');
   /** the public part of this address: { title, difficulty, brief } or null */
   const publicData = async () => {
@@ -74,7 +76,7 @@ export function mount(view, _params, ctx) {
   async function draw() {
     stop(); document.body.classList.remove('ws-phone');
     if (!alive) return;
-    const g = gateKind() ? gateNow(gateKind()) : 'open';
+    const g = gateKind() ? gateNow(gateKind(), { free: isFree() }) : 'open';
     document.body.classList.toggle('ws-locked', g !== 'open'); syncRail();
     if (g === 'wait') { view.innerHTML = wait(); return; }
     if (g === 'preview' || g === 'locked') {
@@ -118,6 +120,6 @@ export function mount(view, _params, ctx) {
     if (target.kind === 'challenge') challengeName(target.id).then((n) => { if (alive && n) document.title = `${n} · Challenge · Tech Katta`; });
     draw();
   })();
-  const off = gateKind() ? watchGate(gateKind(), () => { if (alive) window.tkRefresh?.(); }) : null;
+  const off = gateKind() ? watchGate(gateKind(), () => { if (alive) window.tkRefresh?.(); }, { get free() { return isFree(); } }) : null;
   return () => { alive = false; off?.(); offPublic?.(); stop(); document.body.classList.remove('ws-locked', 'ws-phone'); };
 }

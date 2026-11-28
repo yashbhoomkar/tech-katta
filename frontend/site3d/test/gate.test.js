@@ -42,3 +42,7 @@ test("the sign-in flag off (the API says required: false) opens every page, sign
     assert.equal(gateFor(k, { ...out, required: true }), k === "article" || k === "problem" ? "preview" : "locked");
   }
 });
+test("the free sample (free: true): an article or problem opens for everyone at once, signed out or while the account is unknown; nothing else does", () => {
+  for (const acc of [out, inn, unavailable, unknown]) for (const k of ["article", "problem"]) assert.equal(gateFor(k, acc, { free: true }), "open");
+  for (const k of ["personal", "workspace"]) assert.equal(gateFor(k, out, { free: true }), "locked");
+});

@@ -15,7 +15,7 @@
 //
 // What it reads is the canvas's own record in this browser (solve.js): nothing here writes to it.
 import { createWorld } from '../world-lazy.js';
-import { listArticles, listNow, splitTitle } from '../articles.js';
+import { listArticles, listNow, splitTitle, FREE } from '../articles.js';
 import { recipeFor, PREVIEW } from '../figures.js';
 import { ensureStories } from '../articles.js';
 import { accountState } from '../account.js';
@@ -73,7 +73,7 @@ export function mount(view, _p, { reduced }) {
                   <a class="lesson${r.solved ? ' done' : ''}" href="/problems/${esc(a.slug)}" data-preview="${esc(a.slug)}">
                     <span class="st" role="img" aria-label="${r.solved ? 'Solved' : r.started ? 'Started' : 'Not started'}">${r.solved ? '<i class="tk" aria-hidden="true"></i>' : r.started ? '<i class="half" aria-hidden="true"></i>' : ''}</span>
                     <span class="l-n mono">${String(n).padStart(2, '0')}</span>
-                    <span class="l-main"><b>${esc(h)}</b><span class="muted">${esc(meta || a.dek || '')}</span></span>
+                    <span class="l-main"><b>${esc(h)}${a.access === 'free' ? FREE : ''}</b><span class="muted">${esc(meta || a.dek || '')}</span></span>
                     <span class="l-tag mono">Open the canvas →</span>
                   </a></li>`; }).join('')}
               </ol>
