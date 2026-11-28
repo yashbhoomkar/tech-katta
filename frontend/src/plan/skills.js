@@ -24,7 +24,7 @@ export const MIX = {
   'file-sync': [3, 3, 2, 1], 'grocery-delivery': [2, 3, 2, 1], 'ind-vs-pak': [2, 3, 1, 1], 'job-scheduler': [3, 3, 3, 1],
   'key-value-store': [2, 3, 2, 1], leaderboard: [3, 3, 1, 1], 'menu-search': [2, 3, 2, 1], 'news-feed': [2, 3, 2, 1],
   notifications: [3, 3, 4, 1], payments: [3, 4, 4, 1], 'photo-sharing': [4, 3, 2, 1], 'restaurants-near-me': [2, 3, 2, 1],
-  'rider-dispatch': [2, 3, 2, 1], 'shared-editor': [3, 3, 1, 1], 'ticket-booking': [2, 3, 2, 1], 'url-shortener': [3, 3, 3, 1],
+  'rider-dispatch': [2, 3, 2, 1], 'shared-editor': [3, 3, 1, 1], 'ticket-booking': [2, 3, 2, 1], 'ipl-live-streaming': [3, 3, 2, 1], 'tatkal-booking': [2, 3, 2, 1], 'upi-switch': [3, 4, 4, 1], 'url-shortener': [3, 3, 3, 1],
   'video-streaming': [5, 3, 2, 1], 'web-crawler': [2, 3, 2, 1],
 };
 

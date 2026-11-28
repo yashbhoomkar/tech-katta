@@ -1,0 +1,2002 @@
+{
+  "section": "interview-questions",
+  "slug": "tatkal-booking",
+  "group": "hard",
+  "no": "QUESTION // 24 HARD",
+  "tag": "hard",
+  "access": "paid",
+  "date": "28 Nov 2026",
+  "title": "Design Tatkal train booking",
+  "dek": "At 10:00 sharp the whole country opens the same page for a few berths. Keep the page up, give everyone a fair place in line, and never give one berth to two people.",
+  "body": [
+    {
+      "t": "example"
+    },
+    {
+      "t": "p",
+      "x": "This is our own model of a Tatkal-style sale, not a description of how IRCTC or any railway builds its booking system. The times and numbers are model figures."
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "See, for a train and class, whether Tatkal is open and how many berths are left.",
+        "Join a fair line when Tatkal opens at 10:00, and see your place in it.",
+        "Book berths for a train and class, with the people travelling.",
+        "Pay and get a ticket (a PNR) that can be checked later.",
+        "A berth is given to only one person, and a booking that was accepted is never lost."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Correctness",
+          "No berth booked twice; no accepted booking lost"
+        ],
+        [
+          "Fairness",
+          "People are admitted roughly in the order they joined, not by who retries fastest"
+        ],
+        [
+          "Availability",
+          "The page is up at 10:00 sharp, even if booking is slow"
+        ],
+        [
+          "Scale",
+          "A model opening: 10 lakh requests a second for a few thousand berths a second"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Model: 50 lakh people open the page in the first minutes, refreshing every few seconds. That is about 10 lakh requests a second.",
+        "Almost all of those requests are the same page for everyone: open or sold out, berths left. It may be five seconds old.",
+        "Only a few thousand berths are on sale at once, and each booking takes a couple of minutes (choosing, paying). If 20,000 people book at a time, that is about 110 admissions a second. That, not the crowd, is the load on booking.",
+        "One berth is about 100 bytes of inventory: a lakh berths fit in memory many times over. Size is not the problem; contention is."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Train: `train_id` (train, date and class), `status` (tatkal open, sold out), `berths_left`.",
+        "Berth: `train_id`, `berth_id`, `status` (free, booked), `booked_by`, `booked_at`."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET  /trains/12951-3A-0112/tatkal      → 200 { \"status\": \"tatkal open\", \"berths_left\": 64 }\nPOST /trains/12951-3A-0112/line         → 202 { \"token\": \"…signed…\", \"place\": 41207 }\nPOST /trains/12951-3A-0112/bookings     Authorization: Bearer <token>   { \"berth_id\": \"B2-14\", \"user_id\": \"u1\" }   → 202 { \"accepted\": true }",
+      "say": "Read whether Tatkal is open, join the line and get a signed token with your place, and book a berth with an admitted token."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "p",
+      "x": "A CDN in front answers the page everyone refreshes. A load balancer and a booking service (stateless, in three zones) take what is left. The booking service puts each booking on a queue; berth bookers take them off the queue and book a berth only if it is still free, in a database with a standby in another zone. The queue is the line: it admits people at the rate the database can take."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Never twice"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "CHECK, THEN BOOK",
+      "what": "Read the berth; if it is free, write that it is booked.",
+      "use": "Works when one person at a time uses the system.",
+      "avoid": "Two people read free at the same moment and both write booked. Whoever writes last wins, and the other has a ticket for a berth that is not theirs.",
+      "ex": "Asha and Ravi both see B2-14 free at 10:00:03. Both are told it is theirs.",
+      "like": "Two people signing the same cheque."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "A BOOKING THAT SUCCEEDS ONLY IF FREE",
+      "what": "One write: set the berth to booked by this person if its status is still free. The database does the check and the write in one step, and exactly one request succeeds.",
+      "use": "However many people tap the same berth in the same second, one gets it and the rest are told to choose again.",
+      "avoid": "It protects one berth. A booking for four berths needs all four or none: use one transaction.",
+      "ex": "Asha's request is applied first; Ravi's finds the berth booked and is refused at once.",
+      "like": "A turnstile that lets one person through per click."
+    },
+    {
+      "t": "h2",
+      "x": "A fair line"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Joining the line gives a signed token with a place. The line admits people in batches at the rate booking can take.",
+        "A plain rate limit turns people away at random, and the people who retry fastest (scripts) win. A line is fairer and keeps booking from falling over.",
+        "Limit the tokens: one per account and device per window, so one person cannot hold a thousand places.",
+        "Show the place and a rough wait. People who can see a queue move do not refresh as hard."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The page everyone refreshes"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The Tatkal page is the same for everyone and may be a few seconds old. A CDN with a five-second life answers it, so ten lakh requests a second become a few thousand at your servers.",
+        "Never put the booking itself behind the cache: it changes who owns a berth.",
+        "Agents and scripts send many times the traffic of a person. A per-client limit at the edge keeps each client to a fair share."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: a CDN for the page, a queue for booking, a database that books a berth only if it is free.",
+        "Senior: a fair line with signed tokens; a booking of several berths in one transaction; a standby database in another zone.",
+        "Staff: per-client limits and detection of scripts; how the line is kept fair when a zone fails; how cancellations are put back on sale."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Waiting list?\" A separate ordered list per train and class; a cancellation books the first person on it in the same transaction that frees the berth.",
+            "\"A booking is accepted but payment fails?\" The berth is booked with an expiry; unpaid bookings are released by a job and put back on sale.",
+            "\"The database is the limit?\" Split by train: each train is its own shard, so a busy train does not slow the others.",
+            "\"How do you test it?\" A load test at the model peak, a lost zone, a failing database, and two people booking the same berth at the same moment."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Like a booking, a saved order is a promise: it must not vanish when a part crashes. The lost-orders challenge practises keeping that promise.",
+      "to": "problems/challenge/lost-orders",
+      "go": "Try the lost-orders challenge"
+    }
+  ],
+  "practice": {
+    "v": 2,
+    "brief": "Each test sends what the country does at 10:00 for Tatkal: almost all of it is people refreshing the page that says whether Tatkal is open and how many berths are left, which is the same for everyone and may be five seconds old; one in two hundred is someone admitted from the line booking a berth. A booking is answered at once and saved within a few minutes; two people must never get the same berth, and no accepted booking may be lost. A model morning: the 10:00 figures are ours, not the railway's.",
+    "entities": {
+      "berths": {
+        "rows": 10000000,
+        "rowBytes": 100,
+        "growthPerDay": 0,
+        "fields": {
+          "train_id": "string",
+          "berth_id": "string",
+          "status": "string",
+          "booked_by": "string",
+          "booked_at": "time"
+        },
+        "sample": [
+          {
+            "train_id": "12951-3A-0112",
+            "berth_id": "B2-14",
+            "status": "free",
+            "booked_by": null,
+            "booked_at": null
+          },
+          {
+            "train_id": "12951-3A-0112",
+            "berth_id": "B2-15",
+            "status": "booked",
+            "booked_by": "u7",
+            "booked_at": "2026-12-01T10:00:09Z"
+          }
+        ]
+      },
+      "trains": {
+        "rows": 1000,
+        "rowBytes": 200,
+        "growthPerDay": 10,
+        "fields": {
+          "train_id": "string",
+          "status": "string",
+          "berths_left": "int"
+        },
+        "sample": [
+          {
+            "train_id": "12951-3A-0112",
+            "status": "tatkal open",
+            "berths_left": 64
+          },
+          {
+            "train_id": "12952-SL-0112",
+            "status": "sold out",
+            "berths_left": 0
+          }
+        ]
+      }
+    },
+    "aliases": {
+      "status": [
+        "state",
+        "berth_status"
+      ],
+      "booked_by": [
+        "user_id",
+        "holder",
+        "passenger",
+        "booked_for"
+      ],
+      "berths_left": [
+        "available",
+        "seats_left",
+        "vacancy"
+      ]
+    },
+    "operations": [
+      {
+        "id": "open",
+        "name": "The Tatkal page",
+        "kind": "read",
+        "share": 0.995,
+        "sample": true,
+        "request": {
+          "method": "GET",
+          "path": "/v1/trains/12951-3A-0112/tatkal"
+        },
+        "bytesOut": 3000,
+        "cacheable": {
+          "ttlSec": 5
+        },
+        "keys": {
+          "entity": "trains",
+          "skew": "zipf",
+          "active": 20
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "trains",
+            "by": {
+              "train_id": "12951-3A-0112"
+            },
+            "fields": [
+              "status",
+              "berths_left"
+            ],
+            "label": "Tatkal open or sold out?"
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "status": "$s1.status"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 500
+        },
+        "consistency": {
+          "maxStalenessSec": 5
+        }
+      },
+      {
+        "id": "book",
+        "name": "Book berth B2-14",
+        "kind": "write",
+        "share": 0.005,
+        "sample": true,
+        "request": {
+          "method": "POST",
+          "path": "/v1/trains/12951-3A-0112/bookings",
+          "body": {
+            "berth_id": "B2-14",
+            "user_id": "u1"
+          }
+        },
+        "bytesOut": 100,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "update",
+            "entity": "berths",
+            "by": {
+              "train_id": "12951-3A-0112",
+              "berth_id": "B2-14"
+            },
+            "set": {
+              "status": "booked",
+              "booked_by": "u1",
+              "booked_at": "2026-12-01T10:00:09Z"
+            },
+            "cond": {
+              "status": {
+                "eq": "free"
+              }
+            },
+            "timing": "defer",
+            "withinSec": 300,
+            "label": "Booking the berth, if it is still free"
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "berth_id": "B2-14",
+            "accepted": true
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 500
+        },
+        "durable": true,
+        "effect": "once",
+        "idempotencyField": "berth_id"
+      }
+    ],
+    "tests": [
+      {
+        "id": "api-open",
+        "name": "The Tatkal page",
+        "desc": "Someone in the line refreshes the page for train 12951, 3A.",
+        "sample": true,
+        "op": "open"
+      },
+      {
+        "id": "api-book",
+        "name": "Book berth B2-14",
+        "desc": "u1, admitted from the line, books a free berth; only one person can get it.",
+        "sample": true,
+        "op": "book"
+      },
+      {
+        "id": "normal",
+        "name": "The day before",
+        "desc": "5,000 requests a second: people checking trains and the Tatkal time.",
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 5000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          }
+        ],
+        "sample": true
+      },
+      {
+        "id": "peak",
+        "name": "The line forms",
+        "desc": "2 lakh requests a second for an hour from 9 am: people in the line refreshing before Tatkal opens.",
+        "hours": 1,
+        "startHour": 9,
+        "traffic": {
+          "rps": 200000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          },
+          {
+            "kind": "noCrash"
+          },
+          {
+            "kind": "atomic"
+          },
+          {
+            "kind": "noDuplicates"
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ],
+        "sample": true
+      },
+      {
+        "id": "spike",
+        "name": "Tatkal opens at 10:00",
+        "desc": "For 15 minutes from 10:00, 10 lakh requests a second: everyone joins the line and refreshes. Only a few thousand a second can actually book. Bookings may wait up to half an hour; none may be lost.",
+        "hours": 3,
+        "startHour": 9,
+        "traffic": {
+          "rps": 1000000,
+          "pattern": "tatkal"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          {
+            "kind": "completes",
+            "op": "book",
+            "withinSec": 1800
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 9:10 am, with the line forming, one availability zone is lost for 15 minutes. Pages may slow down; bookings may wait up to ten minutes and none may be lost.",
+        "hours": 1,
+        "startHour": 9,
+        "traffic": {
+          "rps": 200000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          },
+          {
+            "kind": "completes",
+            "op": "book",
+            "withinSec": 600
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ],
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30. Bookings may wait; none may be lost.",
+        "hours": 1,
+        "startHour": 9,
+        "traffic": {
+          "rps": 200000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          },
+          {
+            "kind": "completes",
+            "op": "book",
+            "withinSec": 900
+          }
+        ],
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "crash",
+            "type": "database"
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (5,000 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 5000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 23200
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "cdn",
+          "type": "cdn",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 480,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 720,
+          "y": 0,
+          "name": "Booking service",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 12,
+            "zones": 3
+          }
+        },
+        {
+          "id": "q",
+          "type": "queue",
+          "x": 960,
+          "y": 0,
+          "name": "Bookings to make",
+          "config": {}
+        },
+        {
+          "id": "w",
+          "type": "server",
+          "x": 1200,
+          "y": 0,
+          "name": "Berth bookers",
+          "config": {
+            "size": "m5.large",
+            "count": 6,
+            "zones": 2
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 1440,
+          "y": 0,
+          "name": "Berth inventory",
+          "config": {
+            "engine": "postgres",
+            "size": "db.r5.2xlarge",
+            "multiAz": true,
+            "shards": 1,
+            "schema": {
+              "tables": [
+                {
+                  "name": "berths",
+                  "fields": [
+                    {
+                      "name": "train_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "berth_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "booked_by",
+                      "type": "string"
+                    },
+                    {
+                      "name": "booked_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "train_id",
+                    "berth_id"
+                  ]
+                },
+                {
+                  "name": "trains",
+                  "fields": [
+                    {
+                      "name": "train_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "berths_left",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "train_id"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "cdn"
+        },
+        {
+          "from": "cdn",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "app",
+          "to": "db",
+          "carries": [
+            "open"
+          ]
+        },
+        {
+          "from": "app",
+          "to": "q"
+        },
+        {
+          "from": "q",
+          "to": "w"
+        },
+        {
+          "from": "w",
+          "to": "db"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "No CDN",
+        "why": "Every refresh of the Tatkal page reaches your servers: 2 lakh a second while the line forms.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Booking service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 3
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 0,
+            "name": "Bookings to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 0,
+            "name": "Berth bookers",
+            "config": {
+              "size": "m5.large",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1440,
+            "y": 0,
+            "name": "Berth inventory",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "berths",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berth_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_by",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "train_id",
+                      "berth_id"
+                    ]
+                  },
+                  {
+                    "name": "trains",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berths_left",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "train_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db",
+            "carries": [
+              "open"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "clients",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "Bookings straight to the database",
+        "why": "At 10:00 thousands of bookings a second go straight to the database, far more than it takes.",
+        "fails": "spike",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Booking service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1440,
+            "y": 0,
+            "name": "Berth inventory",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "berths",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berth_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_by",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "train_id",
+                      "berth_id"
+                    ]
+                  },
+                  {
+                    "name": "trains",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berths_left",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "train_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Berths keyed by train",
+        "why": "The berths table is keyed by the train alone: booking one berth reads every berth of the train.",
+        "fails": "api-book",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Booking service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 3
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 0,
+            "name": "Bookings to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 0,
+            "name": "Berth bookers",
+            "config": {
+              "size": "m5.large",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1440,
+            "y": 0,
+            "name": "Berth inventory",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "berths",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berth_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_by",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "train_id"
+                    ]
+                  },
+                  {
+                    "name": "trains",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berths_left",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "train_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db",
+            "carries": [
+              "open"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Bookings saved by a write-back cache",
+        "why": "The berth bookers write to a cache that saves to the database later: when it fails, bookings people were told about are gone.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Booking service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 3
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 0,
+            "name": "Bookings to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 0,
+            "name": "Berth bookers",
+            "config": {
+              "size": "m5.large",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1440,
+            "y": 0,
+            "name": "Berth inventory",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "berths",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berth_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_by",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "train_id",
+                      "berth_id"
+                    ]
+                  },
+                  {
+                    "name": "trains",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berths_left",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "train_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "hc",
+            "type": "cache",
+            "x": 1320,
+            "y": 160,
+            "name": "Seat cache",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 1,
+              "replica": true,
+              "ttlSec": 600,
+              "writePolicy": "back"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db",
+            "carries": [
+              "open"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "hc"
+          },
+          {
+            "from": "hc",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every booking server is in one zone: when it goes dark, nothing answers.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Booking service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 1
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 0,
+            "name": "Bookings to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 0,
+            "name": "Berth bookers",
+            "config": {
+              "size": "m5.large",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1440,
+            "y": 0,
+            "name": "Berth inventory",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "berths",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berth_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_by",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "train_id",
+                      "berth_id"
+                    ]
+                  },
+                  {
+                    "name": "trains",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berths_left",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "train_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db",
+            "carries": [
+              "open"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "No standby: when it crashes, bookings wait 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Booking service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 3
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 0,
+            "name": "Bookings to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 0,
+            "name": "Berth bookers",
+            "config": {
+              "size": "m5.large",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1440,
+            "y": 0,
+            "name": "Berth inventory",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": false,
+              "shards": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "berths",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berth_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_by",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "train_id",
+                      "berth_id"
+                    ]
+                  },
+                  {
+                    "name": "trains",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berths_left",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "train_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db",
+            "carries": [
+              "open"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Booking service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 40,
+              "zones": 3
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 0,
+            "name": "Bookings to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 0,
+            "name": "Berth bookers",
+            "config": {
+              "size": "m5.large",
+              "count": 12,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1440,
+            "y": 0,
+            "name": "Berth inventory",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "berths",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berth_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_by",
+                        "type": "string"
+                      },
+                      {
+                        "name": "booked_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "train_id",
+                      "berth_id"
+                    ]
+                  },
+                  {
+                    "name": "trains",
+                    "fields": [
+                      {
+                        "name": "train_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "berths_left",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "train_id"
+                    ]
+                  }
+                ]
+              },
+              "replicas": 2
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db",
+            "carries": [
+              "open"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "remove:lb",
+      "engine:db:dynamodb",
+      "engine:db:cassandra"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "The CDN may reach the booking servers directly in this model.",
+      "engine:db:dynamodb": "DynamoDB has conditional writes: booking a berth only if it is free works the same.",
+      "engine:db:cassandra": "Cassandra books a berth only if it is free with a lightweight transaction: as good for 5,000 bookings a second."
+    },
+    "rubric": {
+      "fr": [
+        {
+          "label": "See whether Tatkal is open and berths are left",
+          "keys": [
+            "tatkal open",
+            "tatkal is open",
+            "berths left",
+            "berths are left",
+            "how many berths",
+            "available",
+            "vacancy",
+            "sold out",
+            "availability"
+          ]
+        },
+        {
+          "label": "Book berths for a train and class",
+          "keys": [
+            "book",
+            "reserve",
+            "berth",
+            "seat",
+            "pnr"
+          ]
+        },
+        {
+          "label": "A fair line when Tatkal opens at 10:00",
+          "keys": [
+            "queue",
+            "waiting room",
+            "line",
+            "fair",
+            "lottery",
+            "token"
+          ]
+        },
+        {
+          "label": "A berth is given to only one person",
+          "keys": [
+            "sold once",
+            "only once",
+            "double",
+            "oversell",
+            "over-sell",
+            "twice",
+            "double booking",
+            "never sell",
+            "one person"
+          ]
+        }
+      ],
+      "nfr": {
+        "availability": [
+          99.9,
+          99.999
+        ],
+        "p99": [
+          100,
+          1000
+        ],
+        "consistency": "strong",
+        "readsPerWrite": [
+          10,
+          10000
+        ]
+      },
+      "est": [
+        {
+          "id": "crowd",
+          "label": "Requests a second when Tatkal opens (model)",
+          "unit": "/s",
+          "answer": 1000000,
+          "tol": 3,
+          "how": "a model of 50 lakh people refreshing every few seconds"
+        },
+        {
+          "id": "admit",
+          "label": "People admitted a second (model)",
+          "unit": "/s",
+          "answer": 110,
+          "tol": 3,
+          "how": "20,000 booking at once, about 3 minutes each"
+        },
+        {
+          "id": "berths",
+          "label": "Berths on sale in one Tatkal window (model)",
+          "unit": "berths",
+          "answer": 100000,
+          "tol": 3,
+          "how": "a model of 1,000 trains with about 100 Tatkal berths each"
+        }
+      ],
+      "api": [
+        {
+          "label": "Join the line",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?(trains/[^/]+/)?(line|queue|waiting)"
+        },
+        {
+          "label": "Book berths",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?(trains/[^/]+/)?(bookings|reservations|berths|holds)"
+        },
+        {
+          "label": "Check a booking",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(bookings|pnr|reservations)/[^/]+"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "line-3",
+          "q": "Tatkal opens at 10:00 and 50 lakh people arrive for a lakh berths. What do they hit?",
+          "options": [
+            "The booking service itself, with extra servers added for the morning",
+            "A waiting room that admits people at the rate booking can take",
+            "A rate limit that turns away anyone over a fixed rate"
+          ],
+          "answer": 1,
+          "why": "Booking can only confirm so many berths a second, whatever the servers. A waiting room is fair and keeps booking from falling over; a plain rate limit turns people away at random, and agents retry fastest."
+        },
+        {
+          "id": "berth-3",
+          "q": "Two people tap the same last berth in the same second. What decides?",
+          "options": [
+            "Whoever's request reaches the server first, with no check",
+            "A booking that works only if the berth is still free, in one atomic step",
+            "The app checks first and then books"
+          ],
+          "answer": 2,
+          "why": "Checking and then booking leaves a gap for the other person to slip into. A conditional write that succeeds only for a free berth is one step the database decides, so exactly one person gets it."
+        },
+        {
+          "id": "cdn-3",
+          "q": "Almost every request is a refresh of a page that is the same for everyone. Where is it answered?",
+          "options": [
+            "At the servers, which scale up for the morning",
+            "At a CDN that keeps the page for a few seconds",
+            "In the app, which stops asking after one try"
+          ],
+          "answer": 1,
+          "why": "A page that is the same for everyone and may be a few seconds old is exactly what a CDN is for: millions of refreshes become a few requests to your servers."
+        }
+      ]
+    },
+    "hints": [
+      {
+        "step": "requirements",
+        "x": "Only a few thousand berths are on sale, and crores want them at 10:00. Which requirements protect the berths, and which protect the crowd?"
+      },
+      {
+        "step": "estimates",
+        "x": "How many people can book at once if each takes a couple of minutes? That, not the crowd, is your booking load."
+      },
+      {
+        "step": "api",
+        "x": "Join the line (a signed token), refresh the page, book a berth with an admitted token. Which of these must be safe to repeat?"
+      },
+      {
+        "step": "design",
+        "x": "Almost every request is someone refreshing a page that is the same for everyone. Who can answer that without your servers?"
+      },
+      {
+        "step": "design",
+        "x": "Put a CDN in front: 99% of the crowd is answered at the edge, so 10 lakh a second becomes 10,000 at your servers."
+      },
+      {
+        "step": "design",
+        "x": "Booking can only go so fast. A Queue between the API and the berth bookers is the line. Book a berth only if it is still free, in a database with a standby in another zone."
+      }
+    ],
+    "referenceNote": "The CDN answers the page everyone refreshes. Bookings go through a queue to berth bookers, which book a berth only if it is still free, in a database with a standby in another zone."
+  }
+}

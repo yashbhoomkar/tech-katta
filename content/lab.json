@@ -309,6 +309,98 @@
               0.2
             ]
           ]
+        },
+        {
+          "id": "tatkal",
+          "label": "Tatkal opens at 10:00",
+          "short": "10:00 Tatkal",
+          "desc": "The full rate for 15 minutes from 10:00, a fifth of it the rest of the day.",
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              10,
+              0.2
+            ],
+            [
+              10,
+              1
+            ],
+            [
+              10.25,
+              1
+            ],
+            [
+              10.25,
+              0.2
+            ],
+            [
+              24,
+              0.2
+            ]
+          ]
+        },
+        {
+          "id": "ipl",
+          "label": "IPL match night",
+          "short": "IPL night",
+          "desc": "A model match night: quiet all day, a jump at the 7 pm toss, the match from 7:30, a dip at the innings break and the peak in the last overs just before 11 pm.",
+          "points": [
+            [
+              0,
+              0.01
+            ],
+            [
+              18.5,
+              0.03
+            ],
+            [
+              19,
+              0.2
+            ],
+            [
+              19.5,
+              0.5
+            ],
+            [
+              20.5,
+              0.6
+            ],
+            [
+              21,
+              0.65
+            ],
+            [
+              21.25,
+              0.35
+            ],
+            [
+              21.5,
+              0.6
+            ],
+            [
+              22.5,
+              0.85
+            ],
+            [
+              22.8,
+              1
+            ],
+            [
+              23.1,
+              1
+            ],
+            [
+              23.3,
+              0.1
+            ],
+            [
+              24,
+              0.02
+            ]
+          ]
         }
       ],
       "like": "The crowd at the door: everyone who wants something from you, all at once.",
