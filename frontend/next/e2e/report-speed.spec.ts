@@ -14,7 +14,7 @@ const PAGES = ["/problems", "/home", "/problems/sandbox"];
 const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
 
 async function setupPage(page: Page) {
-  await page.addInitScript(() => Object.defineProperty(navigator, "webdriver", { get: () => false }));
+  await page.addInitScript(() => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-internal", "1"); } catch { /* blocked */ } });
   await localApi(page, true);
   await page.route(`${API}/v1/auth/config`, (r) => r.fulfill({ json: { enabled: true, clientId: "test" }, headers: CORS }));
   await page.route(`${API}/v1/me`, (r) => r.fulfill({ json: { user: { name: "Asha" } }, headers: CORS }));
@@ -27,7 +27,7 @@ const CORS = { "access-control-allow-origin": "http://localhost:4173", "access-c
 async function run(browser: Browser, path: string, steps: string[]) {
   const ctx = await browser.newContext({ baseURL: "http://localhost:4173", viewport: { width: 320, height: 579 }, deviceScaleFactor: 3.375, isMobile: true, hasTouch: true });
   try {
-    await ctx.addInitScript(() => Object.defineProperty(navigator, "webdriver", { get: () => false }));
+    await ctx.addInitScript(() => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-internal", "1"); } catch { /* blocked */ } });
     const page = await ctx.newPage();
     await setupPage(page);
     await page.goto(`${path}?feedback=on`);

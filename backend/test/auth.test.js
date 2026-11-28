@@ -31,7 +31,7 @@ test.before(async () => {
   jwks.listen(0, '127.0.0.1'); await once(jwks, 'listening');
   const port = await freePort();
   api = spawn(process.execPath, ['src/server.js'], { cwd: new URL('..', import.meta.url), stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), FRONTEND_ORIGIN: ORIGIN, GOOGLE_CLIENT_ID: CLIENT, MONGODB_URI: mongo.getUri(), ACCOUNTS_DB: 'tk_test', MONGODB_DB: 'old_backend_db', ADMIN_EMAILS: 'ops@example.com', SESSION_SECRET: 'x'.repeat(40), COOKIE_SECURE: '0', GOOGLE_JWKS_URL: `http://127.0.0.1:${jwks.address().port}/certs` } });
+    env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), FRONTEND_ORIGIN: ORIGIN, GOOGLE_CLIENT_ID: CLIENT, MONGODB_URI: mongo.getUri(), ACCOUNTS_DB: 'tk_test', MONGODB_DB: 'old_backend_db', ADMIN_EMAILS: 'ops@example.com', INTERNAL_EMAILS: 'staff@example.com', SESSION_SECRET: 'x'.repeat(40), COOKIE_SECURE: '0', GOOGLE_JWKS_URL: `http://127.0.0.1:${jwks.address().port}/certs` } });
   base = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 100; i += 1) { try { if ((await fetch(base + '/health')).ok) break; } catch {} await new Promise((r) => setTimeout(r, 50)); }
   client = await MongoClient.connect(mongo.getUri());
@@ -401,6 +401,18 @@ test('admin analytics: 401 signed out, 403 for non-admins, summary and Meta CSV 
   assert.equal(s.daily.reduce((a, d) => a + d.users, 0), 1, 'signed-in users per day');
   assert.ok(s.accounts.total >= 2); assert.ok(s.accounts.recent.some((u) => u.email === 'owner@example.com' && u.country === 'IN'));
   assert.ok(!JSON.stringify(s).includes('googleSub') && !JSON.stringify(s).includes('tokenHash'), 'no ids or hashes');
+  // internal traffic (an internal account's events, a browser seen signed in as one) is kept but left out unless asked
+  await events.insertMany([
+    { name: 'page_view', at: at(3), visitor: 'd'.repeat(20), userId: 'u-owner', internal: true, device: 'desktop', page: '/', props: { section: 'landing', slug: '', ref: '' } },
+    { name: 'page_view', at: at(2), visitor: 'd'.repeat(20), internal: true, device: 'desktop', page: '/', props: { section: 'landing', slug: '', ref: '' } },
+  ]);
+  const clean = await (await get('/v1/admin/summary?days=7', owner.cookie)).json();
+  assert.deepEqual(clean.totals, { events: 10, visitors: 2, users: 1 }, 'internal events are not counted by default');
+  assert.equal(clean.includeInternal, false); assert.equal(clean.internalEventsLeftOut, 2);
+  const all = await (await get('/v1/admin/summary?days=7&internal=1', owner.cookie)).json();
+  assert.deepEqual(all.totals, { events: 12, visitors: 3, users: 2 }, 'the toggle puts them back');
+  assert.equal(all.includeInternal, true); assert.equal(all.internalEventsLeftOut, 0);
+  await events.deleteMany({ internal: true });
   // range is clamped, other sites can't read it
   assert.equal((await (await get('/v1/admin/summary?days=99999', owner.cookie)).json()).days, 395);
   assert.equal((await get('/v1/admin/summary', owner.cookie, 'https://evil.example')).headers.get('access-control-allow-origin'), null);
@@ -520,4 +532,47 @@ test('the server sends to accountRoutes exactly the paths it answers', async () 
   const src = await readFile(new URL('../src/auth/routes.js', import.meta.url), 'utf8');
   const answered = new Set([...src.matchAll(/pathname === '([^']+)'/g)].map((m) => m[1]));
   assert.deepEqual([...ACCOUNT_PATHS].sort(), [...answered].sort());
+});
+
+test('internal accounts: ADMIN_EMAILS and INTERNAL_EMAILS mark an account, its events and its browser\'s later events get internal: true', async () => {
+  const { isInternal } = await import('../src/auth/accounts.js');
+  const { cleanBatch } = await import('../src/auth/events.js');
+  assert.equal(isInternal({ email: 'Staff@Example.com ' }, 'staff@example.com'), true);
+  assert.equal(isInternal({ email: 'x@example.com', role: 'admin' }, ''), true, 'an admin is internal (ADMIN_EMAILS and the owner list work the same way, isAdmin)');
+  assert.equal(isInternal({ email: 'someone@example.com' }, 'staff@example.com'), false);
+  assert.equal(isInternal({}, 'staff@example.com'), false);
+  const visitor = 'i'.repeat(20), ev = [{ name: 'sign_in', props: { ads: false } }];
+  assert.equal(cleanBatch({ visitor, events: ev })[0].internal, undefined, 'not marked by default');
+  assert.equal(cleanBatch({ visitor, events: ev }, { internal: true })[0].internal, true, 'an internal account');
+  assert.equal(cleanBatch({ visitor, internal: true, events: ev })[0].internal, true, 'a browser seen signed in as internal');
+  assert.equal(cleanBatch({ visitor, internal: 'yes', events: ev })[0].internal, undefined, 'only true counts');
+  // through the API: the account's view says internal, and its events are stamped at write time
+  const events = client.db('tk_test').collection('events');
+  const staff = await signIn({ sub: '9701', email: 'staff@example.com' });
+  assert.equal((await (await call('/v1/me', { cookie: staff.cookie })).json()).user.internal, true);
+  const plain = await signIn({ sub: '9702', email: 'plain@example.com' });
+  assert.equal((await (await call('/v1/me', { cookie: plain.cookie })).json()).user.internal, undefined);
+  await call('/v1/events', { method: 'POST', cookie: staff.cookie, body: { visitor: 's'.repeat(20), device: 'desktop', events: ev } });
+  await call('/v1/events', { method: 'POST', cookie: plain.cookie, body: { visitor: 'p'.repeat(20), device: 'desktop', events: ev } });
+  assert.equal((await events.findOne({ visitor: 's'.repeat(20) })).internal, true);
+  assert.equal((await events.findOne({ visitor: 'p'.repeat(20) })).internal, undefined);
+});
+
+test('analytics-clean-report: the owner\'s visitor ids and single-event visitors are taken out, nothing is changed', async () => {
+  const { cleanReport } = await import('../scripts/analytics-clean-report.mjs');
+  const at = (h) => new Date(Date.UTC(2026, 10, 27, h, 0));
+  const ev = (visitor, h, extra = {}) => ({ visitor, at: at(h), ...extra });
+  const users = [{ _id: 'o', email: 'x@example.com', role: 'admin' }, { _id: 'p', email: 'p@example.com' }];
+  const events = [
+    ev('owner1', 5, { userId: 'o' }), ev('owner1', 6), ev('owner1', 7), // the owner's id: also the events sent before sign-in
+    ev('bot1', 5), ev('bot2', 5),                                       // one event and gone
+    ev('real1', 5), ev('real1', 6), ev('real2', 5, { userId: 'p' }),    // two events; one signed-in single event stays
+    ev('real3', 5), ev('real3', 6), ev('real3', 7),
+    ev('yesterday', 5 - 24), ev('yesterday', 6 - 24),
+  ];
+  const r = cleanReport(events, users, '2026-11-27');
+  assert.deepEqual(r.all, { events: 11, visitors: 6 }); assert.equal(r.owner.visitorIds, 1); assert.equal(r.owner.events, 3);
+  assert.equal(r.singleEventVisitors.visitors, 2);
+  assert.deepEqual(r.real, { events: 6, visitors: 3 });
+  assert.equal(events.length, 13, 'the data is untouched');
 });

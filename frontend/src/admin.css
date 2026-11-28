@@ -22,3 +22,4 @@
 td{padding:8px 10px 8px 0;border-bottom:1px solid var(--grid);color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}td:first-child{color:var(--ink);white-space:normal;min-width:120px}
 @media(min-width:720px){.a-page{padding:0 24px 64px}.a-head{margin:0 -24px;padding:0 24px}.a-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.a-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.a-scroll{margin:0;padding:0}}
 @media(min-width:1040px){.a-tiles{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.a-int{display:flex;align-items:center;gap:6px;font:500 12px var(--font);color:var(--ink-2);flex-basis:100%;margin-top:6px}

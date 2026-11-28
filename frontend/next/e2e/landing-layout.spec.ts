@@ -11,7 +11,7 @@ const API = "https://tech-api.katta.cc", CORS = { "access-control-allow-origin":
 const SIZES: [number, number][] = [[320, 579], [360, 740], [390, 844], [402, 714], [430, 932], [768, 1024], [1366, 900]];
 
 async function open(page: Page, path: string, theme: string) {
-  await page.addInitScript((t) => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-theme", t); localStorage.removeItem("tk-tour-seen"); } catch { /* blocked */ } }, theme);
+  await page.addInitScript((t) => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-internal", "1"); } catch { /* blocked */ } try { localStorage.setItem("tk-theme", t); localStorage.removeItem("tk-tour-seen"); } catch { /* blocked */ } }, theme);
   await localApi(page, true);
   await page.route(`${API}/v1/auth/config`, (r) => r.fulfill({ json: { enabled: true, clientId: "test" }, headers: CORS }));
   await page.route(`${API}/v1/me`, (r) => r.fulfill({ status: 401, json: {}, headers: CORS }));
