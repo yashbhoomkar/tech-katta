@@ -160,5 +160,11 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "Flajolet et al.: HyperLogLog, the analysis of a near-optimal cardinality estimation algorithm (2007)",
+      "url": "https://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf"
+    }
   ]
 }

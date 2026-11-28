@@ -164,7 +164,7 @@
         {
           "seconds": 60,
           "rates": {
-            "SEND": 12000
+            "SEND": 11000
           }
         },
         {
@@ -176,7 +176,7 @@
         {
           "seconds": 60,
           "rates": {
-            "SEND": 12000
+            "SEND": 11000
           }
         },
         {
@@ -193,37 +193,37 @@
       }
     }
   ],
-  "reference": "lb     = lb()\napi    = server(count=9, size=large)\nqueue  = queue()\nworker = worker(count=4, size=medium)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n",
+  "reference": "lb     = lb()\napi    = server(count=7, size=large)\nqueue  = queue()\nworker = worker(count=2, size=large)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n",
   "wrong": [
     {
       "name": "no-queue",
       "expect": "Overloaded",
       "why": "Without a queue the database takes the spike directly: 12,000 writes a second against a large primary's 10,000.",
-      "source": "lb     = lb()\napi    = server(count=9, size=large)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api > db\n"
+      "source": "lb     = lb()\napi    = server(count=7, size=large)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api > db\n"
     },
     {
       "name": "one-small-worker",
       "expect": "Too Slow",
       "why": "One small worker does 500 a second, half the normal rate: the backlog from the spike never drains.",
-      "source": "lb     = lb()\napi    = server(count=9, size=large)\nqueue  = queue()\nworker = worker(count=1, size=small)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
+      "source": "lb     = lb()\napi    = server(count=7, size=large)\nqueue  = queue()\nworker = worker(count=1, size=small)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
     },
     {
       "name": "async-replica",
       "expect": "Data Lost",
       "why": "A failover loses the last second of written notifications.",
-      "source": "lb     = lb()\napi    = server(count=9, size=large)\nqueue  = queue()\nworker = worker(count=4, size=medium)\ndb     = sql(size=large, replicas=1, sync=false)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
+      "source": "lb     = lb()\napi    = server(count=7, size=large)\nqueue  = queue()\nworker = worker(count=2, size=large)\ndb     = sql(size=large, replicas=1, sync=false)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
     },
     {
       "name": "too-few-servers",
       "expect": "Overloaded",
       "why": "The servers still take the whole spike before the queue: two large serve 4,000 a second, and the spike sends 12,000.",
-      "source": "lb     = lb()\napi    = server(count=2, size=large)\nqueue  = queue()\nworker = worker(count=4, size=medium)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
+      "source": "lb     = lb()\napi    = server(count=2, size=large)\nqueue  = queue()\nworker = worker(count=2, size=large)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
     },
     {
       "name": "many-workers",
       "expect": "Over Budget",
       "why": "Twelve large workers clear the spike at once, at far more than the budget.",
-      "source": "lb     = lb()\napi    = server(count=9, size=large)\nqueue  = queue()\nworker = worker(count=12, size=large)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
+      "source": "lb     = lb()\napi    = server(count=7, size=large)\nqueue  = queue()\nworker = worker(count=12, size=large)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
     }
   ],
   "hints": [

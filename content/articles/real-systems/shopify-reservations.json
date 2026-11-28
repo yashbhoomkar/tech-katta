@@ -155,5 +155,11 @@
       "t": "p",
       "x": "Based on Shopify Engineering's post 'We replaced Redis with MySQL for inventory reservations, and it scaled' (May 2026). The numbers are Shopify's; the explanations and the diagram are ours."
     }
+  ],
+  "sources": [
+    {
+      "label": "Shopify Engineering: We replaced Redis with MySQL for inventory reservations, and it scaled (May 2026)",
+      "url": "https://shopify.engineering/scaling-inventory-reservations"
+    }
   ]
 }

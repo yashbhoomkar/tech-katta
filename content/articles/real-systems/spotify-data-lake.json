@@ -157,5 +157,11 @@
       "t": "p",
       "x": "Based on Spotify Engineering's post 'Indexing the Data Lake for Online Point Queries' (July 2026). The numbers are Spotify's; the explanations and the diagram are ours."
     }
+  ],
+  "sources": [
+    {
+      "label": "Spotify Engineering: Indexing the Data Lake for Online Point Queries (July 2026)",
+      "url": "https://engineering.atspotify.com/2026/7/indexing-the-data-lake-for-online-point-queries"
+    }
   ]
 }

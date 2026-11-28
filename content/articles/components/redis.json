@@ -187,5 +187,19 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "Redis documentation: persistence",
+      "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/"
+    },
+    {
+      "label": "Redis documentation: key eviction",
+      "url": "https://redis.io/docs/latest/develop/reference/eviction/"
+    },
+    {
+      "label": "Redis documentation: sorted sets",
+      "url": "https://redis.io/docs/latest/develop/data-types/sorted-sets/"
+    }
   ]
 }

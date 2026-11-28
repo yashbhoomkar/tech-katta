@@ -7,7 +7,7 @@
   "access": "paid",
   "date": "9 Nov 2026",
   "title": "Meta ZGateway: a proxy in front of a key-value store",
-  "dek": "ZippyDB, Meta's most used key-value store, had more than a million client hosts, each connecting straight to the database hosts it needed. ZGateway, a stateless proxy tier, cut each host's connections by about 97%, and gave Meta one place to batch requests, merge duplicate reads, shed load per tenant and steer traffic.",
+  "dek": "ZippyDB, Meta's most used key-value store, had more than a million client hosts, each connecting straight to the database hosts it needed. ZGateway, a stateless proxy tier, cuts each host's connections by about 97% in Meta's model, and gives Meta one place to batch requests, merge duplicate reads, shed load per tenant and steer traffic.",
   "body": [
     {
       "t": "h2",
@@ -136,6 +136,12 @@
     {
       "t": "p",
       "x": "Based on Engineering at Meta's post 'ZGateway: Learnings from Putting a Proxy in Front of ZippyDB' (September 2026). The numbers are Meta's; the explanations and the diagram are ours."
+    }
+  ],
+  "sources": [
+    {
+      "label": "Engineering at Meta: ZGateway, Learnings from Putting a Proxy in Front of ZippyDB (September 2026)",
+      "url": "https://engineering.fb.com/2026/09/03/core-infra/zgateway-proxy-zippydb-meta/"
     }
   ]
 }

@@ -141,5 +141,11 @@
       "t": "p",
       "x": "Based on Discord's engineering post 'How Discord Stores Trillions of Messages' (March 2023). The numbers are Discord's; the explanations and the diagram are ours."
     }
+  ],
+  "sources": [
+    {
+      "label": "Discord: How Discord Stores Trillions of Messages (2023)",
+      "url": "https://discord.com/blog/how-discord-stores-trillions-of-messages"
+    }
   ]
 }

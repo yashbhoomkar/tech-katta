@@ -13,9 +13,9 @@
   "statement": "Every restaurant on Zotato has photos: dishes, menus, the shop front. Restaurants **upload** photos now and then, and customers **view** them all the time: each menu page shows a dozen.\n\nDesign the service that stores and serves the photos. A photo is about **200 KB** and never changes after upload (a new photo gets a new name). Views come from all over India at up to **60,000 a second** in the evening, and a few photos (the famous biryani) take most of them.\n\nViews must be quick: half under 10 ms, and the 99th percentile under 160 ms. Names must never repeat. The budget is ₹60,000 a month.\n\nThe bytes of a photo should never pass through your API servers: in this problem the CDN reads photos straight from the object store, and the upload route stands for the call that creates the name and signs the upload link (the phone then sends the bytes to storage itself).",
   "constraints": [
     "Up to 20 crore photos, 200 KB each",
-    "Peak: 60,000 views and 50 uploads a second",
+    "Peak: 60,000 views a second, and up to 1,250 uploads a second when restaurants refresh their photos at dinner",
     "Median view under 10 ms",
-    "Budget ₹60,000 a month"
+    "Budget ₹30,000 a month"
   ],
   "total_items": 200000000,
   "requests": [
@@ -59,27 +59,27 @@
         "p99_ms": {
           "GET_IMAGE": 160
         },
-        "budget_inr": 60000
+        "budget_inr": 30000
       }
     },
     {
       "id": "t02-dinner",
       "title": "Dinner time",
       "hidden": false,
-      "explain": "30,000 then 60,000 views a second. Half the views under 10 ms.",
+      "explain": "30,000 then 60,000 views a second, and restaurants refreshing photos at 600 then 1,250 uploads a second. Half the views under 10 ms; uploads quick too.",
       "phases": [
         {
           "seconds": 300,
           "rates": {
             "GET_IMAGE": 30000,
-            "UPLOAD_IMAGE": 30
+            "UPLOAD_IMAGE": 600
           }
         },
         {
           "seconds": 300,
           "rates": {
             "GET_IMAGE": 60000,
-            "UPLOAD_IMAGE": 50
+            "UPLOAD_IMAGE": 1250
           }
         }
       ],
@@ -88,7 +88,8 @@
           "GET_IMAGE": 10
         },
         "p99_ms": {
-          "GET_IMAGE": 160
+          "GET_IMAGE": 160,
+          "UPLOAD_IMAGE": 110
         }
       }
     },
@@ -101,14 +102,14 @@
           "seconds": 300,
           "rates": {
             "GET_IMAGE": 40000,
-            "UPLOAD_IMAGE": 30
+            "UPLOAD_IMAGE": 1200
           }
         },
         {
           "seconds": 300,
           "rates": {
             "GET_IMAGE": 40000,
-            "UPLOAD_IMAGE": 30
+            "UPLOAD_IMAGE": 1200
           },
           "events": [
             {
@@ -119,7 +120,7 @@
       ],
       "promises": {
         "availability": {
-          "GET_IMAGE": 0.999
+          "UPLOAD_IMAGE": 0.999
         }
       }
     },
@@ -132,7 +133,7 @@
           "seconds": 600,
           "rates": {
             "GET_IMAGE": 20000,
-            "UPLOAD_IMAGE": 500
+            "UPLOAD_IMAGE": 1600
           }
         }
       ],
@@ -154,13 +155,14 @@
           "seconds": 1800,
           "rates": {
             "GET_IMAGE": 55000,
-            "UPLOAD_IMAGE": 50
+            "UPLOAD_IMAGE": 800
           }
         }
       ],
       "promises": {
         "p99_ms": {
-          "GET_IMAGE": 160
+          "GET_IMAGE": 160,
+          "UPLOAD_IMAGE": 110
         },
         "availability": {
           "GET_IMAGE": 0.999
@@ -168,19 +170,19 @@
       }
     }
   ],
-  "reference": "cdn   = cdn(ttl_s=86400)\nlb    = lb()\napi   = server(count=2, size=medium)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > cdn | files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n",
+  "reference": "cdn   = cdn(ttl_s=86400)\nlb    = lb()\napi   = server(count=4, size=small)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > cdn | files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n",
   "wrong": [
     {
       "name": "no-cdn",
       "expect": "Overloaded",
-      "why": "Every view goes through the servers: 60,000 calls a second against the 2,000 that two medium servers serve.",
-      "source": "lb    = lb()\napi   = server(count=2, size=medium)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > lb > api > files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
+      "why": "Every view goes through the servers: 60,000 calls a second against the 2,000 that four small servers serve.",
+      "source": "lb    = lb()\napi   = server(count=4, size=small)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > lb > api > files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
     },
     {
       "name": "cache-behind-servers",
       "expect": "Overloaded",
       "why": "A cache behind the servers doesn't protect them: all 60,000 views still go through them.",
-      "source": "cache = cache(nodes=1, memory_gb=4, ttl_s=86400)\nlb    = lb()\napi   = server(count=2, size=medium)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > lb > api > cache | files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
+      "source": "cache = cache(nodes=1, memory_gb=4, ttl_s=86400)\nlb    = lb()\napi   = server(count=4, size=small)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > lb > api > cache | files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
     },
     {
       "name": "views-through-servers",
@@ -192,7 +194,7 @@
       "name": "random-32-bit-ids",
       "expect": "Wrong Answer",
       "why": "20 crore images with random 32-bit names repeat.",
-      "source": "cdn   = cdn(ttl_s=86400)\nlb    = lb()\napi   = server(count=2, size=medium)\nfiles = objectstore()\nids   = idgen(kind=random, bits=32)\n\nread  GET_IMAGE:    client > cdn | files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
+      "source": "cdn   = cdn(ttl_s=86400)\nlb    = lb()\napi   = server(count=4, size=small)\nfiles = objectstore()\nids   = idgen(kind=random, bits=32)\n\nread  GET_IMAGE:    client > cdn | files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
     },
     {
       "name": "many-servers",

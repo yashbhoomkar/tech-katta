@@ -191,5 +191,15 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "PostgreSQL documentation: concurrency control, introduction (MVCC)",
+      "url": "https://www.postgresql.org/docs/current/mvcc-intro.html"
+    },
+    {
+      "label": "PostgreSQL documentation: index types",
+      "url": "https://www.postgresql.org/docs/current/indexes-types.html"
+    }
   ]
 }

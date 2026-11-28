@@ -111,5 +111,11 @@
       "t": "p",
       "x": "Based on Figma's blog post 'How Figma's multiplayer technology works' by Evan Wallace (October 2019). The explanations and the diagram are ours."
     }
+  ],
+  "sources": [
+    {
+      "label": "Figma: How Figma's multiplayer technology works (2019)",
+      "url": "https://www.figma.com/blog/how-figmas-multiplayer-technology-works/"
+    }
   ]
 }

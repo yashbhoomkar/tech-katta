@@ -187,5 +187,11 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "Elasticsearch reference: scalability and resilience",
+      "url": "https://www.elastic.co/guide/en/elasticsearch/reference/current/scalability.html"
+    }
   ]
 }

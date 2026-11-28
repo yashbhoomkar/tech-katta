@@ -168,5 +168,11 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "Apache Flink documentation: concepts overview",
+      "url": "https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/overview/"
+    }
   ]
 }
