@@ -14,7 +14,7 @@ import { msg } from './messages.js';
 import { round } from './round.js';
 
 // Raise whenever a formula, a catalogue number, a rule or a message that depends on numbers changes (21.7).
-export const JUDGE_VERSION = 3; // 3: a counter with fewer values than the problem's items fails like a collision (2026-11-17); 2: a worker blocked by a failover waits instead of being stuck; lost writes counted from the rate just before a failure
+export const JUDGE_VERSION = 4; // 4: a large SQL primary takes 20,000 reads and 10,000 writes a second and a load balancer 100,000, matching Numbers to know and the canvas (2026-11-27); 3: a counter with fewer values than the problem's items fails like a collision (2026-11-17); 2: a worker blocked by a failover waits instead of being stuck; lost writes counted from the rate just before a failure
 
 export function judge(design, problem, test) {
   const cost = costOf(design);
