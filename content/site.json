@@ -484,7 +484,7 @@
       {
         "target": ".d-desc",
         "title": "Interview Questions",
-        "text": "Seven short guides on how the interview works, then 22 questions from Easy to Hard, each answered from requirements and rough numbers to a design you can defend."
+        "text": "Seven short guides on how the interview works, then the questions, from Easy to Hard, each answered from requirements and rough numbers to a design you can defend."
       },
       {
         "target": "a.qt-start[href*=\"how-to-answer\"]",
@@ -599,7 +599,7 @@
       {
         "target": ".tabs .tab[href=\"#problems\"]",
         "title": "Then practise",
-        "text": "22 problems and 8 challenges. Build a design on a canvas, run the tests and get a score out of 100: real traffic, crashed servers and the monthly bill decide it."
+        "text": "Problems and challenges. Build a design on a canvas, run the tests and get a score out of 100: real traffic, crashed servers and the monthly bill decide it."
       },
       {
         "target": ".d-head .acct",

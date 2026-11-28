@@ -1,0 +1,2518 @@
+{
+  "section": "interview-questions",
+  "slug": "ipl-live-streaming",
+  "group": "medium",
+  "no": "QUESTION // 25 MEDIUM",
+  "tag": "medium",
+  "access": "paid",
+  "date": "28 Nov 2026",
+  "title": "Design IPL live streaming for match night",
+  "dek": "A crore people watch the last over at once. Keep the stream up with a CDN and an origin shield, make every new 4-second segment once, and still give each viewer their own ad.",
+  "body": [
+    {
+      "t": "example"
+    },
+    {
+      "t": "p",
+      "x": "This is our own model of a live match, not a description of how any streaming company builds its service. The crowd and the shape of the night are model figures. The idea of a CDN with a shield in front of an origin is general practice."
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Watch the match live, within a few seconds of the ground, in several qualities.",
+        "Never stop: if a part fails, the stream may stutter for a moment but must keep going.",
+        "At an ad break, each viewer is shown an ad chosen for them.",
+        "Survive the crowd arriving all at once at the toss, and the peak in the last overs."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Availability",
+          "99.95% of segment and playlist requests answered, fast, through the match"
+        ],
+        [
+          "Freshness",
+          "A new 4-second segment reaches everyone within a few seconds"
+        ],
+        [
+          "Protection",
+          "The CDN's misses never reach the origin as a flood"
+        ],
+        [
+          "Scale",
+          "A model peak of 1.2 crore players, 30 lakh requests a second"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Model: 1.2 crore players, each asking for a 4-second segment every 4 seconds: about 30 lakh requests a second at the peak.",
+        "The playlist (which lists the newest segments) is asked for as often as a segment, but it is tiny: a few KB.",
+        "A segment is about 250 KB. At about 1.5 Mbps a player, 1.2 crore players is about 18 terabits a second: only a CDN can carry that.",
+        "Everyone asks for the same newest segment, so the CDN answers nearly all of them. The few misses must not each reach your servers.",
+        "Ad decisions are personal: they cannot be copied from a cache. They are a small share of requests (about 1 in 1,000 in our model), but each one needs work at your servers."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Stream: `stream_id`, `status` (live, ended), `latest_seq`.",
+        "Segment: `stream_id`, `quality`, `seq`, `bytes`. Never changes once made.",
+        "Playlist: `stream_id`, `quality`, the list of the newest segments."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET /live/ipl-final/720p/1834.ts          → 200 (the segment, Cache-Control: max-age=4)\nGET /live/ipl-final/720p/playlist.m3u8    → 200 (the newest segments, max-age=2)\nGET /live/ipl-final/ad-decision?viewer=u1 → 200 { \"ad\": \"a-77\" }   (never cached)",
+      "say": "Fetch a segment, fetch the playlist, ask which ad to show. The first two can be cached for seconds; the ad decision cannot."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "p",
+      "x": "The encoder cuts the match into 4-second segments and writes them to a segment store. Viewers ask a CDN. On a miss, the CDN asks a load balancer, which spreads requests over origin servers in three zones. The origin servers read through an origin shield (a cache) in front of the store, so a segment is read from the store once, however many origin servers ask for it. Ad decisions pass through the CDN and are worked out by the origin servers."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "The CDN and the shield"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "VIEWERS STRAIGHT TO THE ORIGIN",
+      "what": "Put servers behind a load balancer and add more as the crowd grows.",
+      "use": "Fine for a few thousand viewers.",
+      "avoid": "30 lakh requests a second cannot pass any load balancer, and new servers take minutes to start while the crowd arrives in minutes.",
+      "ex": "At the toss the crowd goes from a few lakh to a crore in half an hour. The origin falls over in the first ten minutes.",
+      "like": "Serving a stadium from one tea stall."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "A CDN AND AN ORIGIN SHIELD",
+      "what": "The CDN answers almost every request from a copy near the viewer. Where the CDN has no copy yet, the request goes to the origin, which asks the shield: one read from the store per segment, however many ask.",
+      "use": "Origin load depends on the number of new segments, not on the number of viewers. A cold CDN or a failed server cannot send the crowd to the store.",
+      "avoid": "The shield must not be a single point of failure: keep a standby in another zone, or its loss sends every miss to the store at once.",
+      "ex": "Segment 1834 is made at 10:50:04. The first miss fills the shield; the next 50,000 origin requests for it are answered from the shield.",
+      "like": "A warehouse in front of the factory."
+    },
+    {
+      "t": "h2",
+      "x": "Live segments"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A segment never changes once made, so it can be cached for its whole short life. The playlist changes every 4 seconds, so it is cached for about 2.",
+        "Everyone asks for the same newest segment at the same moment. The first request after a miss fills the cache; the others wait for it, instead of all going to the store.",
+        "Several qualities: a player moves to a lower one when its network is poor. Lower qualities are cheap and keep the stream alive when you are short of capacity."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Ad breaks"
+    },
+    {
+      "t": "list",
+      "items": [
+        "An ad decision is for one viewer and cannot be cached. It reaches the origin servers, so size them for the ad share at the peak, not for the segments alone.",
+        "If the ad service is slow, play a default ad rather than stall the video: the stream matters more than the ad.",
+        "Ad breaks come at known times (the end of an over): you can warm servers and caches just before."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Concurrency peaks"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Size the origin servers for the last overs, which have about twice the viewers of the toss, not for the average. Starting servers takes minutes; the crowd arrives faster.",
+        "Spread servers over three zones so the loss of one still leaves enough, and the stream goes on.",
+        "Test the failures: a zone lost, the shield crashed, at the peak, not in a quiet hour."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: a CDN in front, segments in object storage, a cache for the playlist.",
+        "Senior: an origin shield; origin servers sized for the peak, across zones; ad decisions as the part that cannot be cached.",
+        "Staff: how a cold start of the CDN is avoided, how traffic moves between CDNs, and what degrades first when capacity is short."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Two matches at once?\" Each stream has its own segments and playlists; the CDN, shield and origin are shared, so size them for both peaks added together.",
+            "\"Replays?\" The segments are already in the store; a replay is a playlist that lists old ones, and the CDN caches them for much longer.",
+            "\"The encoder fails?\" Two encoders send the same segments to the store; the origin serves whichever segment arrives first.",
+            "\"How do you test it?\" Load tests at the toss and the last overs, then a lost zone and a crashed shield at the peak."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "The same CDN-and-origin idea carries the IND vs PAK problem, where the crowd is bigger and the origin has no shield to start from.",
+      "to": "problems/ind-vs-pak",
+      "go": "Try IND vs PAK"
+    }
+  ],
+  "practice": {
+    "v": 2,
+    "brief": "Each test sends what a model IPL night's viewers ask for: a 4-second segment of the match every 4 seconds, the playlist that lists the newest segments, and at every ad break a personal ad decision that cannot be shared. The model crowd is 1.2 crore players at the peak, 30 lakh requests a second; the shape of the evening is ours (a jump at the toss, a dip at the innings break, the peak in the last overs). A CDN can answer most segments and playlists, but every new segment comes from your servers first, and the origin must be protected from the CDN's many misses.",
+    "entities": {
+      "segments": {
+        "rows": 30000000,
+        "rowBytes": 250000,
+        "fields": {
+          "stream_id": "string",
+          "quality": "string",
+          "seq": "string",
+          "bytes": "blob"
+        },
+        "sample": [
+          {
+            "stream_id": "ipl-final",
+            "quality": "720p",
+            "seq": "1834",
+            "bytes": "<bytes>"
+          },
+          {
+            "stream_id": "ipl-final",
+            "quality": "360p",
+            "seq": "1834",
+            "bytes": "<bytes>"
+          }
+        ]
+      },
+      "playlists": {
+        "rows": 2000,
+        "rowBytes": 2000,
+        "fields": {
+          "stream_id": "string",
+          "quality": "string",
+          "bytes": "blob"
+        },
+        "sample": [
+          {
+            "stream_id": "ipl-final",
+            "quality": "720p",
+            "bytes": "<playlist>"
+          },
+          {
+            "stream_id": "ipl-final",
+            "quality": "360p",
+            "bytes": "<playlist>"
+          }
+        ]
+      },
+      "streams": {
+        "rows": 400,
+        "rowBytes": 200,
+        "fields": {
+          "stream_id": "string",
+          "status": "string",
+          "latest_seq": "string"
+        },
+        "sample": [
+          {
+            "stream_id": "ipl-final",
+            "status": "live",
+            "latest_seq": "1834"
+          },
+          {
+            "stream_id": "csk-vs-mi",
+            "status": "ended",
+            "latest_seq": "2410"
+          }
+        ]
+      }
+    },
+    "aliases": {
+      "stream_id": [
+        "match_id",
+        "stream",
+        "channel_id",
+        "event_id"
+      ],
+      "seq": [
+        "segment",
+        "sequence",
+        "chunk",
+        "segment_no",
+        "part"
+      ],
+      "quality": [
+        "rendition",
+        "resolution",
+        "bitrate",
+        "variant"
+      ],
+      "bytes": [
+        "file",
+        "data",
+        "content",
+        "body"
+      ]
+    },
+    "operations": [
+      {
+        "id": "segment",
+        "name": "Play the next segment",
+        "kind": "read",
+        "share": 0.799,
+        "sample": true,
+        "request": {
+          "method": "GET",
+          "path": "/live/ipl-final/720p/1834.ts"
+        },
+        "bytesOut": 250000,
+        "cacheable": {
+          "ttlSec": 4
+        },
+        "live": true,
+        "keys": {
+          "entity": "segments",
+          "skew": "uniform",
+          "active": 3000
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "streams",
+            "by": {
+              "stream_id": "ipl-final"
+            },
+            "fields": [
+              "status"
+            ],
+            "label": "Is the match live?"
+          },
+          {
+            "id": "s2",
+            "op": "blob",
+            "mode": "get",
+            "entity": "segments",
+            "key": {
+              "stream_id": "ipl-final",
+              "quality": "720p",
+              "seq": "1834"
+            },
+            "field": "bytes",
+            "bytes": 250000
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "seq": "1834",
+            "found": "$s2.ok"
+          }
+        },
+        "slo": {
+          "availability": 99.95,
+          "p99Ms": 300
+        }
+      },
+      {
+        "id": "playlist",
+        "name": "What's new in the stream",
+        "kind": "read",
+        "share": 0.2,
+        "request": {
+          "method": "GET",
+          "path": "/live/ipl-final/720p/playlist.m3u8"
+        },
+        "bytesOut": 2000,
+        "cacheable": {
+          "ttlSec": 2
+        },
+        "live": true,
+        "keys": {
+          "entity": "playlists",
+          "skew": "uniform",
+          "active": 10
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "streams",
+            "by": {
+              "stream_id": "ipl-final"
+            },
+            "fields": [
+              "status"
+            ],
+            "label": "Is the match live?"
+          },
+          {
+            "id": "s2",
+            "op": "blob",
+            "mode": "get",
+            "entity": "playlists",
+            "key": {
+              "stream_id": "ipl-final",
+              "quality": "720p"
+            },
+            "field": "bytes"
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "quality": "720p",
+            "found": "$s2.ok"
+          }
+        },
+        "slo": {
+          "availability": 99.95,
+          "p99Ms": 300
+        }
+      },
+      {
+        "id": "ad",
+        "name": "What ad plays next",
+        "kind": "read",
+        "share": 0.001,
+        "request": {
+          "method": "GET",
+          "path": "/live/ipl-final/ad-decision?viewer=u1"
+        },
+        "bytesOut": 500,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "compute",
+            "cpuMs": 2,
+            "label": "Choosing an ad for this viewer"
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "ad": "a-77"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 500
+        }
+      }
+    ],
+    "tests": [
+      {
+        "id": "api-segment",
+        "name": "Play the next segment",
+        "desc": "A player asks for segment 1834 of the match in 720p.",
+        "sample": true,
+        "op": "segment"
+      },
+      {
+        "id": "api-playlist",
+        "name": "What's new in the stream",
+        "desc": "Every 4 seconds a player asks for the 720p playlist, which lists the newest segments.",
+        "op": "playlist"
+      },
+      {
+        "id": "api-ad",
+        "name": "What ad plays next",
+        "desc": "At an ad break a player asks which ad to show. The answer is for this viewer, so it is worked out, not copied from a cache.",
+        "op": "ad"
+      },
+      {
+        "id": "toss",
+        "name": "The toss",
+        "desc": "7 pm: the crowd arrives within minutes, from a few lakh to 60 lakh players by 7:30.",
+        "hours": 1,
+        "startHour": 19,
+        "traffic": {
+          "rps": 3000000,
+          "pattern": "ipl"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "from": 0,
+            "to": 35,
+            "label": "No buffering around the toss (7:00 to 7:35 pm): 99.95% of requests work, fast"
+          }
+        ],
+        "sample": true
+      },
+      {
+        "id": "last-overs",
+        "name": "The last overs",
+        "desc": "10 pm to midnight: the peak, 1.2 crore players just before 11, then everyone leaves within minutes.",
+        "hours": 2,
+        "startHour": 22,
+        "traffic": {
+          "rps": 3000000,
+          "pattern": "ipl"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "from": 40,
+            "to": 85,
+            "label": "No buffering in the last overs (10:40 to 11:25 pm): 99.95% of requests work, fast"
+          },
+          {
+            "kind": "noCrash"
+          }
+        ],
+        "sample": true
+      },
+      {
+        "id": "whole-match",
+        "name": "The whole night",
+        "desc": "7 pm to midnight, toss to presentation.",
+        "hours": 5,
+        "startHour": 19,
+        "traffic": {
+          "rps": 3000000,
+          "pattern": "ipl"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 99.9,
+            "p99Ms": 500
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "shield-crash",
+        "name": "The shield fails at the peak",
+        "desc": "At 10:50 pm the origin shield crashes. With a standby in another zone it takes over within a minute; without one, every miss reaches the segment store at once and the shield is cold for ten minutes.",
+        "hours": 2,
+        "startHour": 22,
+        "traffic": {
+          "rps": 3000000,
+          "pattern": "ipl"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 1000
+          }
+        ],
+        "faults": [
+          {
+            "minute": 50,
+            "kind": "crash",
+            "type": "cache"
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 10:50 pm, in the last overs, one availability zone is lost for 15 minutes. The stream may stutter for a minute; it must not stop.",
+        "hours": 2,
+        "startHour": 22,
+        "traffic": {
+          "rps": 3000000,
+          "pattern": "ipl"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 1000
+          }
+        ],
+        "faults": [
+          {
+            "minute": 50,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A day without a match: 20,000 people watching replays, 5,000 requests a second all day, storage and data transfer included. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 5000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 266000
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "viewers",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "name": "Viewers",
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 260,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "origin",
+          "type": "server",
+          "x": 520,
+          "y": 0,
+          "name": "Origin",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 7
+          }
+        },
+        {
+          "id": "cache",
+          "type": "cache",
+          "x": 780,
+          "y": 0,
+          "name": "Origin shield",
+          "config": {
+            "size": "cache.m5.large",
+            "nodes": 4,
+            "ttlSec": 4,
+            "replica": true
+          }
+        },
+        {
+          "id": "store",
+          "type": "database",
+          "x": 1040,
+          "y": 0,
+          "name": "Segment store",
+          "config": {
+            "engine": "s3",
+            "schema": {
+              "tables": [
+                {
+                  "name": "segments",
+                  "fields": [
+                    {
+                      "name": "stream_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "quality",
+                      "type": "string"
+                    },
+                    {
+                      "name": "seq",
+                      "type": "string"
+                    },
+                    {
+                      "name": "bytes",
+                      "type": "blob"
+                    }
+                  ],
+                  "key": [
+                    "stream_id",
+                    "quality",
+                    "seq"
+                  ]
+                },
+                {
+                  "name": "playlists",
+                  "fields": [
+                    {
+                      "name": "stream_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "quality",
+                      "type": "string"
+                    },
+                    {
+                      "name": "bytes",
+                      "type": "blob"
+                    }
+                  ],
+                  "key": [
+                    "stream_id",
+                    "quality"
+                  ]
+                },
+                {
+                  "name": "streams",
+                  "fields": [
+                    {
+                      "name": "stream_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "latest_seq",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "stream_id"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "viewers",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "origin"
+        },
+        {
+          "from": "origin",
+          "to": "cache"
+        },
+        {
+          "from": "cache",
+          "to": "store"
+        }
+      ]
+    },
+    "reference": {
+      "nodes": [
+        {
+          "id": "viewers",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "name": "Viewers",
+          "config": {}
+        },
+        {
+          "id": "cdn",
+          "type": "cdn",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 480,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "origin1",
+          "type": "server",
+          "x": 720,
+          "y": -100,
+          "name": "Origin A",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 19,
+            "zones": 3,
+            "timeoutMs": 300
+          }
+        },
+        {
+          "id": "origin2",
+          "type": "server",
+          "x": 720,
+          "y": 100,
+          "name": "Origin B",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 19,
+            "zones": 3,
+            "timeoutMs": 300
+          }
+        },
+        {
+          "id": "cache",
+          "type": "cache",
+          "x": 960,
+          "y": 0,
+          "name": "Origin shield",
+          "config": {
+            "size": "cache.m5.large",
+            "nodes": 4,
+            "ttlSec": 4,
+            "replica": true
+          }
+        },
+        {
+          "id": "store",
+          "type": "database",
+          "x": 1200,
+          "y": 0,
+          "name": "Segment store",
+          "config": {
+            "engine": "s3",
+            "schema": {
+              "tables": [
+                {
+                  "name": "segments",
+                  "fields": [
+                    {
+                      "name": "stream_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "quality",
+                      "type": "string"
+                    },
+                    {
+                      "name": "seq",
+                      "type": "string"
+                    },
+                    {
+                      "name": "bytes",
+                      "type": "blob"
+                    }
+                  ],
+                  "key": [
+                    "stream_id",
+                    "quality",
+                    "seq"
+                  ]
+                },
+                {
+                  "name": "playlists",
+                  "fields": [
+                    {
+                      "name": "stream_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "quality",
+                      "type": "string"
+                    },
+                    {
+                      "name": "bytes",
+                      "type": "blob"
+                    }
+                  ],
+                  "key": [
+                    "stream_id",
+                    "quality"
+                  ]
+                },
+                {
+                  "name": "streams",
+                  "fields": [
+                    {
+                      "name": "stream_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "latest_seq",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "stream_id"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "viewers",
+          "to": "cdn"
+        },
+        {
+          "from": "cdn",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "origin1"
+        },
+        {
+          "from": "lb",
+          "to": "origin2"
+        },
+        {
+          "from": "origin1",
+          "to": "cache"
+        },
+        {
+          "from": "origin2",
+          "to": "cache"
+        },
+        {
+          "from": "cache",
+          "to": "store"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "Segments in the database",
+        "why": "Video segments go into the rows of a table: a database is not built for big files.",
+        "fails": "api-segment",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "name": "Viewers",
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -100,
+            "name": "Origin A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 19,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 100,
+            "name": "Origin B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 19,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Origin shield",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 4,
+              "ttlSec": 4,
+              "replica": true
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Segment store",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  },
+                  {
+                    "name": "streams",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "latest_seq",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "stream_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin1",
+            "to": "cache"
+          },
+          {
+            "from": "origin2",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "No CDN",
+        "why": "All 30 lakh requests a second reach your load balancer and servers.",
+        "fails": "toss",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "name": "Viewers",
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -100,
+            "name": "Origin A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 19,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 100,
+            "name": "Origin B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 19,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Origin shield",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 4,
+              "ttlSec": 4,
+              "replica": true
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Segment store",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  },
+                  {
+                    "name": "streams",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "latest_seq",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "stream_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin1",
+            "to": "cache"
+          },
+          {
+            "from": "origin2",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "store"
+          },
+          {
+            "from": "viewers",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "Autoscaling from a few",
+        "why": "Servers that add more when busy take minutes to start, and the crowd arrives in minutes at the toss.",
+        "fails": "toss",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "name": "Viewers",
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -100,
+            "name": "Origin A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3,
+              "autoscale": true,
+              "maxCount": 50,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 100,
+            "name": "Origin B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3,
+              "autoscale": true,
+              "maxCount": 50,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Origin shield",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 4,
+              "ttlSec": 4,
+              "replica": true
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Segment store",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  },
+                  {
+                    "name": "streams",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "latest_seq",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "stream_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin1",
+            "to": "cache"
+          },
+          {
+            "from": "origin2",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "Just enough servers",
+        "why": "Enough for the toss, not for the last overs, which have twice the viewers.",
+        "fails": "last-overs",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "name": "Viewers",
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -100,
+            "name": "Origin A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 100,
+            "name": "Origin B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Origin shield",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 4,
+              "ttlSec": 4,
+              "replica": true
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Segment store",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  },
+                  {
+                    "name": "streams",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "latest_seq",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "stream_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin1",
+            "to": "cache"
+          },
+          {
+            "from": "origin2",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every origin server is in one zone: when it goes dark, the stream stops for everyone.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "name": "Viewers",
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -100,
+            "name": "Origin A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 19,
+              "zones": 1,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 100,
+            "name": "Origin B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 19,
+              "zones": 1,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Origin shield",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 4,
+              "ttlSec": 4,
+              "replica": true
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Segment store",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  },
+                  {
+                    "name": "streams",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "latest_seq",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "stream_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin1",
+            "to": "cache"
+          },
+          {
+            "from": "origin2",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It survives the night, at a bill well above what it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "name": "Viewers",
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -100,
+            "name": "Origin A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 100,
+            "name": "Origin B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Origin shield",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 7,
+              "ttlSec": 4,
+              "replica": true
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Segment store",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  },
+                  {
+                    "name": "streams",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "latest_seq",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "stream_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin1",
+            "to": "cache"
+          },
+          {
+            "from": "origin2",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "No origin shield",
+        "why": "Every CDN miss reaches the origin servers and the store: nothing stands between the crowd and your servers.",
+        "fails": "toss",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "name": "Viewers",
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -100,
+            "name": "Origin A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 19,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 100,
+            "name": "Origin B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 19,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Segment store",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  },
+                  {
+                    "name": "streams",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "latest_seq",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "stream_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin1",
+            "to": "store"
+          },
+          {
+            "from": "origin2",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "Shield with no standby",
+        "why": "The shield has no standby in another zone: when it crashes at the peak, every miss reaches the segment store at once.",
+        "fails": "shield-crash",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "name": "Viewers",
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -100,
+            "name": "Origin A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 35,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 100,
+            "name": "Origin B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 35,
+              "zones": 3,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Origin shield",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 7,
+              "ttlSec": 4,
+              "replica": false
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Segment store",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  },
+                  {
+                    "name": "streams",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "latest_seq",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "stream_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin1",
+            "to": "cache"
+          },
+          {
+            "from": "origin2",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "store"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "remove:lb",
+      "half:cache:nodes",
+      "ttl:cache"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "The CDN may reach the origin servers directly in this model.",
+      "half:cache:nodes": "Half as many shield nodes still hold every live segment: a live segment is small and short-lived.",
+      "ttl:cache": "A live segment never changes once made: how long the shield keeps it only changes how much it holds."
+    },
+    "rubric": {
+      "fr": [
+        {
+          "label": "Stream the match to every viewer as it happens",
+          "keys": [
+            "stream",
+            "broadcast",
+            "as it happens",
+            "watch the match",
+            "watch it live",
+            "match live"
+          ]
+        },
+        {
+          "label": "Several qualities; the player picks one to suit its network",
+          "keys": [
+            "adaptive",
+            "abr",
+            "bitrate",
+            "qualit",
+            "resolution",
+            "240p",
+            "360p",
+            "480p",
+            "720p",
+            "1080p",
+            "rendition"
+          ]
+        },
+        {
+          "label": "A personal ad at each ad break",
+          "keys": [
+            "ad break",
+            "ads",
+            "advert",
+            "ad decision",
+            "personal ad",
+            "sponsor"
+          ]
+        },
+        {
+          "label": "Keep going when a part fails",
+          "keys": [
+            "fail",
+            "crash",
+            "never stop",
+            "keep going",
+            "stay up",
+            "redundan",
+            "standby",
+            "zone"
+          ]
+        }
+      ],
+      "nfr": {
+        "availability": [
+          99.9,
+          99.99
+        ],
+        "p99": [
+          100,
+          2000
+        ],
+        "consistency": "eventual",
+        "readsPerWrite": [
+          1000,
+          100000000
+        ]
+      },
+      "est": [
+        {
+          "id": "peak",
+          "label": "Requests a second at the peak (model)",
+          "unit": "req/s",
+          "answer": 3000000,
+          "tol": 3,
+          "how": "1.2 crore players ÷ 4 s"
+        },
+        {
+          "id": "origin",
+          "label": "Requests reaching your servers at the peak (model)",
+          "unit": "req/s",
+          "answer": 30000,
+          "tol": 3,
+          "how": "the 1% the CDN can't answer"
+        },
+        {
+          "id": "bandwidth",
+          "label": "Video sent at the peak (model)",
+          "unit": "Tbps",
+          "answer": 18,
+          "tol": 3,
+          "how": "1.2 crore × about 1.5 Mbps"
+        }
+      ],
+      "api": [
+        {
+          "label": "Get the playlist for one quality",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(live|streams?|matches|events?)/[^/]+/.*\\.m3u8$"
+        },
+        {
+          "label": "Get one segment",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(live|streams?|matches|events?)/[^/]+/.+\\.(ts|m4s|mp4|aac)$"
+        },
+        {
+          "label": "Ask which ad plays next",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(live|streams?|matches|events?)/[^/]+/(ads?|ad-decision|adbreak)"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "prewarm-3",
+          "q": "Everyone arrives within minutes of the 7 pm toss. How do you have enough origin servers?",
+          "options": [
+            "Autoscale on load and let new servers catch up with the crowd",
+            "Start them all before 7 pm, sized for the expected peak",
+            "Watch the dashboards and add servers by hand as load grows"
+          ],
+          "answer": 1,
+          "why": "New servers take minutes to boot and warm up, and the crowd arrives faster than that, so autoscaling is always behind at the toss. A match has a known start time and a peak you can predict from past matches: start the capacity before it, and keep autoscaling only for surprises."
+        },
+        {
+          "id": "shield-3",
+          "q": "The CDN has no copy of the newest segment yet, and a lakh edges ask for it. What stops them all reaching your store?",
+          "options": [
+            "Each edge waits a random time before it asks the origin",
+            "An origin shield that reads the store once and answers the rest",
+            "More servers behind the load balancer to take the flood"
+          ],
+          "answer": 1,
+          "why": "A shield collapses many identical misses into one read, so the load on the store depends on the number of new segments, not on the number of edges or viewers. Random waits make segments late, and more servers just pass the same flood on to the store."
+        },
+        {
+          "id": "ad-3",
+          "q": "An ad decision is different for every viewer. Where is it worked out?",
+          "options": [
+            "At the CDN, from a copy that is kept for everyone",
+            "In the player, which is free to pick any ad it likes",
+            "At the origin servers, sized for the ads at the peak"
+          ],
+          "answer": 2,
+          "why": "A decision for one viewer cannot come from a copy kept for everyone, and a player that picks its own ad cannot be paid for or checked. It is worked out at your servers, which must be sized for the ad share at the peak; if the ad service is slow, play a default ad and keep the video going."
+        }
+      ]
+    },
+    "hints": [
+      {
+        "step": "requirements",
+        "x": "One match, one camera feed, crores of people at the same moment. What do they all ask for, and how often?"
+      },
+      {
+        "step": "estimates",
+        "x": "1.2 crore players each fetch a 4-second segment every 4 seconds. Divide; then take the 1% the CDN can't answer."
+      },
+      {
+        "step": "api",
+        "x": "A player reads a playlist that lists the newest segments, fetches the segments, and at an ad break asks which ad plays next."
+      },
+      {
+        "step": "design",
+        "x": "No server farm takes 30 lakh requests a second. Put a CDN in front: it answers 99 in 100 near the viewers, so size your servers for the rest."
+      },
+      {
+        "step": "design",
+        "x": "Put a cache (the origin shield) between your origin servers and the segment store, so a new segment is read from the store once, however many ask."
+      },
+      {
+        "step": "design",
+        "x": "Size the origin for the last overs, not the toss, and start the servers before 7 pm: new ones take minutes. Split them over zones so one can fail, and keep a standby for the shield."
+      },
+      {
+        "step": "deep",
+        "x": "Segments and playlists are files that change every 4 seconds: keep them in object storage, with the shield in front, not in database rows."
+      },
+      {
+        "step": "deep",
+        "x": "Ad decisions are personal and reach your servers. Give them a short time limit and a default ad, so a slow ad service never stalls the video."
+      }
+    ]
+  }
+}

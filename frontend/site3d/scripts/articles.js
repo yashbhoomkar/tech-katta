@@ -30,6 +30,7 @@ export const SECOND = {
   'web-crawler': 'Billions of pages, politely', leaderboard: 'Ranks that update live', 'ad-clicks': 'Counting every click exactly', 'key-value-store': 'Replicas, quorums and failures',
   'shared-editor': 'Two people, one document', 'rider-dispatch': 'Matching riders to orders', 'video-streaming': 'Millions watching at once', 'menu-search': 'Finding a dish from a few letters',
   'ind-vs-pak': 'The biggest live audience of the year',
+  'upi-switch': 'Idempotency, timeouts and reversals', 'tatkal-booking': 'A huge spike at 10:00 sharp', 'ipl-live-streaming': 'A CDN, an origin shield and a crore viewers',
 };
 /** the small "Free" label on a list row of the free sample (articles with access "free") */
 export const FREE = '<i class="free-tag">Free</i>';

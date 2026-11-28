@@ -17,3 +17,9 @@ export async function localApi(page: Page, signedIn: boolean) {
     await route.fulfill({ status: r.status, body: await r.text(), headers: { "content-type": "application/json", ...CORS } });
   });
 }
+
+/** how many interview questions there are, from the API (the tests never type the count) */
+export async function questionCount(): Promise<number> {
+  const list = (await (await fetch(`${OPEN}/v1/articles`)).json()) as { articles: { section: string; group: string }[] };
+  return list.articles.filter((a) => a.section === "interview-questions" && a.group !== "start").length;
+}

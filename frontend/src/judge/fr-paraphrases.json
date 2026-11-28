@@ -149,5 +149,23 @@
   "obey robots.txt and at most one request a second per site",
   "never download the same URL twice",
   "revisit menu pages that change often"
+ ],
+ "upi-switch": [
+  "people pay a shop or a friend from their UPI app",
+  "if the app times out it can check what happened to the payment",
+  "a debit that never reached the shop is reversed to the payer",
+  "a repeat of the same request never debits the payer twice"
+ ],
+ "tatkal-booking": [
+  "people can see whether Tatkal is open and how many berths are left",
+  "people book berths for a train and class",
+  "everyone gets a fair place in line when Tatkal opens",
+  "no berth is ever booked twice"
+ ],
+ "ipl-live-streaming": [
+  "people watch the match live",
+  "each player picks a quality to suit its network",
+  "each viewer gets their own ad at an ad break",
+  "the stream keeps going when a part fails"
  ]
 }

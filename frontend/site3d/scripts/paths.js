@@ -6,9 +6,9 @@ export const PATHS = [
   { id: 'beginner', name: 'Beginner', years: '0 to 2 years', blurb: 'The ideas behind almost every design, then your first problem.',
     steps: ['concepts/networking-essentials', 'concepts/api-design', 'concepts/data-modelling', 'concepts/database-indexing', 'concepts/caching', 'concepts/scaling-reads', 'interview-questions/url-shortener'] },
   { id: 'intermediate', name: 'Intermediate', years: '2 to 5 years', blurb: 'Spread data over machines, keep it consistent, move work through queues.',
-    steps: ['concepts/sharding', 'concepts/cap-theorem', 'concepts/scaling-writes', 'components/kafka-in-practice', 'components/redis', 'concepts/real-time-updates', 'interview-questions/chat-app'] },
+    steps: ['concepts/sharding', 'concepts/cap-theorem', 'concepts/scaling-writes', 'components/kafka-in-practice', 'components/redis', 'concepts/real-time-updates', 'interview-questions/ipl-live-streaming', 'interview-questions/chat-app'] },
   { id: 'advanced', name: 'Advanced', years: '5+ years', blurb: 'Hard cases: contention, money, failures, and the biggest live audience of the year.',
-    steps: ['concepts/consistent-hashing', 'concepts/contention', 'concepts/workflows', 'concepts/change-capture', 'real-systems/shopify-reservations', 'interview-questions/payments', 'interview-questions/ind-vs-pak'] },
+    steps: ['concepts/consistent-hashing', 'concepts/contention', 'concepts/workflows', 'concepts/change-capture', 'real-systems/shopify-reservations', 'interview-questions/payments', 'interview-questions/upi-switch', 'interview-questions/ind-vs-pak'] },
 ];
 const isProblem = (a) => a.section === 'interview-questions' && a.group !== 'start';
 

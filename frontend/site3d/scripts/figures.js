@@ -518,6 +518,9 @@ const Qs = {
   dispatch: hl([[qL('r', 'Riders'), qL('u', 'Customer')], [qS('loc', 'Location service'), qS('ord', 'Order service')], [qC('geo', 'Rider locations'), qS('dis', 'Dispatch')], [qD('db', 'Assignments')]], 'r>loc u>ord loc>geo ord>dis dis>geo dis>db'),
   video: hl([[qL('cr', 'Creator')], [qD('raw', 'Uploads', { layers: 3 })], [qW('t0', 'Transcoder'), qW('t1', 'Transcoder')], [qD('st', 'Video chunks', { layers: 4 })], [qG('cdn', 'CDN')], [qL('v', 'Viewers')]], 'cr>raw raw>t0 raw>t1 t0>st t1>st st>cdn cdn>v', 3.4),
   menus: hl([[qL('u')], [qS('s', 'Search service')], [qD('ix', 'Search index', { layers: 2 }), qK('k', 'Menu changes')], [qD('db', 'Menus')]], 'u>s s>ix db>k k>ix', 3.8),
+  upi: hl([[qL('u', 'Payer app')], [qS('sw', 'UPI switch')], [qD('db', 'Transactions'), qQ('q', 'Bank calls')], [qW('w0', 'Bank workers'), qG('bk', 'Banks')]], 'u>sw sw>db sw>q q>w0 w0>bk'),
+  tatkal: hl([[qL('u', 'Travellers')], [qG('cdn', 'CDN')], [qQ('wr', 'The line')], [qS('b', 'Booking service')], [qD('db', 'Berths')]], 'u>cdn cdn>wr wr>b b>db'),
+  ipl: hl([[qS('enc', 'Encoder')], [qD('st', 'Segment store', { layers: 4 })], [qC('sh', 'Origin shield')], [qS('or', 'Origin')], [qG('cdn', 'CDN')], [qL('v', 'Viewers')]], 'enc>st st>sh sh>or or>cdn cdn>v', 3.4),
   live: hl([[qS('enc', 'Encoder')], [qS('or', 'Origin')], [qG('cdn0', 'CDN'), qG('cdn1', 'CDN')], [qL('v0', 'Viewers'), qL('v1', 'Viewers')]], 'enc>or or>cdn0 or>cdn1 cdn0>v0 cdn1>v1'),
 };
 const ok = (...ids) => all(ids, 'ok');
@@ -543,6 +546,9 @@ Object.assign(RECIPES, {
   'rider-dispatch': design(Qs.dispatch, { geo: ['every few seconds'] }, [['Where riders are', 'Pings into a fast store', ok('loc', 'geo'), { geo: ['live positions', 'ok'] }], ['One order at a time', 'A rider is claimed once', ok('dis', 'db'), { db: ['one order per rider', 'ok'] }]]),
   'video-streaming': design(Qs.video, { cdn: ['the weight'] }, [['Getting it ready fast', 'Chunks transcoded in parallel', ok('t0', 't1'), { t0: ['chunk by chunk', 'ok'] }], ['The CDN carries the weight', 'Viewers stream from the edge', ok('cdn', 'v'), { cdn: ['most of the bytes', 'ok'] }]]),
   'menu-search': design(Qs.menus, { ix: ['by words'] }, [['Finding dishes by their words', 'An index of words', ok('ix', 's'), { ix: ['paneer → dishes', 'ok'] }], ['Fresh enough', 'Changes stream into the index', ok('k', 'ix'), { k: ['menu edits', 'ok'] }]]),
+  'upi-switch': design(Qs.upi, { db: ['one row per payment'] }, [['Never twice', 'One request id per payment', ok('sw', 'db'), { db: ['same id, same payment', 'ok'] }], ['Unknown is not failed', 'Pending until the bank answers', { bk: 'warn' }, { bk: ['no reply yet', 'warn'] }]]),
+  'tatkal-booking': design(Qs.tatkal, { db: ['every berth'] }, [['The page everyone refreshes', 'The CDN answers it', ok('cdn'), { cdn: ['the same page for all', 'ok'] }], ['A fair line', 'Admitted at the rate booking can take', { wr: 'warn' }, { wr: ['in batches', 'warn'] }]]),
+  'ipl-live-streaming': design(Qs.ipl, { cdn: ['a crore viewers'] }, [['Protect the origin', 'The shield reads the store once', ok('sh', 'or'), { sh: ['one read per segment', 'ok'] }], ['Everyone arrives at the toss', 'Servers started before 7 pm', { or: 'warn' }, { or: ['ready before the toss', 'warn'] }]]),
   'ind-vs-pak': design(Qs.live, { v0: ['crores watching'] }, [['Everyone arrives at the toss', 'The CDN takes the crowd', { cdn0: 'warn', cdn1: 'warn', or: 'ok' }, { cdn0: ['the toss', 'warn'] }], ['Degrade, don', 'Lower quality, never down', ok('cdn0', 'cdn1'), { cdn1: ['lower bitrate', 'ok'] }]]),
 });
 // the start-here guides: one system that grows as the guide goes
@@ -560,7 +566,7 @@ Object.assign(RECIPES, {
   'patterns-guide': guide(FULL, [[FULL, 'Real-time updates', 'From one event to every screen', ok('lb', 'u'), { u: ['live', 'ok'] }], [FULL, 'Scaling reads', 'Layers that take the load', ok('c'), { c: ['most reads', 'ok'] }], [FULL, 'Long jobs', 'Queued for workers', ok('k', 'w'), { w: ['minutes of work', 'ok'] }]]),
   'questions-guide': guide(FULL, [[SMALL, 'Easy', 'Few parts, one hard idea'], [FULL, 'Medium', 'More parts, more trade-offs', ok('a0', 'a1', 'c', 'db', 'k')], [FULL, 'An order to take them in', 'Easy first, then build up', ok('lb', 'a0', 'a1', 'c', 'db', 'k', 'w')]]),
 });
-for (const k of ['url-shortener', 'file-sync', 'restaurants-near-me', 'grocery-delivery', 'ticket-booking', 'photo-sharing', 'news-feed', 'dating-swipes', 'coding-judge', 'chat-app', 'notifications', 'payments', 'job-scheduler', 'web-crawler', 'leaderboard', 'ad-clicks', 'key-value-store', 'shared-editor', 'rider-dispatch', 'video-streaming', 'menu-search', 'ind-vs-pak']) PREVIEW_Q[k] = 1;
+for (const k of ['url-shortener', 'file-sync', 'restaurants-near-me', 'grocery-delivery', 'ticket-booking', 'photo-sharing', 'news-feed', 'dating-swipes', 'coding-judge', 'chat-app', 'notifications', 'payments', 'job-scheduler', 'web-crawler', 'leaderboard', 'ad-clicks', 'key-value-store', 'shared-editor', 'rider-dispatch', 'video-streaming', 'menu-search', 'ind-vs-pak', 'upi-switch', 'tatkal-booking', 'ipl-live-streaming']) PREVIEW_Q[k] = 1;
 
 /** the step a list preview shows: the system working, not failing */
 export const PREVIEW = { 'networking-essentials': 1, caching: 2, sharding: 2, 'consistent-hashing': 3, 'cap-theorem': 1, 'api-design': 1, 'data-modelling': 3,

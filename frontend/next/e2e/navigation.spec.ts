@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { CORS, LIVE, localApi } from "./api";
+import { CORS, LIVE, localApi, questionCount } from "./api";
 
 // Three places and You (tech-katta-context 53, phase 2): the phone bar, the sidebar, one Solve list, the old Simulator address.
 
@@ -68,7 +68,7 @@ test("Interview guides: every problem's answer has Solve and Read", async ({ pag
   await open(page);
   await page.goto("/learn/interview-questions");
   await expect(page.locator(".headline .thin")).toHaveText("Interview guides");
-  await expect(page.locator("li.ans")).toHaveCount(22);
+  await expect(page.locator("li.ans")).toHaveCount(await questionCount());
   const first = page.locator("li.ans").first();
   await expect(first.locator(".solve-go")).toHaveAttribute("href", /\/problems\/[\w-]+$/);
   await expect(first.locator("a.lesson")).toHaveAttribute("href", /\/learn\/interview-questions\/[\w-]+$/);

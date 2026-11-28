@@ -1480,5 +1480,68 @@
     "Easy first, then build up"
    ]
   }
+ ],
+ "upi-switch": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "One request id per payment"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Pending until the bank answers"
+   ]
+  }
+ ],
+ "tatkal-booking": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The CDN answers it"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Admitted at the rate booking can take"
+   ]
+  }
+ ],
+ "ipl-live-streaming": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The shield reads the store once"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Servers started before 7 pm"
+   ]
+  }
  ]
 }

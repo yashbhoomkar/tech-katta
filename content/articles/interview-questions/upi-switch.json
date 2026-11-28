@@ -1,0 +1,3011 @@
+{
+  "section": "interview-questions",
+  "slug": "upi-switch",
+  "group": "hard",
+  "no": "QUESTION // 23 HARD",
+  "tag": "hard",
+  "access": "paid",
+  "date": "28 Nov 2026",
+  "title": "Design a UPI payments switch",
+  "dek": "A payer app sends ₹480 to a shop. The switch sits between two banks it does not run: debit one, credit the other, never take the money twice, and put it back if the second step fails. Salary day sends several times the normal load.",
+  "body": [
+    {
+      "t": "example"
+    },
+    {
+      "t": "p",
+      "x": "This is our own model of a payment switch, not a description of how NPCI or any bank builds UPI. The numbers are model figures: we say so each time."
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Pay: a payer app sends money from one UPI address (VPA) to another, for example ₹480 to Zotato.",
+        "Check: if the app times out, it can ask what happened to its payment and always gets one honest answer.",
+        "Reverse: if the payer's bank debited but the payee's bank could not credit, the money goes back to the payer.",
+        "Never debit twice for the same payment, even if the app, the network or a bank repeats a call.",
+        "Salary day (the 1st of the month) and festival sales must not break any of the above."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Correctness",
+          "One debit per payment; every debit ends as success or reversed, never forgotten"
+        ],
+        [
+          "Honesty",
+          "The payer sees success, failed, or \"pending, don't pay again\""
+        ],
+        [
+          "Availability",
+          "Starting a payment works even when one bank is slow or down"
+        ],
+        [
+          "Scale",
+          "A model month-start: about 4,000 payments a second at 10 am"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Model: 10 crore payments a day is about 1,200 a second on average, spread unevenly. Public monthly UPI counts are in the thousands of crores; we use a smaller model so the numbers fit one design.",
+        "Salary day is the peak: about 3 to 4 times an ordinary hour, so about 4,000 payments a second at 10 am (model).",
+        "Each payment is one row of about 250 bytes: 10 crore a day is about 25 GB a day, kept for years, so it is partitioned by date.",
+        "Each payment makes two bank calls (debit, then credit), and banks answer in hundreds of milliseconds: the bank calls, not your servers, set how long a payment takes.",
+        "Reversals are rare: perhaps 1 payment in a thousand (model). They must still be exactly right."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Transaction: `txn_id`, `request_id` (from the app, unique), `payer_vpa`, `payee_vpa`, `amount`, `status` (pending, debited, success, failed, reversed), `at`.",
+        "Reversal: `reversal_id`, `txn_id`, `amount`, `at`. Only ever added."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /upi/pay            { \"request_id\": \"rq_3\", \"payer\": \"ravi@zbank\", \"payee\": \"zotato@ybank\", \"amount\": 48000 }   → 202 { \"txn_id\": \"tx_3\", \"status\": \"pending\" }\nGET  /upi/status/rq_3    → 200 { \"txn_id\": \"tx_3\", \"status\": \"success\" }\nPOST /upi/callback/credit-failed   (from a bank) { \"txn_id\": \"tx_2\", \"status\": \"credit_failed\" }   → 200",
+      "say": "Pay with a request id from the app and get back a pending payment. Ask for its status by the same request id. A bank calls back when a credit fails."
+    },
+    {
+      "t": "p",
+      "x": "The amount is in paise and comes with the request, but it is checked against what the payer approved; a repeat of the same request id with a different amount is refused, not treated as a new payment."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "p",
+      "x": "Payer apps call an API gateway (a limit per app), then a load balancer, then the switch: stateless servers in three zones. The switch saves the payment in one database, by request id, then puts the two bank calls on a queue. Bank workers take them from the queue, call the banks, and write the result. A bank's callback comes back through the same gateway to the same switch. The database is sharded and has a standby in another zone."
+    },
+    {
+      "t": "p",
+      "x": "Only the switch talks to the banks. Everything else asks the switch. That keeps one place that knows the state of every payment."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Never twice"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "CHECK THE LAST PAYMENT",
+      "what": "Before debiting, look for a payment with the same amount to the same payee in the last minute.",
+      "use": "Catches the obvious double tap.",
+      "avoid": "It blocks a real second payment (two cups of chai) and misses a repeat that arrives later or through another path.",
+      "ex": "Asha buys two ₹20 teas from the same stall, ten seconds apart. The second is refused.",
+      "like": "A cashier who thinks every second purchase is a mistake."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "A REQUEST ID, UNIQUE IN THE DATABASE",
+      "what": "The app makes one request id per payment and sends it with every retry. The database refuses a second row with the same request id, so a repeat finds the first payment and returns it.",
+      "use": "Any number of retries, from any path, lead to one payment and at most one debit.",
+      "avoid": "A real second payment needs a new request id: the app makes one only after the first is known to have ended.",
+      "ex": "The retry for rq_3 finds tx_3, already pending, and simply returns its status.",
+      "like": "A receipt number: showing it again does not buy the item again."
+    },
+    {
+      "t": "h2",
+      "x": "Unknown is not failed"
+    },
+    {
+      "t": "list",
+      "items": [
+        "When a bank does not answer in time, the payment is pending, not failed. The money may have moved.",
+        "The app asks for the status with the same request id, and the switch asks the bank by the same transaction id until it gets an answer.",
+        "Never show failed for a payment that may have succeeded: the payer will pay again.",
+        "Calls to the banks carry the transaction id, so a bank that gets the same call twice can recognise it."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Reversals"
+    },
+    {
+      "t": "list",
+      "items": [
+        "If the debit worked and the credit failed, the switch marks the payment reversed and records a reversal in the same database transaction. Either both happen or neither.",
+        "The bank worker then asks the payer's bank to return the money, with the reversal's own id so a repeat is harmless.",
+        "A payment can be reversed only if it is still debited: the status change has a condition, so a late duplicate callback does nothing.",
+        "Reversals are added, never edited. At the end of the day the switch compares its records with each bank's report and adds correcting entries for any gap."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Salary day and sale spikes"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Size the switch and the database for the peak, not the average: salary day arrives in minutes and no one can add servers that fast.",
+        "The queue absorbs the bank calls. A slow bank makes the queue longer; it does not make starting a payment slower.",
+        "A per-app limit at the gateway stops one app that retries wildly from using the capacity everyone else needs.",
+        "If one bank is down, payments to and from it wait in the queue and finish when it is back; other banks are not affected."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: a switch with a database and a queue; a request id that makes a retry safe; pending as a state.",
+        "Senior: reversals in the same transaction; unknown results; peak sizing; a standby database in another zone.",
+        "Staff: per-bank queues and limits; daily reconciliation; how the switch proves it never took money twice."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"One bank is slow?\" A queue and a limit per bank, so its backlog cannot use the workers the other banks need.",
+            "\"A bank calls back twice?\" The status change is conditional, so the second call finds the payment already changed and does nothing.",
+            "\"How do you find a payment that is stuck?\" A job that lists payments pending for longer than the bank's time limit and asks the bank about each by its transaction id.",
+            "\"How do you test it?\" A fault test for each step: a bank down, a bank slow, a zone lost, the database failing over, a status-check storm."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Like a payment, a saved order is a promise: it must not vanish when a part crashes. The lost-orders challenge practises keeping that promise.",
+      "to": "problems/challenge/lost-orders",
+      "go": "Try the lost-orders challenge"
+    }
+  ],
+  "practice": {
+    "v": 2,
+    "brief": "Each test sends UPI payments from the payer apps and the apps' status checks after a timeout (7 in 10 and 3 in 10), and the banks call back when a credit fails. A payment must never be debited twice, and a debit that did not reach the payee must be reversed.",
+    "entities": {
+      "transactions": {
+        "rows": 30000000000,
+        "rowBytes": 250,
+        "growthPerDay": 50000000,
+        "fields": {
+          "txn_id": "string",
+          "request_id": "string",
+          "payer_vpa": "string",
+          "payee_vpa": "string",
+          "amount": "int",
+          "status": "string",
+          "at": "time"
+        },
+        "sample": [
+          {
+            "txn_id": "tx_1",
+            "request_id": "rq_1",
+            "payer_vpa": "asha@okbank",
+            "payee_vpa": "chaiwala@okbank",
+            "amount": 2000,
+            "status": "success",
+            "at": "2026-12-01T10:02:00Z"
+          },
+          {
+            "txn_id": "tx_2",
+            "request_id": "rq_2",
+            "payer_vpa": "ravi@zbank",
+            "payee_vpa": "zotato@ybank",
+            "amount": 48000,
+            "status": "debited",
+            "at": "2026-12-01T10:02:03Z"
+          }
+        ]
+      },
+      "reversals": {
+        "rows": 200000000,
+        "rowBytes": 120,
+        "growthPerDay": 300000,
+        "fields": {
+          "reversal_id": "string",
+          "txn_id": "string",
+          "amount": "int",
+          "at": "time"
+        },
+        "sample": [
+          {
+            "reversal_id": "rv_1",
+            "txn_id": "tx_9",
+            "amount": 15000,
+            "at": "2026-12-01T10:03:00Z"
+          },
+          {
+            "reversal_id": "rv_2",
+            "txn_id": "tx_14",
+            "amount": 3000,
+            "at": "2026-12-01T10:05:00Z"
+          }
+        ]
+      }
+    },
+    "aliases": {
+      "txn_id": [
+        "transaction_id",
+        "id",
+        "txn",
+        "rrn",
+        "reference"
+      ],
+      "request_id": [
+        "idempotency_key",
+        "request",
+        "dedupe_key",
+        "client_id",
+        "idem_key"
+      ],
+      "payer_vpa": [
+        "payer",
+        "from",
+        "sender",
+        "remitter",
+        "vpa"
+      ],
+      "payee_vpa": [
+        "payee",
+        "to",
+        "receiver",
+        "beneficiary"
+      ],
+      "amount": [
+        "value",
+        "paise",
+        "amount_paise"
+      ],
+      "reversal_id": [
+        "id",
+        "refund_id"
+      ]
+    },
+    "operations": [
+      {
+        "id": "pay",
+        "name": "Pay by UPI",
+        "kind": "write",
+        "share": 0.7,
+        "sample": true,
+        "request": {
+          "method": "POST",
+          "path": "/upi/pay",
+          "body": {
+            "request_id": "rq_3",
+            "payer": "ravi@zbank",
+            "payee": "zotato@ybank",
+            "amount": 48000
+          }
+        },
+        "bytesOut": 250,
+        "keys": {
+          "entity": "transactions",
+          "skew": "uniform"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "transactions",
+            "values": {
+              "txn_id": "tx_3",
+              "request_id": "rq_3",
+              "payer_vpa": "ravi@zbank",
+              "payee_vpa": "zotato@ybank",
+              "amount": 48000,
+              "status": "pending",
+              "at": "2026-12-01T10:02:03Z"
+            },
+            "unique": [
+              "request_id"
+            ]
+          },
+          {
+            "id": "s2",
+            "op": "call",
+            "preset": "payments",
+            "label": "Asking the banks to debit and credit",
+            "timing": "defer",
+            "withinSec": 60
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "txn_id": "tx_3",
+            "request_id": "rq_3",
+            "status": "pending"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 500
+        },
+        "durable": true,
+        "effect": "once",
+        "idempotencyField": "request_id"
+      },
+      {
+        "id": "status",
+        "name": "The app checks a payment",
+        "kind": "read",
+        "share": 0.3,
+        "sample": true,
+        "request": {
+          "method": "GET",
+          "path": "/upi/status/rq_1"
+        },
+        "bytesOut": 150,
+        "keys": {
+          "entity": "transactions",
+          "skew": "uniform"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "transactions",
+            "by": {
+              "request_id": "rq_1"
+            },
+            "fields": [
+              "txn_id",
+              "status"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "txn_id": "$s1.txn_id",
+            "status": "$s1.status"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        },
+        "consistency": "strong"
+      },
+      {
+        "id": "credit-failed",
+        "name": "A bank says the credit failed",
+        "kind": "write",
+        "source": "external",
+        "preset": "payments",
+        "share": 0.1,
+        "request": {
+          "method": "POST",
+          "path": "/upi/callback/credit-failed",
+          "body": {
+            "txn_id": "tx_2",
+            "status": "credit_failed"
+          }
+        },
+        "bytesOut": 100,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "tx",
+            "steps": [
+              {
+                "id": "a",
+                "op": "update",
+                "entity": "transactions",
+                "by": {
+                  "txn_id": "tx_2"
+                },
+                "set": {
+                  "status": "reversed"
+                },
+                "cond": {
+                  "status": {
+                    "eq": "debited"
+                  }
+                }
+              },
+              {
+                "id": "b",
+                "op": "put",
+                "entity": "reversals",
+                "values": {
+                  "reversal_id": "rv_3",
+                  "txn_id": "tx_2",
+                  "amount": 48000,
+                  "at": "2026-12-01T10:03:30Z"
+                }
+              }
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "recorded": "$s1.ok"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 1000
+        },
+        "durable": true,
+        "effect": "once"
+      }
+    ],
+    "tests": [
+      {
+        "id": "api-pay",
+        "name": "Pay ₹480 to Zotato",
+        "desc": "Ravi pays Zotato ₹480 (tx_3). The payment is saved once, by the app's request id, as pending; the banks are asked afterwards, so the app is not kept waiting on them.",
+        "sample": true,
+        "op": "pay"
+      },
+      {
+        "id": "api-status",
+        "name": "The app checks a payment",
+        "desc": "A timeout makes the app ask what happened to its request rq_1. It reads the saved payment and answers; it never starts a second one.",
+        "sample": true,
+        "op": "status"
+      },
+      {
+        "id": "api-credit-failed",
+        "name": "A bank says the credit failed",
+        "desc": "The payee's bank cannot credit tx_2. In one transaction the payment is marked reversed and a reversal is added, so the payer's money goes back exactly once.",
+        "op": "credit-failed"
+      },
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "desc": "1,000 requests a second from the payer apps, and the banks' callbacks.",
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          }
+        ],
+        "sample": true
+      },
+      {
+        "id": "month-start",
+        "name": "Salary day, 10 am",
+        "desc": "3,000 requests a second on the 1st of the month. Nothing may be debited twice or lost.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "noCrash"
+          },
+          {
+            "kind": "noDuplicates"
+          },
+          {
+            "kind": "atomic"
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ],
+        "sample": true
+      },
+      {
+        "id": "festival",
+        "name": "The festival-sale rush",
+        "desc": "At 8 pm a sale starts: 8,000 requests a second for 15 minutes.",
+        "hours": 3,
+        "startHour": 19,
+        "traffic": {
+          "rps": 8000,
+          "pattern": "sale"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "pay",
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "bank-down",
+        "name": "A bank goes down",
+        "desc": "At 10:10 am a bank stops answering for 10 minutes. Payers can still start payments; the banks are asked again when it is back.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "pay",
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          {
+            "kind": "completes",
+            "op": "pay",
+            "withinSec": 900
+          }
+        ],
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "externalDown",
+            "preset": "payments",
+            "minutes": 10
+          }
+        ]
+      },
+      {
+        "id": "bank-slow",
+        "name": "A bank slows down",
+        "desc": "At 10:10 am the banks take ten times as long to answer, for 15 minutes. Starting a payment must stay fast; the banks may catch up within 30 minutes.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes",
+            "op": "pay",
+            "withinSec": 1800
+          }
+        ],
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "slow",
+            "type": "external",
+            "preset": "payments",
+            "factor": 10,
+            "minutes": 15
+          }
+        ]
+      },
+      {
+        "id": "status-storm",
+        "name": "The status-check storm",
+        "desc": "At 10:10 am a timeout makes one app send four times its traffic for 15 minutes, asking again and again. Everyone else must still be able to pay.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 2000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "noCrash"
+          }
+        ],
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "abuse",
+            "factor": 4,
+            "minutes": 15
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 10:10 am one availability zone is lost for 15 minutes. Payments may slow down; none may be lost.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "pay",
+            "availability": 95,
+            "p99Ms": 3000
+          },
+          {
+            "kind": "completes",
+            "op": "pay",
+            "withinSec": 600
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ],
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "pay",
+            "availability": 95,
+            "p99Ms": 3000
+          }
+        ],
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "crash",
+            "type": "database"
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (1,000 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 30000
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        },
+        {
+          "id": "psp",
+          "type": "external",
+          "x": 0,
+          "y": 240,
+          "name": "Banks",
+          "config": {
+            "preset": "payments",
+            "latencyMs": 400,
+            "limitRps": 20000,
+            "errorPct": 0.5,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "locked": [
+      "psp"
+    ],
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "gw",
+          "type": "apigw",
+          "x": 240,
+          "y": -160,
+          "name": "API gateway",
+          "config": {
+            "rateLimit": "perClient",
+            "perClientRps": 60
+          }
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "name": "UPI switch",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 5,
+            "zones": 3
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 720,
+          "y": 0,
+          "name": "Transactions DB",
+          "config": {
+            "engine": "postgres",
+            "size": "db.r5.2xlarge",
+            "multiAz": true,
+            "shards": 4,
+            "schema": {
+              "tables": [
+                {
+                  "name": "transactions",
+                  "fields": [
+                    {
+                      "name": "txn_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "request_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "payer_vpa",
+                      "type": "string"
+                    },
+                    {
+                      "name": "payee_vpa",
+                      "type": "string"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "int"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "txn_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "request_id"
+                      ],
+                      "kind": "unique"
+                    }
+                  ]
+                },
+                {
+                  "name": "reversals",
+                  "fields": [
+                    {
+                      "name": "reversal_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "txn_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "int"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "reversal_id"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "q",
+          "type": "queue",
+          "x": 720,
+          "y": 240,
+          "name": "Bank calls to make",
+          "config": {}
+        },
+        {
+          "id": "w",
+          "type": "server",
+          "x": 960,
+          "y": 240,
+          "name": "Bank workers",
+          "config": {
+            "size": "m5.large",
+            "count": 16,
+            "zones": 2
+          }
+        },
+        {
+          "id": "psp",
+          "type": "external",
+          "x": 0,
+          "y": 240,
+          "name": "Banks",
+          "config": {
+            "preset": "payments",
+            "latencyMs": 400,
+            "limitRps": 20000,
+            "errorPct": 0.5,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "app",
+          "to": "db"
+        },
+        {
+          "from": "app",
+          "to": "q"
+        },
+        {
+          "from": "q",
+          "to": "w"
+        },
+        {
+          "from": "w",
+          "to": "psp"
+        },
+        {
+          "from": "psp",
+          "to": "lb"
+        },
+        {
+          "from": "clients",
+          "to": "gw"
+        },
+        {
+          "from": "gw",
+          "to": "lb"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "No request id check",
+        "why": "Nothing stops a second debit for the same request id: a retry becomes a second payment.",
+        "fails": "api-pay",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ]
+                  },
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Bank calls to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Bank workers",
+            "config": {
+              "size": "m5.large",
+              "count": 16,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "Reversals in another database",
+        "why": "The payment and its reversal land in two databases: no transaction spans them, so a crash can leave money taken and not returned.",
+        "fails": "api-credit-failed",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "request_id"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Bank calls to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Bank workers",
+            "config": {
+              "size": "m5.large",
+              "count": 16,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "ledger",
+            "type": "database",
+            "x": 720,
+            "y": -240,
+            "name": "Ledger DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          },
+          {
+            "from": "app",
+            "to": "ledger"
+          }
+        ]
+      },
+      {
+        "name": "Banks cannot call back",
+        "why": "Nothing connects the banks to the switch, so a failed credit is never heard of and the debit is never reversed.",
+        "fails": "api-credit-failed",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "request_id"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Bank calls to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Bank workers",
+            "config": {
+              "size": "m5.large",
+              "count": 16,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          }
+        ]
+      },
+      {
+        "name": "The payer waits for the banks",
+        "why": "The switch asks the banks before it answers: when a bank is down, nobody can even start a payment.",
+        "fails": "bank-down",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "request_id"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          },
+          {
+            "from": "app",
+            "to": "psp"
+          }
+        ]
+      },
+      {
+        "name": "Sized for a normal day",
+        "why": "The switch and its database fit an ordinary afternoon, not the festival-sale rush.",
+        "fails": "festival",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "request_id"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Bank calls to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Bank workers",
+            "config": {
+              "size": "m5.large",
+              "count": 16,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every part of the switch is in one zone: when it goes dark, nothing answers.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 1
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "request_id"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Bank calls to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Bank workers",
+            "config": {
+              "size": "m5.large",
+              "count": 16,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "The database has no standby: when it crashes, payments stop for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": false,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "request_id"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Bank calls to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Bank workers",
+            "config": {
+              "size": "m5.large",
+              "count": 16,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "Write-back cache in front of the transactions",
+        "why": "The cache confirms payments and saves them later: a crash loses debits the payer was told succeeded.",
+        "fails": "month-start",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "request_id"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Bank calls to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Bank workers",
+            "config": {
+              "size": "m5.large",
+              "count": 16,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 600,
+            "y": -160,
+            "name": "Cache",
+            "config": {
+              "size": "cache.m5.large",
+              "writePolicy": "back",
+              "replica": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "No limit per client",
+        "why": "The gateway lets one app send as much as it likes: a status-check storm starves everyone else.",
+        "fails": "status-storm",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "gw",
+            "type": "apigw",
+            "x": 240,
+            "y": -160,
+            "name": "API gateway",
+            "config": {
+              "rateLimit": "off",
+              "perClientRps": 60
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "request_id"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Bank calls to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Bank workers",
+            "config": {
+              "size": "m5.large",
+              "count": 16,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          },
+          {
+            "from": "clients",
+            "to": "gw"
+          },
+          {
+            "from": "gw",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "UPI switch",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Transactions DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 8,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "transactions",
+                    "fields": [
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "request_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payer_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payee_vpa",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "txn_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "request_id"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "reversals",
+                    "fields": [
+                      {
+                        "name": "reversal_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "txn_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "reversal_id"
+                    ]
+                  }
+                ]
+              },
+              "replicas": 2
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Bank calls to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Bank workers",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Banks",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 20000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "remove:lb"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "The payer apps and the banks may call the switch directly in this model."
+    },
+    "rubric": {
+      "fr": [
+        {
+          "label": "Pay another person or shop by UPI",
+          "keys": [
+            "pay",
+            "send money",
+            "transfer",
+            "upi",
+            "vpa"
+          ]
+        },
+        {
+          "label": "Check what happened to a payment",
+          "keys": [
+            "check",
+            "pending",
+            "what happened",
+            "timeout",
+            "timed out",
+            "still processing"
+          ]
+        },
+        {
+          "label": "Reverse a debit that did not reach the payee",
+          "keys": [
+            "reverse",
+            "reversal",
+            "refund",
+            "credit failed",
+            "money back",
+            "return"
+          ]
+        },
+        {
+          "label": "Never debit twice for the same payment",
+          "keys": [
+            "twice",
+            "duplicate",
+            "idempot",
+            "double",
+            "request id",
+            "transaction id",
+            "txn id",
+            "dedupe"
+          ]
+        }
+      ],
+      "nfr": {
+        "availability": [
+          99.9,
+          99.999
+        ],
+        "p99": [
+          100,
+          2000
+        ],
+        "consistency": "strong",
+        "readsPerWrite": [
+          0.2,
+          2
+        ]
+      },
+      "est": [
+        {
+          "id": "avg",
+          "label": "Payments a second on an ordinary day (model)",
+          "unit": "/s",
+          "answer": 1200,
+          "tol": 3,
+          "how": "a model of about 10 crore payments a day, spread unevenly, so about 1,200 a second on average"
+        },
+        {
+          "id": "peak",
+          "label": "Payments a second at 10 am on the 1st (model)",
+          "unit": "/s",
+          "answer": 4000,
+          "tol": 3,
+          "how": "salary day: about 3 to 4 times an ordinary hour"
+        },
+        {
+          "id": "rows",
+          "label": "New transaction rows a day (model)",
+          "unit": "rows",
+          "answer": 100000000,
+          "tol": 3,
+          "how": "about 10 crore payments, one row each"
+        }
+      ],
+      "api": [
+        {
+          "label": "Pay",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?(upi/)?(pay|payments|transactions|transfers)"
+        },
+        {
+          "label": "Check a payment",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(upi/)?(status|payments|transactions|transfers)/[^/]+"
+        },
+        {
+          "label": "A bank's callback",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?(upi/)?(callbacks?|webhooks?)"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "idem-3",
+          "q": "The phone sends the same payment twice after a timeout. How do you not debit twice?",
+          "options": [
+            "Compare the amount and payee with the last payment, and refuse a match",
+            "A request id the database keeps unique, so a repeat finds the first",
+            "Debit both, then reverse the second one in the nightly check"
+          ],
+          "answer": 1,
+          "why": "A timeout does not say whether the first request worked, so the phone must be free to repeat it. A unique request id makes the repeat return the first result. Matching on amount blocks real second payments, and reversing later still takes the money twice."
+        },
+        {
+          "id": "unknown-3",
+          "q": "A bank does not answer in time. What does the payer see?",
+          "options": [
+            "Success, so the payer is not kept waiting at all",
+            "Failed, so the payer can try again straight away",
+            "Pending, until the bank answers or the switch asks it"
+          ],
+          "answer": 2,
+          "why": "Not answering is not failing: the money may have moved. Pending (checked later, with the same transaction id) is the only honest answer; failed invites a second payment, and success may be false."
+        },
+        {
+          "id": "rev-3",
+          "q": "The payer's bank debited but the payee's bank could not credit. What fixes it?",
+          "options": [
+            "A reversal saved with the status change, in one transaction",
+            "Ask the payer to raise a complaint with their bank",
+            "Credit the payee from the switch's own money, then settle later"
+          ],
+          "answer": 0,
+          "why": "The reversal must happen exactly once and must not be forgotten if the switch crashes: that needs the status change and the reversal record in one transaction, and its own id so the bank can drop a repeat."
+        },
+        {
+          "id": "peak-3",
+          "q": "Salary day sends three times the traffic. What do you do?",
+          "options": [
+            "Size for the average, and add servers by hand if the day needs them",
+            "Turn away payments above a fixed rate until the peak has passed",
+            "Size for the peak, and queue the bank calls so a spike adds wait only there"
+          ],
+          "answer": 2,
+          "why": "The peak arrives faster than anyone can add servers, and the banks cannot be made faster. Sizing the switch for the peak and absorbing the bank calls in a queue keeps starting a payment quick."
+        }
+      ]
+    },
+    "hints": [
+      {
+        "step": "requirements",
+        "x": "A UPI payment moves money between two banks you do not run. What must be true even when a bank is slow, down, or answers twice?"
+      },
+      {
+        "step": "estimates",
+        "x": "Work from a model month-start: how many payments a second at 10 am on the 1st, and how many of those are repeats and status checks?"
+      },
+      {
+        "step": "api",
+        "x": "The payer's phone sends a transaction id with every payment. Which calls does it make, and which one is safe to repeat?"
+      },
+      {
+        "step": "design",
+        "x": "Save the payment first, by its transaction id. A second request with the same id must find the first, not start another."
+      },
+      {
+        "step": "design",
+        "x": "The banks are slow and not yours: put a Queue between the switch and its bank workers, so a slow bank costs time, not payments."
+      },
+      {
+        "step": "design",
+        "x": "A failed credit has to reverse the debit once. Write the status change and the reversal in one transaction, in the same database as the payment, with a standby in another zone."
+      }
+    ],
+    "referenceNote": "Every payment is saved once, by its transaction id, before any bank is asked. The banks are asked from a queue, so a slow or absent bank does not hold up the payer. A failed credit and the reversal are written in one transaction."
+  }
+}
