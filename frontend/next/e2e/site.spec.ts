@@ -62,8 +62,9 @@ test("signed out: an article shows its public part and the sign-in card, a list 
   await expect(page.locator(".dash .si-card")).toBeVisible();
   await expect(page.locator(".next-card, .dash-more")).toHaveCount(0);
   // the way into the canvas is public: signed out, Home still points at the first problem (no progress shown)
-  await expect(page.locator(".dash .solve-card")).toHaveAttribute("href", "/problems/url-shortener");
-  await expect(page.locator(".dash .solve-card")).not.toContainText("solved");
+  const solve = page.locator(".dash .solve-card:not(.incident-card)"); // (this week's incident has a card of its own)
+  await expect(solve).toHaveAttribute("href", "/problems/url-shortener");
+  await expect(solve).not.toContainText("solved");
 });
 
 test("signed out: the workspace is locked and loads no island", async ({ page }) => {
