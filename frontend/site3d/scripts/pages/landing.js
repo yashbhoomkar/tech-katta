@@ -4,6 +4,7 @@
 import { mountStory, stageHtml, followTheme } from '../story.js';
 import { KIND_PASTEL } from '../palette.js';
 import { runTour, offerTour } from '../tour.js';
+import { sectionsHtml, mountSections } from './landing-lab.js';
 
 /** the parts of this page's system, for the colour key (colours from palette.js) */
 const LEGEND = [['laptop', 'Users', 'mist'], ['server', 'App server', 'sky'], ['kafka', 'Kafka topic', 'lemon'], ['consumer', 'Consumer', 'lime'], ['db', 'SQL database', 'mint']];
@@ -108,8 +109,10 @@ export function mount(view, _p, { reduced }) {
     </div>
   </section>
 
+  ${sectionsHtml()}
   ${footer()}`;
 
+  const offLab = mountSections(view, { reduced });
   const root = view.querySelector('.story');
   const n = root.querySelector('.progress .n'), name = root.querySelector('.progress .name'), segs = [...root.querySelectorAll('.segs i')];
   let cur = 0;
@@ -225,7 +228,7 @@ export function mount(view, _p, { reduced }) {
   const stopOffer = offerTour({ start: startTour });
   root.querySelector('[data-tour]').addEventListener('click', startTour);
   root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.28, behavior: reduced ? 'auto' : 'smooth' }); });
-  return () => { tour?.end(); stopOffer(); cancelAnimationFrame(ringRaf); ring.remove(); pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); offTheme(); story.destroy(); };
+  return () => { offLab(); tour?.end(); stopOffer(); cancelAnimationFrame(ringRaf); ring.remove(); pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); offTheme(); story.destroy(); };
 }
 
-export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">Everything for your system design interview, in one place. Learn, practise and get judged, free.</p><nav><a href="/home">Home</a><a href="/learn">Learn</a><a href="/problems">Problems</a><a href="/simulator">Simulator</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav></footer>`;
+export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">Everything for your system design interview, in one place. Learn, practise and get judged, free.</p><nav><a href="/home">Home</a><a href="/learn">Learn</a><a href="/problems">Problems</a><a href="/simulator">Simulator</a><a href="/start">Start here</a><a href="/free">Free</a><a href="/changelog">What's new</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav></footer>`;

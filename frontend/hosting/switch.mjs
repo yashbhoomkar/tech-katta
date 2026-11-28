@@ -137,8 +137,10 @@ writeFileSync(path.join(dist, "index.html"), renderHome(shell3d, site, articles)
 // the 3D pages with no search-engine page of their own: /learn (it opens Concepts), the simulator (/simulator/<id> is a rewrite to this file,
 // hosting/routes.json) and the Dashboard (/home)
 for (const [dir, title, canon] of [["learn", "Learn", "learn/concepts"], ["simulator", "Warm-ups", "simulator"], ["home", "Home", "home"]]) put(dir, shellFor(title, { canon }));
+// Start here (the three learning paths) and What's new: public pages with their own title and description
+for (const [dir, title, desc] of [["start", "Not sure where to start?", "Three learning paths for system design interviews by experience (0-2, 2-5 and 5+ years), each a short list of lessons that ends with a problem to solve."], ["changelog", "What's new", "Every change a learner can notice on Tech Katta, newest first."], ["free", "Free while in beta", "Everything on Tech Katta is free during the beta. These lessons and the URL shortener problem open in full without signing in."]]) put(dir, shellFor(title, { desc, canon: dir }));
 
 // 4. the sitemap and the content map for AI assistants
-writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date, free: p.free }))));
+writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date, free: p.free }))).replace("</urlset>", `  <url><loc>${SITE}/start</loc></url>\n  <url><loc>${SITE}/changelog</loc></url>\n  <url><loc>${SITE}/free</loc></url>\n</urlset>`));
 writeFileSync(path.join(dist, "llms.txt"), llmsTxt(site, pages));
 console.log(`switch: the 3D site answers every address; ${written} search-engine pages, ${workspace} workspace and static pages, the home page, sitemap.xml and llms.txt`);

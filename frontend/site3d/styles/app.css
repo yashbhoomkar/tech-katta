@@ -1749,3 +1749,48 @@ html.lite .stage .poster { transition: none; }
 @media (min-width: 761px) { .article-story.text-mode .step.hero { padding-top: 56px; } .article-story.text-mode .step.hero > * { max-width: 760px; } }
 .fig-card .fig-svg { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px 14px 44px; }
 .fig-card .fig-svg svg { width: 100%; height: auto; max-height: 100%; }
+
+/* ---------- progress panel (Home), learning paths (/start), sources, changelog ---------- */
+.prog-panel { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 18px; padding: 16px 20px; border-radius: var(--r-m); background: var(--glass-hl), var(--glass-bg); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
+.prog-stats { display: grid; grid-template-columns: repeat(3, auto); justify-content: space-between; gap: 12px; margin: 0; }
+.prog-stats dt { font-size: var(--label); letter-spacing: 0; text-transform: none; color: var(--ink-2); margin-bottom: 2px; }
+.prog-stats dd { margin: 0; font-size: 14px; color: var(--ink-2); } .prog-stats dd b { font-size: 22px; color: var(--ink); letter-spacing: -.02em; }
+.prog-stats a { color: inherit; text-decoration: none; }
+.prog-row { display: grid; grid-template-columns: 1fr; gap: 2px; margin: 0; font-size: 14px; }
+.prog-row .mono { font-size: var(--label); letter-spacing: 0; color: var(--ink-2); } .prog-row a { color: var(--ink); text-decoration: none; } .prog-row a b { font-size: 16px; } .prog-row a:hover b { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 760px) { .dash .prog-panel { order: 0; position: relative; z-index: 1; margin: 0 0 14px; padding: 14px 16px; } }
+.paths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 32px; align-items: start; }
+.path { padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); box-shadow: var(--shadow); }
+.path.chosen { border-color: var(--accent); }
+.path .mono { font-size: var(--label); letter-spacing: 0; color: var(--ink-2); } .path h2 { font-size: 26px; letter-spacing: -.02em; margin: 4px 0 6px; } .path > .muted { font-size: 14px; }
+.path .path-count { margin: 14px 0 8px; color: var(--accent-ink); }
+.steps { list-style: none; margin: 0 0 20px; padding: 0; }
+.steps a { display: flex; gap: 12px; align-items: baseline; min-height: 44px; padding: 10px 0; border-top: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 500; }
+.steps a:hover span:last-child { text-decoration: underline; text-underline-offset: 3px; }
+.steps .step-n { flex: 0 0 22px; font-size: var(--label); color: var(--ink-3); } .steps .done a { color: var(--ink-2); } .steps .done .step-n { color: var(--ok); }
+.steps em { font-style: normal; margin-left: 6px; font-size: var(--label); color: var(--accent-ink); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 999px) { .paths { grid-template-columns: 1fr; } }
+.sources { margin: 36px 0 0; padding-top: 18px; border-top: 1px solid var(--line); }
+.sources h2 { font-size: var(--label); letter-spacing: 0; text-transform: none; color: var(--ink-2); margin: 0 0 8px; }
+.sources ul { margin: 0; padding-left: 18px; } .sources li { margin: 6px 0; font-size: 15px; overflow-wrap: anywhere; } .sources a { color: var(--accent-ink); }
+.log { list-style: none; margin: 32px 0 0; padding: 0; } .log > li { padding: 20px 0; border-top: 1px solid var(--line); }
+.log h2 { font-size: var(--label); letter-spacing: 0; text-transform: none; color: var(--ink-2); margin: 0 0 8px; } .log ul { margin: 0; padding-left: 18px; } .log ul li { margin: 6px 0; line-height: 1.55; }
+
+/* ---------- landing: the practice-lab sections, /free ---------- */
+.lab-sections .page { padding-top: 56px; padding-bottom: 24px; max-width: 1100px; }
+.lab-demo .demo-card { display: flex; flex-direction: column; gap: 14px; max-width: 720px; margin-top: 20px; }
+.demo-design { margin: 0; font-size: var(--label); letter-spacing: 0; color: var(--ink-2); }
+.demo-fixes { display: flex; flex-wrap: wrap; gap: 10px; } .demo-fixes[hidden] { display: none; }
+.demo-fixes .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); }
+.demo-out { min-height: 24px; } .demo-verdict { margin: 0 0 8px; } .demo-verdict.ok b { color: var(--ok); } .demo-verdict.bad b { color: var(--alert); }
+.why-list { margin: 0 0 8px; padding-left: 18px; } .why-list li { margin: 6px 0; font-size: 14px; line-height: 1.5; }
+.counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 0; padding: 20px 0; border-block: 1px solid var(--line); }
+.counts > div { display: flex; flex-direction: column; } .counts dt { font-size: var(--label); letter-spacing: 0; text-transform: none; color: var(--ink-2); order: 2; } .counts dd { margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -.03em; order: 1; }
+.paths.mini { margin-top: 12px; } .paths.mini .path { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--ink); } .paths.mini .path b { font-size: 22px; letter-spacing: -.02em; } .paths.mini .go { font-weight: 600; color: var(--accent-ink); font-size: 14px; }
+.inside-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
+.inside { padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); display: flex; flex-direction: column; gap: 10px; } .inside > .mono { font-size: var(--label); letter-spacing: 0; color: var(--ink-2); margin: 0; } .inside b { font-size: 18px; } .inside .muted { font-size: 14px; margin: 0; }
+.lab-free .lead { max-width: 640px; }
+@media (max-width: 999px) { .inside-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .counts { grid-template-columns: repeat(2, 1fr); } .lab-sections .page { padding-top: 40px; } }
+.shelf { list-style: none; margin: 24px 0 0; padding: 0; } .shelf li { border-top: 1px solid var(--line); } .shelf a { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; min-height: 44px; padding: 12px 0; color: var(--ink); text-decoration: none; font-weight: 500; } .shelf a:hover b { text-decoration: underline; text-underline-offset: 3px; } .shelf .mono { font-size: var(--label); letter-spacing: 0; color: var(--ink-2); }

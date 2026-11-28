@@ -23,6 +23,9 @@ function titleFor(path, nav, mod) {
   if (nav === 'you') return `You · ${brand}`;
   if (nav === 'legal') return `${mod.policyTitle(path.replace(/\W/g, ''))} · ${brand}`;
   if (nav === 'notes') return `Quick Notes · ${brand}`;
+  if (nav === 'free') return `Free while in beta · ${brand}`;
+  if (nav === 'start') return `Not sure where to start? · ${brand}`;
+  if (nav === 'changelog') return `What's new · ${brand}`;
   if (nav === 'problems') return mod?.titleOf?.(path) || `Problems · ${brand}`;
   if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Warm-ups'} · ${inc ? 'Warm-ups · ' : ''}${brand}`; }
   const m = path.match(/^\/learn\/([\w-]+)(?:\/([\w-]+))?/);
@@ -78,7 +81,7 @@ const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-wr
 const ROUTES = [
   [/^\/?$/, page('landing'), 'home'], [/^\/learn\/?$/, page('learn'), 'learn'], [SEC, page('learn'), 'learn'], [ART, page('article'), 'learn'],
   [/^\/simulator\/([\w-]+)$/, page('sim'), 'sim'], [/^\/home\/?$/, page('me'), 'me'], [/^\/problems\/?$/, page('problems'), 'problems'],
-  [/^\/me\/?$/, page('you'), 'you'], [/^\/(privacy|terms)\/?$/, page('policy'), 'legal'], [/^\/learn\/quick-notes\/?$/, page('notes'), 'notes'],
+  [/^\/start\/?$/, page('start'), 'start'], [/^\/free\/?$/, page('free'), 'free'], [/^\/changelog\/?$/, page('changelog'), 'changelog'], [/^\/me\/?$/, page('you'), 'you'], [/^\/(privacy|terms)\/?$/, page('policy'), 'legal'], [/^\/learn\/quick-notes\/?$/, page('notes'), 'notes'],
   [/^\/(?:problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/, page('workspace'), 'problems'],
 ];
 /** one address per page: the canonical link follows the route (no trailing slash; /learn is /learn/concepts); none on the not-found page */

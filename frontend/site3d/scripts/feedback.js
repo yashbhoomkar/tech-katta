@@ -112,6 +112,8 @@ export function startFeedback() {
   let restT = 0; const soon = () => { clearTimeout(restT); restT = setTimeout(rest, 120); };
   rest(); addEventListener('resize', soon); addEventListener('scroll', soon, { passive: true }); addEventListener('popstate', soon); addEventListener('orientationchange', soon);
   new MutationObserver(soon).observe(document.body, { childList: true, subtree: true });
+  addEventListener('transitionend', soon, true); addEventListener('animationend', soon, true); addEventListener('load', soon);
+  try { document.fonts?.addEventListener('loadingdone', soon); document.fonts?.ready.then(soon); } catch { /* no font events */ } // a font that arrives late moves the text and the counters with it: // a step counter or readout that fades or slides into place after the page is drawn (slower on a slow device) is looked at too
   // when the browser is idle: load the popup and the screenshot code, and work out the fonts once, so pressing Report has nothing left to fetch
   const warm = () => {
     // the mark 'tk-report:ready' says all of it is loaded and the fonts are worked out (the speed tests wait for it)

@@ -10,7 +10,8 @@
 //  - the page is drawn once, at the size it will be sent (not drawn big and shrunk), and the PNG is encoded only when the report is sent (encodePng).
 // The result is the visible window only, at the screen's pixel ratio but at most 2, at most 1600 px on its long side, as a PNG under 4 MB (the only format
 // BugDrop's worker takes). Times of the steps are kept in window.__tkReportPerf (for tests and for finding what is slow).
-import { fitSize, pixelRatioFor, dataUrlBytes, MAX_BYTES, MAX_SIDE, fontBlocks, pickFontFaces, STYLE_PROPS, INHERITED, canSkipStyle } from './feedback-core.js';
+import { accountState } from './account.js';
+import { redactBoxes, REDACT_SELECTOR, fitSize, pixelRatioFor, dataUrlBytes, MAX_BYTES, MAX_SIDE, fontBlocks, pickFontFaces, STYLE_PROPS, INHERITED, canSkipStyle } from './feedback-core.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 const now = () => performance.now();
@@ -113,6 +114,32 @@ function makeFilter(used) {
   };
 }
 
+/** The screen rectangles to cover in the picture, read when the capture starts: every input, textarea, select and contenteditable; anything marked data-private; and, as a second net,
+ *  any element whose own text holds the signed-in person's name or email, and their photo. Our own button and popup are not in the picture, so they are not covered. */
+export function privateRects() {
+  const rects = [], seen = new Set();
+  const add = (el) => {
+    if (seen.has(el) || el.closest?.('.tk-report, .tk-report-pop, .tk-probe')) return; seen.add(el);
+    const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0 && intersects(r, 0)) rects.push(r);
+  };
+  document.querySelectorAll(REDACT_SELECTOR).forEach(add);
+  const u = accountState()?.user;
+  if (u) {
+    const needles = [u.email, u.name].map((s) => String(s || '').trim().toLowerCase()).filter((s) => s.length >= 3);
+    if (needles.length) {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const t = n.data.toLowerCase(); if (t.length < 3 || !needles.some((s) => t.includes(s))) continue;
+        if (n.parentElement && !n.parentElement.closest('script, style, noscript, title')) add(n.parentElement);
+      }
+    }
+    if (u.picture) document.querySelectorAll('img').forEach((i) => { if (i.src === u.picture || i.getAttribute('src') === u.picture) add(i); });
+  }
+  return rects;
+}
+/** solid blocks over the covered places: the picture itself has nothing under them, so nothing underneath can be read from it or recovered from the PNG */
+function paintRedactions(g, boxes) { g.fillStyle = '#1f2328'; for (const b of boxes) g.fillRect(b.x, b.y, b.w, b.h); }
+
 /** { canvas, width, height }; throws an Error whose message says why when the page could not be drawn. `canvas` holds the picture; encodePng(shot) makes the PNG. */
 export async function capturePage({ geometry, grabbed, alive = () => true } = {}) {
   const perf = (window.__tkReportPerf = {}); const t0 = now(); let t = t0;
@@ -125,6 +152,7 @@ export async function capturePage({ geometry, grabbed, alive = () => true } = {}
     const { toSvg } = await load(); lap('load');
     const blocks = await Promise.race([warmFonts(), new Promise((r) => setTimeout(() => r([]), 1500))]); lap('fonts'); // a font file that will not come must not hold the picture back
     restore = readCanvases(grabbed); lap('canvases'); await tick(); // between the steps the page gets its turn (a touch, the popup's drawing)
+    const covered = privateRects(); // read now, with the clone: the same moment of the page
     const used = { families: new Set(), weights: new Set(), chars: new Set() };
     const out = fitSize(Math.round(W * pr), Math.round(H * pr), MAX_SIDE);
     const opts = {
@@ -143,6 +171,7 @@ export async function capturePage({ geometry, grabbed, alive = () => true } = {}
     await img.decode(); lap('rasterize');
     const canvas = document.createElement('canvas'); canvas.width = out.width; canvas.height = out.height;
     const g = canvas.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, out.width, out.height); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, out.width, out.height);
+    paintRedactions(g, redactBoxes(covered, { x: sx, y: sy, w: W, h: H }, { x: scrollX, y: scrollY }, out.width / W));
     lap('draw'); restore(); restore = () => {}; perf.total = Math.round(now() - t0);
     return { canvas, width: out.width, height: out.height };
   } catch (e) {

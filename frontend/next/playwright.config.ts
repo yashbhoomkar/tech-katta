@@ -17,9 +17,14 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
+  // The specs that draw a 3D scene (tagged @3d) run one at a time, after everything else: each is a WebGL page drawn in software, and on a 2-core runner two of them at once (or one beside a crowd of
+  // other pages) timed out at 60 s and sometimes crashed the browser. A project depends on the one before it, so only one WebGL page is open at any moment.
   projects: [
-    { name: "desktop", grepInvert: /@phone/, use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 900 }, ...use } },
-    { name: "phone", grep: /@phone/, use: { ...devices["Pixel 7"], ...use } },
+    { name: "desktop", grepInvert: /@phone|@3d/, use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 900 }, ...use } },
+    { name: "phone", grep: /@phone/, grepInvert: /@3d/, use: { ...devices["Pixel 7"], ...use } },
+    { name: "3d-design", testMatch: /design\.spec/, grep: /@3d/, dependencies: ["desktop", "phone"], use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 900 }, ...use } },
+    { name: "3d-site", testMatch: /site\.spec/, grep: /@3d/, dependencies: ["3d-design"], use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 900 }, ...use } },
+    { name: "3d-phone", testMatch: /phone-workspace\.spec/, grep: /@3d/, dependencies: ["3d-site"], use: { ...devices["Pixel 7"], ...use } },
   ],
   // the site (built and served as the host serves it) and two local copies of the API: the gated one (production's behaviour) and the open one (a stand-in for a signed-in visitor), e2e/api.ts
   webServer: [

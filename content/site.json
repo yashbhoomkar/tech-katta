@@ -947,5 +947,44 @@
         "If these terms change, the date at the top changes too, and you agree to the new terms the next time you sign in."
       ]
     ]
-  }
+  },
+  "changelog": [
+    {
+      "date": "28 Nov 2026",
+      "items": [
+        "The first screen opens faster: the 3D scene now loads only when you press Play in 3D, and every article can be read as plain text.",
+        "Five articles and the URL shortener problem are open in full without signing in.",
+        "Fixed errors found in an audit of the articles, and the canvas problems now say which limits they relax.",
+        "New: Start here, with three learning paths by experience; and a progress panel on Home."
+      ]
+    },
+    {
+      "date": "27 Nov 2026",
+      "items": [
+        "Everything is free while Tech Katta is in beta; sign-in is optional.",
+        "The Report button: send a note or a screenshot you can draw on, from any page.",
+        "The Report screenshot is ready the moment you press it, even on slow phones."
+      ]
+    },
+    {
+      "date": "26 Nov 2026",
+      "items": [
+        "The problem workspace on phones is a focus screen: the brief, the canvas and the results each get the whole screen.",
+        "A part's settings close with Done or Back, and the parts row swipes.",
+        "Home, Learn, Solve and You are the four main places; Solve lists every problem in one place."
+      ]
+    },
+    {
+      "date": "24 Nov 2026",
+      "items": [
+        "Better phone layouts, larger tap targets and steadier page loading across the site."
+      ]
+    },
+    {
+      "date": "23 Nov 2026",
+      "items": [
+        "The 3D site becomes tech.katta.cc: stories you scroll through, a canvas that runs your design, and Replay in 3D."
+      ]
+    }
+  ]
 }
