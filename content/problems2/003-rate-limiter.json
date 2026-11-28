@@ -10,12 +10,12 @@
   ],
   "companies": [],
   "free": true,
-  "statement": "Every call to Zotato's public API first asks one question: has this user made more than 100 calls this minute? If yes, the call is refused.\n\nDesign the rate limiter. Each **check** counts the call against the user's counter and answers at once, so every check is a write. The partner dashboard also **reads** a user's usage, rarely, and it may be a minute old.\n\nChecks sit in front of every API call, so they must be fast and must keep working when a machine dies. A lost count now and then is fine: a counter only lives for a minute. The budget is ₹1.6 lakh a month.",
+  "statement": "Every call to Zotato's public API first asks one question: has this user made more than 100 calls this minute? If yes, the call is refused.\n\nDesign the rate limiter. Each **check** counts the call against the user's counter and answers at once, so every check is a write. The partner dashboard also **reads** a user's usage, rarely, and it may be a minute old.\n\nChecks sit in front of every API call, so they must be fast and must keep working when a machine dies. A lost count now and then is fine: a counter only lives for a minute. The budget is ₹1.8 lakh a month.\n\nOne thing this problem leaves out: a route here must end at a database, not at a cache, so the answer API gateways and Redis teach (a Redis counter with `INCR` and `EXPIRE`) can't be written. The problem teaches the other half of the choice instead: a partitioned store, and how many copies a write waits for.",
   "constraints": [
     "Up to 1 crore users",
-    "Peak: 10,000 checks a second",
+    "Peak: 12,000 checks a second",
     "A check must answer within 100 ms at the 99th percentile",
-    "Budget ₹1,60,000 a month"
+    "Budget ₹1,80,000 a month"
   ],
   "total_items": 10000000,
   "requests": [
@@ -59,12 +59,12 @@
       "id": "t01-normal-day",
       "title": "A normal afternoon",
       "hidden": false,
-      "explain": "1,000 checks a second. The budget is checked here.",
+      "explain": "1,200 checks a second. The budget is checked here.",
       "phases": [
         {
           "seconds": 600,
           "rates": {
-            "CHECK": 1000,
+            "CHECK": 1200,
             "GET_USAGE": 20
           }
         }
@@ -73,26 +73,26 @@
         "p99_ms": {
           "CHECK": 100
         },
-        "budget_inr": 160000
+        "budget_inr": 180000
       }
     },
     {
       "id": "t02-peak",
       "title": "Evening peak",
       "hidden": false,
-      "explain": "5,000 checks a second, then 10,000. Every check is a write.",
+      "explain": "6,000 checks a second, then 12,000. Every check is a write.",
       "phases": [
         {
           "seconds": 300,
           "rates": {
-            "CHECK": 5000,
+            "CHECK": 6000,
             "GET_USAGE": 20
           }
         },
         {
           "seconds": 300,
           "rates": {
-            "CHECK": 10000,
+            "CHECK": 12000,
             "GET_USAGE": 50
           }
         }
@@ -114,14 +114,14 @@
         {
           "seconds": 300,
           "rates": {
-            "CHECK": 7000,
+            "CHECK": 8400,
             "GET_USAGE": 20
           }
         },
         {
           "seconds": 300,
           "rates": {
-            "CHECK": 7000,
+            "CHECK": 8400,
             "GET_USAGE": 20
           },
           "events": [
@@ -145,14 +145,14 @@
         {
           "seconds": 300,
           "rates": {
-            "CHECK": 6000,
+            "CHECK": 7200,
             "GET_USAGE": 20
           }
         },
         {
           "seconds": 300,
           "rates": {
-            "CHECK": 6000,
+            "CHECK": 7200,
             "GET_USAGE": 20
           },
           "events": [
@@ -179,7 +179,7 @@
         {
           "seconds": 1800,
           "rates": {
-            "CHECK": 9000,
+            "CHECK": 10800,
             "GET_USAGE": 30
           }
         }
@@ -191,31 +191,31 @@
       }
     }
   ],
-  "reference": "lb  = lb()\napi = server(count=8, size=large)\nkv  = nosql(nodes=4, rf=3, w=1, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n",
+  "reference": "lb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=4, rf=3, w=1, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n",
   "wrong": [
     {
       "name": "sql-counters",
       "expect": "Overloaded",
-      "why": "A large SQL primary takes 2,500 writes a second; every call is a write, 10,000 a second.",
-      "source": "lb  = lb()\napi = server(count=8, size=large)\ndb  = sql(size=large, replicas=0, sync=false)\n\ntable db.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > db\nread  GET_USAGE: client > lb > api > db\n"
+      "why": "A large SQL primary takes 10,000 writes a second; every check is a write, and the peak is 12,000 a second.",
+      "source": "lb  = lb()\napi = server(count=10, size=large)\ndb  = sql(size=large, replicas=0, sync=false)\n\ntable db.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > db\nread  GET_USAGE: client > lb > api > db\n"
     },
     {
       "name": "write-to-all-copies",
       "expect": "Unavailable",
       "why": "w=3 needs all three copies of a counter; when one node dies, every check fails.",
-      "source": "lb  = lb()\napi = server(count=8, size=large)\nkv  = nosql(nodes=4, rf=3, w=3, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n"
+      "source": "lb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=4, rf=3, w=3, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n"
     },
     {
       "name": "too-few-servers",
       "expect": "Overloaded",
-      "why": "Four large servers serve 8,000 calls a second; the peak sends 10,000.",
+      "why": "Four large servers serve 8,000 calls a second; the peak sends 12,000.",
       "source": "lb  = lb()\napi = server(count=4, size=large)\nkv  = nosql(nodes=4, rf=3, w=1, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n"
     },
     {
-      "name": "three-nodes",
+      "name": "tight-servers",
       "expect": "Too Slow",
-      "why": "Six large servers run at 84 % of what they can take at the peak, so the slowest checks wait longer than the promise allows. Three storage nodes are enough here.",
-      "source": "lb  = lb()\napi = server(count=6, size=large)\nkv  = nosql(nodes=3, rf=3, w=1, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n"
+      "why": "Seven large servers run at 86 % of what they can take at the peak, so the slowest checks wait longer than the promise allows.",
+      "source": "lb  = lb()\napi = server(count=7, size=large)\nkv  = nosql(nodes=4, rf=3, w=1, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n"
     },
     {
       "name": "huge-cluster",
@@ -225,9 +225,9 @@
     }
   ],
   "hints": [
-    "Every check is a write. How many writes a second can one SQL primary take?",
-    "A NoSQL store spreads writes over its nodes. How many nodes for 10,000 a second?",
+    "Every check is a write. How many writes a second can one SQL primary take, and is the peak above it?",
+    "A NoSQL store spreads writes over its nodes. How many nodes for 12,000 a second?",
     "If a write waits for every copy, what happens when one copy's node dies?"
   ],
-  "editorial": "## The approach\n\nEvery check is a write, and there are 10,000 a second at the peak. That rules out a single SQL primary (2,500 writes a second at most, even large).\n\n1. **A partitioned store.** A NoSQL store spreads the counters over its nodes; four nodes serve 20,000 calls a second.\n2. **Wait for one copy, not all.** `w=1`: the check answers when one copy has the count. A lost count is fine here (it lives a minute), and a dead node doesn't stop checks.\n3. **Enough servers.** Eight large servers serve 16,000 calls a second.\n\n## The reference design\n\n```\nlb  = lb()\napi = server(count=8, size=large)\nkv  = nosql(nodes=4, rf=3, w=1, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n```\n\nIt costs ₹1.38 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **Sql counters: Overloaded.** A large SQL primary takes 2,500 writes a second; every call is a write, 10,000 a second.\n- **Write to all copies: Unavailable.** w=3 needs all three copies of a counter; when one node dies, every check fails.\n- **Too few servers: Overloaded.** Four large servers serve 8,000 calls a second; the peak sends 10,000.\n- **Three nodes: Too Slow.** Three nodes run at two thirds of their capacity at the peak; each check waits longer than the promise allows.\n- **Huge cluster: Over Budget.** Twelve nodes pass every test at well over the budget.\n\n## Read more\n\n- [Cassandra](/dashboard/components/cassandra/)\n- [DynamoDB](/dashboard/components/dynamodb/)\n"
+  "editorial": "## The approach\n\nEvery check is a write, and there are 12,000 a second at the peak. That is more than a single SQL primary takes (about 10,000 writes a second, even large; Numbers to know has the figure).\n\n1. **A partitioned store.** A NoSQL store spreads the counters over its nodes; four nodes serve 20,000 calls a second, 60 % busy at the peak.\n2. **Wait for one copy, not all.** `w=1`: the check answers when one copy has the count. A lost count is fine here (it lives a minute), and a dead node doesn't stop checks.\n3. **Enough servers.** Ten large servers serve 20,000 calls a second, 60 % busy at the peak.\n\n## The reference design\n\n```\nlb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=4, rf=3, w=1, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n```\n\nIt costs ₹1.62 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **Sql counters: Overloaded.** A large SQL primary takes 10,000 writes a second; every check is a write, and the peak is 12,000 a second.\n- **Write to all copies: Unavailable.** w=3 needs all three copies of a counter; when one node dies, every check fails.\n- **Too few servers: Overloaded.** Four large servers serve 8,000 calls a second; the peak sends 12,000.\n- **Tight servers: Too Slow.** Seven large servers run at 86 % of what they can take at the peak; each check waits longer than the promise allows.\n- **Huge cluster: Over Budget.** Twelve nodes pass every test at well over the budget.\n\n## Read more\n\n- [Cassandra](/dashboard/components/cassandra/)\n- [DynamoDB](/dashboard/components/dynamodb/)\n"
 }

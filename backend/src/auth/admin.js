@@ -5,14 +5,16 @@ const TZ = 'Asia/Kolkata';
 const count = { $sum: 1 };
 const visitors = [{ $group: { _id: '$visitor' } }, { $count: 'n' }];
 
-export async function adminSummary({ events, users, submissions }, { days = 7, now = Date.now() } = {}) {
+export async function adminSummary({ events, users, submissions }, { days = 7, now = Date.now(), includeInternal = false } = {}) {
   const from = new Date(now - days * 86_400_000);
+  // events from internal accounts and from browsers seen signed in as one (events.js `internal`) are left out unless asked; automated browsers never send events (analytics.js)
+  const range = { at: { $gte: from }, ...(includeInternal ? {} : { internal: { $ne: true } }) };
   // Problems submitted (judged on the server) in the range: per problem, submissions, accepted, copied
   // (the Solution tab's design unchanged), people, scores.
   const problems = submissions ? await submissions.aggregate([{ $match: { at: { $gte: from } } }, { $group: { _id: '$slug', submissions: { $sum: 1 }, accepted: { $sum: { $cond: [{ $eq: ['$verdict', 'accepted'] }, 1, 0] } }, copied: { $sum: { $cond: [{ $eq: ['$copied', true] }, 1, 0] } }, people: { $addToSet: '$userId' }, score: { $avg: '$score' }, best: { $max: '$score' } } },
     { $project: { _id: 0, slug: '$_id', submissions: 1, accepted: 1, copied: 1, people: { $size: '$people' }, score: { $round: ['$score', 0] }, best: 1 } }, { $sort: { submissions: -1 } }]).toArray() : [];
   const [f] = await events.aggregate([
-    { $match: { at: { $gte: from } } },
+    { $match: range },
     { $facet: {
       totals: [{ $group: { _id: null, events: count, visitors: { $addToSet: '$visitor' }, users: { $addToSet: '$userId' } } },
         { $project: { _id: 0, events: 1, visitors: { $size: '$visitors' }, users: { $size: { $filter: { input: '$users', cond: { $ne: ['$$this', null] } } } } } }],
@@ -44,6 +46,7 @@ export async function adminSummary({ events, users, submissions }, { days = 7, n
     } },
   ]).toArray();
   const n = (a) => a[0]?.n || 0;
+  const excluded = includeInternal ? 0 : await events.countDocuments({ at: { $gte: from }, internal: true });
   // pass rate per check, from strings like "101" (one digit per check, in the challenge's order)
   const scores = f.scores.map(({ passed, ...s }) => {
     const checks = [];
@@ -60,7 +63,7 @@ export async function adminSummary({ events, users, submissions }, { days = 7, n
     recent: [{ $sort: { createdAt: -1 } }, { $limit: 25 }, { $project: { _id: 0, name: 1, email: 1, country: 1, createdAt: 1, lastLoginAt: 1, ads: { $ifNull: ['$adsConsent.ads', false] } } }],
   } }]).toArray();
   return {
-    days, from: from.toISOString(), to: new Date(now).toISOString(), timezone: TZ,
+    days, includeInternal, internalEventsLeftOut: excluded, from: from.toISOString(), to: new Date(now).toISOString(), timezone: TZ,
     totals: { events: 0, visitors: 0, users: 0, ...(f.totals[0] || {}) },
     daily: f.daily, byName: Object.fromEntries(f.byName.map((x) => [x._id, x.n])),
     devices: f.devices.map((x) => ({ device: x._id, visitors: x.visitors })),

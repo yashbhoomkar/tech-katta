@@ -1,5 +1,5 @@
 {
- "judge_version": 3,
+ "judge_version": 4,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
@@ -54,7 +54,7 @@
    }
   ],
   "warnings": [],
-  "judge_version": 3
+  "judge_version": 4
  },
  "wrong": {
   "no-cache-one-server": {
@@ -63,12 +63,12 @@
    "total": 5,
    "cost_inr": 45000,
    "worst_p99_ms": {
-    "GET_LINK": 472.7,
+    "GET_LINK": 472.6,
     "CREATE_LINK": 613.8
    },
    "worst_p50_ms": {
     "GET_LINK": 118.2,
-    "CREATE_LINK": 153.5
+    "CREATE_LINK": 153.4
    },
    "failed": {
     "test": "t02-evening-peak",
@@ -89,8 +89,8 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.11,
-      "rho": 0.0505
+      "ms": 2.05,
+      "rho": 0.0253
      },
      {
       "part": "api",
@@ -108,11 +108,11 @@
     {
      "reason": "p99",
      "request": "GET_LINK",
-     "message": "GET_LINK took 472.7 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 505 % of capacity."
+     "message": "GET_LINK took 472.6 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 505 % of capacity."
     }
    ],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 472.7,
+   "rank_p99_ms": 472.6,
    "tests": [
     {
      "id": "t01-quiet-afternoon",
@@ -154,7 +154,7 @@
      "part": "api"
     }
    ],
-   "judge_version": 3
+   "judge_version": 4
   },
   "no-cache": {
    "verdict": "Too Slow",
@@ -163,7 +163,7 @@
    "cost_inr": 66000,
    "worst_p99_ms": {
     "GET_LINK": 126.9,
-    "CREATE_LINK": 268.1
+    "CREATE_LINK": 268
    },
    "worst_p50_ms": {
     "GET_LINK": 31.7,
@@ -188,8 +188,8 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.11,
-      "rho": 0.0505
+      "ms": 2.05,
+      "rho": 0.0253
      },
      {
       "part": "api",
@@ -239,7 +239,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "async-replica": {
    "verdict": "Data Lost",
@@ -308,7 +308,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "no-replica": {
    "verdict": "Unavailable",
@@ -342,8 +342,8 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.08,
-      "rho": 0.0404
+      "ms": 2.04,
+      "rho": 0.0202
      },
      {
       "part": "api",
@@ -408,7 +408,7 @@
      "part": "db"
     }
    ],
-   "judge_version": 3
+   "judge_version": 4
   },
   "random-32-bit-ids": {
    "verdict": "Wrong Answer",
@@ -477,7 +477,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "day-long-cache-no-invalidate": {
    "verdict": "Wrong Answer",
@@ -486,7 +486,7 @@
    "cost_inr": 69000,
    "worst_p99_ms": {
     "GET_LINK": 35.1,
-    "CREATE_LINK": 53.2
+    "CREATE_LINK": 53.1
    },
    "worst_p50_ms": {
     "GET_LINK": 6.3,
@@ -546,7 +546,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "everything-large": {
    "verdict": "Over Budget",
@@ -554,12 +554,12 @@
    "total": 5,
    "cost_inr": 143000,
    "worst_p99_ms": {
-    "GET_LINK": 34.6,
-    "CREATE_LINK": 52.7
+    "GET_LINK": 34.5,
+    "CREATE_LINK": 52.6
    },
    "worst_p50_ms": {
     "GET_LINK": 6.1,
-    "CREATE_LINK": 13.2
+    "CREATE_LINK": 13.1
    },
    "failed": {
     "test": "t01-quiet-afternoon",
@@ -581,7 +581,7 @@
    },
    "also": [],
    "tip": "A smaller \"db\" would fix this.",
-   "rank_p99_ms": 34.6,
+   "rank_p99_ms": 34.5,
    "tests": [
     {
      "id": "t01-quiet-afternoon",
@@ -615,7 +615,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   }
  }
 }

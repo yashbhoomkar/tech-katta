@@ -1,26 +1,26 @@
 {
- "judge_version": 3,
+ "judge_version": 4,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
   "total": 5,
-  "cost_inr": 167000,
+  "cost_inr": 356000,
   "worst_p99_ms": {
-   "GET_TOP": 94.5,
-   "SUBMIT_SCORE": 81.2
+   "GET_TOP": 97,
+   "SUBMIT_SCORE": 86.4
   },
   "worst_p50_ms": {
-   "GET_TOP": 23.6,
-   "SUBMIT_SCORE": 20.3
+   "GET_TOP": 24.2,
+   "SUBMIT_SCORE": 21.6
   },
   "tightest": {
    "promise": "budget",
    "request": null,
    "test": "t01-warm-up",
-   "margin": 0.1211,
-   "text": "Tightest promise: budget, 12 % to spare."
+   "margin": 0.11,
+   "text": "Tightest promise: budget, 11 % to spare."
   },
-  "rank_p99_ms": 94.5,
+  "rank_p99_ms": 97,
   "tests": [
    {
     "id": "t01-warm-up",
@@ -54,21 +54,21 @@
    }
   ],
   "warnings": [],
-  "judge_version": 3
+  "judge_version": 4
  },
  "wrong": {
   "no-index": {
    "verdict": "Too Slow",
    "passed": 0,
    "total": 5,
-   "cost_inr": 167000,
+   "cost_inr": 356000,
    "worst_p99_ms": {
-    "GET_TOP": 1169.2,
-    "SUBMIT_SCORE": 40.6
+    "GET_TOP": 1137.9,
+    "SUBMIT_SCORE": 40
    },
    "worst_p50_ms": {
-    "GET_TOP": 6.6,
-    "SUBMIT_SCORE": 10.1
+    "GET_TOP": 6.7,
+    "SUBMIT_SCORE": 10
    },
    "failed": {
     "test": "t01-warm-up",
@@ -78,41 +78,41 @@
     "request": "GET_TOP",
     "phase": 1,
     "expected": "p99 ≤ 120 ms",
-    "actual": "p99 1169.2 ms",
-    "message": "GET_TOP took 1169.2 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 13 % of capacity.",
+    "actual": "p99 1137.9 ms",
+    "message": "GET_TOP took 1137.9 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 10 % of capacity.",
     "blame": {
      "part": "db",
      "line": 4,
-     "rho": 0.125,
-     "note": "db is at 13 % of its capacity"
+     "rho": 0.1,
+     "note": "db is at 10 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 2.05,
-      "rho": 0.024
+      "ms": 2.09,
+      "rho": 0.042
      },
      {
       "part": "api",
-      "ms": 22.22,
-      "rho": 0.1
+      "ms": 22.64,
+      "rho": 0.1167
      },
      {
       "part": "cache",
-      "ms": 2.02,
-      "rho": 0.01,
+      "ms": 2.08,
+      "rho": 0.04,
       "hit": 0.99
      },
      {
       "part": "db",
-      "ms": 1142.86,
-      "rho": 0.125
+      "ms": 1111.11,
+      "rho": 0.1
      }
     ]
    },
    "also": [],
    "tip": "An index on the lookup column would fix this.",
-   "rank_p99_ms": 1169.2,
+   "rank_p99_ms": 1137.9,
    "tests": [
     {
      "id": "t01-warm-up",
@@ -146,20 +146,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "minute-ttl": {
    "verdict": "Wrong Answer",
    "passed": 0,
    "total": 5,
-   "cost_inr": 167000,
+   "cost_inr": 356000,
    "worst_p99_ms": {
-    "GET_TOP": 36.3,
-    "SUBMIT_SCORE": 40.6
+    "GET_TOP": 36.8,
+    "SUBMIT_SCORE": 40
    },
    "worst_p50_ms": {
-    "GET_TOP": 6.6,
-    "SUBMIT_SCORE": 10.1
+    "GET_TOP": 6.7,
+    "SUBMIT_SCORE": 10
    },
    "failed": {
     "test": "t01-warm-up",
@@ -181,7 +181,7 @@
    },
    "also": [],
    "tip": "Clearing \"cache\" when the data changes would fix this.",
-   "rank_p99_ms": 36.3,
+   "rank_p99_ms": 36.8,
    "tests": [
     {
      "id": "t01-warm-up",
@@ -215,20 +215,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "medium-db": {
    "verdict": "Overloaded",
    "passed": 1,
    "total": 5,
-   "cost_inr": 117000,
+   "cost_inr": 281000,
    "worst_p99_ms": {
-    "GET_TOP": 64.7,
-    "SUBMIT_SCORE": 352.3
+    "GET_TOP": 82.4,
+    "SUBMIT_SCORE": 369.3
    },
    "worst_p50_ms": {
-    "GET_TOP": 13.6,
-    "SUBMIT_SCORE": 88.1
+    "GET_TOP": 18,
+    "SUBMIT_SCORE": 92.3
    },
    "failed": {
     "test": "t02-match",
@@ -237,9 +237,9 @@
     "reason": "overloaded",
     "request": "GET_TOP",
     "phase": 2,
-    "expected": "at most 1,050 calls a second",
-    "actual": "1,260 calls a second",
-    "message": "db received 1,260 calls a second but can serve 1,050.",
+    "expected": "at most 1,200 calls a second",
+    "actual": "1,440 calls a second",
+    "message": "db received 1,440 calls a second but can serve 1,200.",
     "blame": {
      "part": "db",
      "line": 4,
@@ -249,30 +249,30 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.34,
-      "rho": 0.144
+      "ms": 2.67,
+      "rho": 0.252
      },
      {
       "part": "api",
-      "ms": 50,
-      "rho": 0.6
+      "ms": 66.67,
+      "rho": 0.7
      },
      {
       "part": "cache",
-      "ms": 2.13,
-      "rho": 0.06,
+      "ms": 2.63,
+      "rho": 0.24,
       "hit": 0.99
      },
      {
       "part": "db",
-      "ms": 10.2,
-      "rho": 0.02
+      "ms": 10.42,
+      "rho": 0.04
      }
     ]
    },
    "also": [],
    "tip": "Bigger machines for \"db\" would fix this.",
-   "rank_p99_ms": 64.7,
+   "rank_p99_ms": 82.4,
    "tests": [
     {
      "id": "t01-warm-up",
@@ -306,20 +306,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "no-cache": {
    "verdict": "Overloaded",
    "passed": 1,
    "total": 5,
-   "cost_inr": 164000,
+   "cost_inr": 353000,
    "worst_p99_ms": {
-    "GET_TOP": 252.3,
-    "SUBMIT_SCORE": 352.3
+    "GET_TOP": 269.3,
+    "SUBMIT_SCORE": 369.3
    },
    "worst_p50_ms": {
-    "GET_TOP": 63.1,
-    "SUBMIT_SCORE": 88.1
+    "GET_TOP": 67.3,
+    "SUBMIT_SCORE": 92.3
    },
    "failed": {
     "test": "t02-match",
@@ -328,30 +328,30 @@
     "reason": "overloaded",
     "request": "GET_TOP",
     "phase": 2,
-    "expected": "at most 5,854 calls a second",
-    "actual": "7,200 calls a second",
-    "message": "db received 7,200 calls a second but can serve 5,854.",
+    "expected": "at most 19,091 calls a second",
+    "actual": "25,200 calls a second",
+    "message": "db received 25,200 calls a second but can serve 19,091.",
     "blame": {
      "part": "db",
      "line": 3,
-     "rho": 1.23,
-     "note": "db is at 123 % of its capacity"
+     "rho": 1.32,
+     "note": "db is at 132 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 2.34,
-      "rho": 0.144
+      "ms": 2.67,
+      "rho": 0.252
      },
      {
       "part": "api",
-      "ms": 50,
-      "rho": 0.6
+      "ms": 66.67,
+      "rho": 0.7
      },
      {
       "part": "db",
       "ms": 200,
-      "rho": 1.23
+      "rho": 1.32
      }
     ]
    },
@@ -359,11 +359,11 @@
     {
      "reason": "p99",
      "request": "GET_TOP",
-     "message": "GET_TOP took 252.3 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 123 % of capacity."
+     "message": "GET_TOP took 269.3 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 132 % of capacity."
     }
    ],
    "tip": "Reading GET_TOP from replicas of \"db\" would fix this.",
-   "rank_p99_ms": 252.3,
+   "rank_p99_ms": 269.3,
    "tests": [
     {
      "id": "t01-warm-up",
@@ -397,20 +397,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "big-everything": {
    "verdict": "Over Budget",
    "passed": 0,
    "total": 5,
-   "cost_inr": 329000,
+   "cost_inr": 545000,
    "worst_p99_ms": {
-    "GET_TOP": 35.1,
-    "SUBMIT_SCORE": 39.4
+    "GET_TOP": 35.7,
+    "SUBMIT_SCORE": 38.9
    },
    "worst_p50_ms": {
-    "GET_TOP": 6.3,
-    "SUBMIT_SCORE": 9.9
+    "GET_TOP": 6.4,
+    "SUBMIT_SCORE": 9.7
    },
    "failed": {
     "test": "t01-warm-up",
@@ -419,20 +419,20 @@
     "reason": "budget",
     "request": null,
     "phase": null,
-    "expected": "≤ ₹1,90,000",
-    "actual": "₹3,29,000",
-    "message": "This design costs ₹3,29,000 a month; the budget is ₹1,90,000.",
+    "expected": "≤ ₹4,00,000",
+    "actual": "₹5,45,000",
+    "message": "This design costs ₹5,45,000 a month; the budget is ₹4,00,000.",
     "blame": {
-     "part": "db",
-     "line": 4,
+     "part": "api",
+     "line": 2,
      "rho": null,
-     "note": "db is the most expensive part"
+     "note": "api is the most expensive part"
     },
     "trace": []
    },
    "also": [],
-   "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 35.1,
+   "tip": "A smaller \"api\" would fix this.",
+   "rank_p99_ms": 35.7,
    "tests": [
     {
      "id": "t01-warm-up",
@@ -466,7 +466,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   }
  }
 }

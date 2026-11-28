@@ -10,7 +10,7 @@
   ],
   "companies": [],
   "free": true,
-  "statement": "Zotato sells tickets for the IPL final. At 10 am sharp, lakhs of fans open the seat map and try to **book**. Each booking takes one seat and creates a booking id.\n\nDesign the seat map read and the booking write. Each seat of each show has its own `seat_id`. The rules are strict:\n\n- A seat must **never be sold twice**: after a booking, every seat map must show it taken at once (read your writes).\n- A confirmed booking must **never be lost**, even if the database primary dies.\n- Booking ids must never repeat.\n\nThe seat map is read far more than seats are booked, and a few shows (the final) take almost all the traffic. The budget is ₹2 lakh a month.",
+  "statement": "Zotato sells tickets for the IPL final. At 10 am sharp, lakhs of fans open the seat map and try to **book**. Each booking takes one seat and creates a booking id.\n\nDesign the seat map read and the booking write. Each seat of each show has its own `seat_id`. The rules are strict:\n\n- A seat must **never be sold twice**. The seat map is only a guide: it may be up to **2 seconds** old, and the booking itself is checked at the database, so a stale map can't sell a seat twice. (This problem can't show the conditional update that does the checking; it only asks that every booking reach the primary.)\n- A confirmed booking must **never be lost**, even if the database primary dies.\n- Booking ids must never repeat.\n\nThe seat map is read far more than seats are booked, and a few shows (the final) take almost all the traffic. The budget is ₹2 lakh a month.",
   "constraints": [
     "Up to 50 crore bookings in total",
     "Peak: 8,000 seat-map reads and 1,200 bookings a second",
@@ -27,9 +27,10 @@
       "distinct_keys": 5000,
       "item_bytes": 5000,
       "skew": 0.9,
-      "read_your_writes": true,
+      "read_your_writes": false,
       "cdn_ok": false,
-      "says": "Show the seat map of a show: which seats are free."
+      "says": "Show the seat map of a show: which seats are free.",
+      "max_stale_s": 2
     },
     {
       "name": "BOOK",
@@ -199,49 +200,43 @@
       }
     }
   ],
-  "reference": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=large, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db then invalidate cache\n",
+  "reference": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db\n",
   "wrong": [
     {
-      "name": "cache-not-cleared",
+      "name": "long-ttl",
       "expect": "Wrong Answer",
-      "why": "A booked seat can still show as free for a minute: someone else picks it and is told it's gone.",
+      "why": "A cached seat map a minute old shows seats that were taken a minute ago: fans pick them and are told they are gone. The problem allows 2 seconds.",
       "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=large, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db\n"
-    },
-    {
-      "name": "replica-reads",
-      "expect": "Wrong Answer",
-      "why": "Async replicas are a second behind: a seat you just booked can show as free.",
-      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=large, replicas=1, sync=false)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db[replica]\nwrite BOOK:      client > lb > api > ids > db then invalidate cache\n"
     },
     {
       "name": "async-replica",
       "expect": "Data Lost",
       "why": "A failover loses the last second of confirmed bookings: tickets people paid for vanish.",
-      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=large, replicas=1, sync=false)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db then invalidate cache\n"
+      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=1, sync=false)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db\n"
     },
     {
       "name": "medium-db",
       "expect": "Overloaded",
       "why": "1,200 bookings a second against a medium primary's 1,000 writes.",
-      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db then invalidate cache\n"
+      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db\n"
     },
     {
       "name": "random-ids",
       "expect": "Wrong Answer",
       "why": "Random 32-bit booking ids repeat across 50 crore bookings.",
-      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=large, replicas=1, sync=true)\nids   = idgen(kind=random, bits=32)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db then invalidate cache\n"
+      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=1, sync=true)\nids   = idgen(kind=random, bits=32)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db\n"
     },
     {
       "name": "big-everything",
       "expect": "Over Budget",
       "why": "It passes every test at more than the budget.",
-      "source": "lb    = lb()\napi   = server(count=12, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=large, replicas=3, sync=true)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db then invalidate cache\n"
+      "source": "lb    = lb()\napi   = server(count=12, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=3, sync=true)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db\n"
     }
   ],
   "hints": [
-    "After a booking, the seat map must show the seat taken at once. Which copies of the data could be behind?",
-    "A cached seat map is fine only if every booking clears it.",
+    "The seat map may be 2 seconds old. What TTL does that allow, and what does a short TTL do to the hit ratio when a few shows take almost all the reads?",
+    "A seat map that is a minute old is wrong for too long. Which copies of the data could be that far behind?",
     "A booking acknowledged by a primary that dies a moment later: where else must it already be?"
   ],
-  "editorial": "## The approach\n\nCorrectness first, then speed.\n\n1. **No stale seat maps.** Every booking clears the show's cached map (`then invalidate cache`), and seat maps are read from the primary, never from an async replica. So a booked seat shows as taken at once.\n2. **No lost bookings.** A synchronous replica has every confirmed booking when the primary dies. Writes take twice as long, which the 250 ms promise allows.\n3. **Ids that never repeat.** A counter.\n4. **Capacity.** A large primary takes 2,500 writes a second; at 1,200 bookings, plus the seat-map reads that miss the cache, it is about two thirds busy.\n\n## The reference design\n\n```\nlb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=large, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db then invalidate cache\n```\n\nIt costs ₹1.67 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **Cache not cleared: Wrong Answer.** A booked seat can still show as free for a minute: someone else picks it and is told it's gone.\n- **Replica reads: Wrong Answer.** Async replicas are a second behind: a seat you just booked can show as free.\n- **Async replica: Data Lost.** A failover loses the last second of confirmed bookings: tickets people paid for vanish.\n- **Medium db: Overloaded.** 1,200 bookings a second against a medium primary's 1,000 writes.\n- **Random ids: Wrong Answer.** Random 32-bit booking ids repeat across 50 crore bookings.\n- **Big everything: Over Budget.** It passes every test at more than the budget.\n\n## Read more\n\n- [Consistency models](/dashboard/concepts/cap-theorem/)\n- [PostgreSQL](/dashboard/components/postgresql/)\n"
+  "editorial": "## The approach\n\nCorrectness first, then speed.\n\n1. **A short TTL, not an invalidation.** The seat map may be 2 seconds old, so a 2-second cache is enough: a few shows take almost all the reads, so each map is rebuilt about once every 2 seconds however many fans ask. The map is always a little behind; the booking is the truth, because it is checked at the primary, and that is what stops a seat being sold twice.\n2. **No lost bookings.** A synchronous replica has every confirmed booking when the primary dies. Writes take twice as long, which the 250 ms promise allows.\n3. **Ids that never repeat.** A counter.\n4. **Capacity.** A large primary takes 10,000 writes a second; 1,200 bookings, plus the seat-map reads that miss the cache, keep it well within that. A medium primary (1,000 writes a second) would not.\n\n## The reference design\n\n```\nlb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.seats(seat_id pk, show_id, status, booking_id) index(show_id)\n\nread  GET_SEATS: client > lb > api > cache | db\nwrite BOOK:      client > lb > api > ids > db\n```\n\nIt costs ₹1.67 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **Long ttl: Wrong Answer.** A cached seat map a minute old shows seats that were taken a minute ago: fans pick them and are told they are gone. The problem allows 2 seconds.\n- **Async replica: Data Lost.** A failover loses the last second of confirmed bookings: tickets people paid for vanish.\n- **Medium db: Overloaded.** 1,200 bookings a second against a medium primary's 1,000 writes.\n- **Random ids: Wrong Answer.** Random 32-bit booking ids repeat across 50 crore bookings.\n- **Big everything: Over Budget.** It passes every test at more than the budget.\n\n## Read more\n\n- [Consistency models](/dashboard/concepts/cap-theorem/)\n- [PostgreSQL](/dashboard/components/postgresql/)\n"
 }
