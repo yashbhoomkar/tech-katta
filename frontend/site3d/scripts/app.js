@@ -13,6 +13,7 @@ import * as you from './pages/you.js';
 import * as notes from './pages/notes.js';
 import * as policy from './pages/policy.js';
 import * as start from './pages/start.js';
+import * as free from './pages/free.js';
 import * as changelog from './pages/changelog.js';
 import { legacyKey, legacyTarget } from './legacy.js';
 import { wireSearch } from './search.js';
@@ -33,6 +34,7 @@ function titleFor(path, nav) {
   if (nav === 'you') return `You · ${brand}`;
   if (nav === 'legal') return `${policy.policyTitle(path.replace(/\W/g, ''))} · ${brand}`;
   if (nav === 'notes') return `Quick Notes · ${brand}`;
+  if (nav === 'free') return `Free while in beta · ${brand}`;
   if (nav === 'start') return `Not sure where to start? · ${brand}`;
   if (nav === 'changelog') return `What's new · ${brand}`;
   if (nav === 'problems') return workspace.titleOf(path) || `Problems · ${brand}`;
@@ -90,7 +92,7 @@ const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-wr
 const ROUTES = [
   [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
   [/^\/simulator\/([\w-]+)$/, sim, 'sim'], [/^\/home\/?$/, me, 'me'], [/^\/problems\/?$/, problems, 'problems'],
-  [/^\/start\/?$/, start, 'start'], [/^\/changelog\/?$/, changelog, 'changelog'], [/^\/me\/?$/, you, 'you'], [/^\/(privacy|terms)\/?$/, policy, 'legal'], [/^\/learn\/quick-notes\/?$/, notes, 'notes'],
+  [/^\/start\/?$/, start, 'start'], [/^\/free\/?$/, free, 'free'], [/^\/changelog\/?$/, changelog, 'changelog'], [/^\/me\/?$/, you, 'you'], [/^\/(privacy|terms)\/?$/, policy, 'legal'], [/^\/learn\/quick-notes\/?$/, notes, 'notes'],
   [/^\/(?:problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/, workspace, 'problems'],
 ];
 /** one address per page: the canonical link follows the route (no trailing slash; /learn is /learn/concepts); none on the not-found page */

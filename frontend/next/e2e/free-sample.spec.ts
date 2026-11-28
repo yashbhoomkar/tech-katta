@@ -23,7 +23,8 @@ for (const path of ["/learn/concepts/networking-essentials", "/learn/components/
     await expect(page.locator(".rd-full")).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".gate-card, .si-card, .preview-fade")).toHaveCount(0);
     // the full text: many sections, not the two-paragraph preview
-    expect(await page.locator(".rd-full h2").count()).toBeGreaterThan(3);
+    // (the server-rendered text is visible first and has no headings yet: wait for the real article, then count)
+    await expect.poll(() => page.locator(".rd-full h2").count(), { timeout: 30_000 }).toBeGreaterThan(3);
     expect(errs).toEqual([]);
   });
 }
