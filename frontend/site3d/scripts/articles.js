@@ -31,6 +31,8 @@ export const SECOND = {
   'shared-editor': 'Two people, one document', 'rider-dispatch': 'Matching riders to orders', 'video-streaming': 'Millions watching at once', 'menu-search': 'Finding a dish from a few letters',
   'ind-vs-pak': 'The biggest live audience of the year',
 };
+/** the small "Free" label on a list row of the free sample (articles with access "free") */
+export const FREE = '<i class="free-tag">Free</i>';
 const mem = new Map();
 const ss = { get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch { /* full or blocked */ } } };
 

@@ -1,7 +1,7 @@
 // The landing: Tech Katta as one place for system design interview prep, told over one 3D pipeline, chapter by chapter. Everything that moves is 3D: the system
 // builds itself when the page opens, and each chapter's scroll drives its change (story.js). The parts wear the same
 // pastels as everywhere else (palette.js); the "meet the parts" chapter introduces them.
-import { mountStory, stageHtml } from '../story.js';
+import { mountStory, stageHtml, followTheme } from '../story.js';
 import { KIND_PASTEL } from '../palette.js';
 import { runTour, offerTour } from '../tour.js';
 
@@ -74,7 +74,7 @@ export function mount(view, _p, { reduced }) {
   const sim = '/simulator/ind-vs-pak';
   view.innerHTML = `
   <section class="story landing-story">
-    ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${STEPS.length - 1}</span><span class="segs">${STEPS.slice(1).map(() => '<i></i>').join('')}</span><span class="mono name">Start</span></div>`)}
+    ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${STEPS.length - 1}</span><span class="segs">${STEPS.slice(1).map(() => '<i></i>').join('')}</span><span class="mono name">Start</span></div>`, 'landing')}
     <div class="step hero" data-step="0">
       <h1 class="headline"><span class="thin">Your system design interview</span><span class="heavy accent">Everything for it, in one place</span></h1>
       <p class="lead">Learn the concepts and components, see how real apps are built, answer the questions interviewers ask, then design systems and get them judged. Free.</p>
@@ -113,6 +113,7 @@ export function mount(view, _p, { reduced }) {
   const root = view.querySelector('.story');
   const n = root.querySelector('.progress .n'), name = root.querySelector('.progress .name'), segs = [...root.querySelectorAll('.segs i')];
   let cur = 0;
+  const offTheme = followTheme(root);
   const story = mountStory(root, STEPS, { reduced, intro: true, label: 'A system in 3D: users, app servers, a Kafka topic, consumers and a database. Tap a part to learn what it does; the colour key in the first chapter does the same.', onStep: (i, frac = 0) => { cur = Math.max(0, Math.min(STEPS.length - 1, Math.round(frac))); n.textContent = `0${i} / 0${STEPS.length - 1}`; name.textContent = NAMES[i]; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
   // click (or tap) a part: a card beside it says what it does, what is happening to it now, and where to learn it
   let openId = null, openY = 0;
@@ -224,7 +225,7 @@ export function mount(view, _p, { reduced }) {
   const stopOffer = offerTour({ start: startTour });
   root.querySelector('[data-tour]').addEventListener('click', startTour);
   root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.28, behavior: reduced ? 'auto' : 'smooth' }); });
-  return () => { tour?.end(); stopOffer(); cancelAnimationFrame(ringRaf); ring.remove(); pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); story.destroy(); };
+  return () => { tour?.end(); stopOffer(); cancelAnimationFrame(ringRaf); ring.remove(); pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); offTheme(); story.destroy(); };
 }
 
 export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">Everything for your system design interview, in one place. Learn, practise and get judged, free.</p><nav><a href="/home">Home</a><a href="/learn">Learn</a><a href="/problems">Problems</a><a href="/simulator">Simulator</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav></footer>`;

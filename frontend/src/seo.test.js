@@ -46,7 +46,7 @@ test('the API gives the same pages as the content folder', async () => {
   assert.deepEqual(pagesOf(site, list), pagesFrom(content));
 });
 
-test('an article page holds its public part (2 paragraphs, section names), never the locked text, and Article markup without paywall data', async () => {
+test('an article page holds its public part (2 paragraphs, section names), never the locked text, and Article markup with paywall data', async () => {
   const { publicParagraphs } = await import('../../backend/src/content/public.js');
   const fs = await import('node:fs');
   const a = JSON.parse(fs.readFileSync(path.join(content, 'articles', 'concepts', 'consistent-hashing.json'), 'utf8'));
@@ -56,8 +56,11 @@ test('an article page holds its public part (2 paragraphs, section names), never
   // hidden while JavaScript runs (site3d/scripts/boot-theme.js adds tk-js), so it never flashes before the app draws
   assert.match(html, /html\.tk-js #root>\.tk-static\{display:none\}/);
   assert.match(html, /<h1>Consistent hashing/);
-  assert.doesNotMatch(html, /tk-locked/);
-  assert.doesNotMatch(html, /isAccessibleForFree/);
+  // the locked part is named in the page and in the structured data (Google's paywalled-content markup)
+  assert.match(html, /<div class="tk-locked">/);
+  const art = JSON.parse(html.match(/<script type="application\/ld\+json">([^<]*)<\/script>/)[1])['@graph'].find((n) => n['@type'] === 'TechArticle');
+  assert.equal(art.isAccessibleForFree, false);
+  assert.deepEqual(art.hasPart, { '@type': 'WebPageElement', isAccessibleForFree: false, cssSelector: '.tk-locked' });
   const shown = publicParagraphs(a.body);
   assert.equal(shown.length, 2);
   const esc = (t) => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -75,7 +78,8 @@ test('every article page shows at most 2 paragraphs and about 150 words of its b
   const pages = pagesFrom(content);
   for (const r of refs) {
     const page = pages.find((p) => p.key === r); assert.ok(page && page.body, r);
-    const paragraphs = (page.body.match(/<article>.*<\/article>/s)?.[0].match(/<p>/g) || []).length;
+    if (page.free) continue; // the free sample carries its full text (next test)
+    const paragraphs = (page.body.match(/<article>.*<\/article>/s)?.[0].replace(/<div class="tk-locked">.*?<\/div>/s, '').match(/<p>/g) || []).length;
     assert.ok(paragraphs <= 2 + 3, `${r}: ${paragraphs} <p> in the article (label, subtitle, date, 2 paragraphs)`);
   }
 });
@@ -87,4 +91,53 @@ test("nextPath: the new frontend's address for each old page key", async () => {
   assert.equal(nextPath("concepts/caching"), "/learn/concepts/caching");
   assert.equal(nextPath("problems"), "/problems");
   assert.equal(nextPath("privacy"), "/privacy");
+});
+
+const SHELL = '<html><head><title>x</title><script type="module" src="/a.js"></script></head><body><div id="root"><p style="x">Loading…</p></div></body></html>';
+const free = (fs) => JSON.parse(fs.readFileSync(path.join(content, 'articles', 'index.json'), 'utf8')).articles
+  .map((r) => JSON.parse(fs.readFileSync(path.join(content, 'articles', r + '.json'), 'utf8'))).filter((a) => a.access === 'free');
+
+test('the free sample: one article per Learn section and the URL shortener, plus How to answer', async () => {
+  const fs = await import('node:fs');
+  const keys = free(fs).map((a) => `${a.section}/${a.slug}`).sort();
+  assert.deepEqual(keys, ['components/redis', 'concepts/networking-essentials', 'interview-questions/how-to-answer', 'interview-questions/url-shortener', 'real-systems/discord-messages']);
+});
+
+test('a free article page holds its full text, down to its last section, and is marked free; a gated page does not hold its last section', async () => {
+  const fs = await import('node:fs');
+  const esc = (t) => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const pages = pagesFrom(content);
+  for (const a of free(fs)) {
+    const page = pages.find((p) => p.key === `${a.section}/${a.slug}`), html = render(SHELL, page);
+    const heads = a.body.filter((b) => b.t === 'h2'), last = heads[heads.length - 1];
+    assert.ok(html.includes(esc(last.x)), `${a.slug}: its last section heading`);
+    const after = a.body.slice(a.body.indexOf(last) + 1).filter((b) => b.t === 'p' && b.x.length > 80 && !/`/.test(b.x)).pop();
+    if (after) assert.ok(html.includes(esc(after.x.slice(0, 60))), `${a.slug}: its last paragraph`);
+    assert.doesNotMatch(html, /tk-locked/);
+    const node = JSON.parse(html.match(/<script type="application\/ld\+json">([^<]*)<\/script>/)[1])['@graph'].find((n) => /Article$/.test(n['@type']));
+    assert.equal(node.isAccessibleForFree, true); assert.equal(node.hasPart, undefined);
+    assert.equal(page.free, true);
+  }
+  const gated = JSON.parse(fs.readFileSync(path.join(content, 'articles', 'concepts', 'caching.json'), 'utf8'));
+  const html = render(SHELL, pages.find((p) => p.key === 'concepts/caching'));
+  // its section names are listed (the locked list), the text of its last section is not
+  const heads = gated.body.filter((b) => b.t === 'h2'), last = heads[heads.length - 1];
+  assert.ok(html.includes(esc(last.x)), 'the last section name is listed');
+  const tail = gated.body.filter((b) => b.t === 'p' && b.x.length > 80 && !/`/.test(b.x)).pop();
+  assert.ok(gated.body.indexOf(tail) > gated.body.indexOf(last), 'the gated sample has text under its last section');
+  assert.ok(!html.includes(esc(tail.x.slice(0, 60))), 'a gated page must not carry its last section text');
+});
+
+test('the sitemap lists the free pages first, each with a lastmod; every page has its own title, description and canonical address', async () => {
+  const fs = await import('node:fs');
+  const pages = pagesFrom(content), xml = sitemap(pages.map((p) => ({ key: p.key, date: p.date, free: p.free })));
+  const locs = [...xml.matchAll(/<url><loc>([^<]*)<\/loc>(<lastmod>[^<]*<\/lastmod>)?/g)];
+  const nFree = free(fs).length;
+  assert.equal(locs[0][1], 'https://tech.katta.cc/');
+  for (let i = 1; i <= nFree; i += 1) assert.ok(locs[i][2], `free page ${locs[i][1]} has a lastmod`);
+  assert.deepEqual(locs.slice(1, nFree + 1).map((m) => m[1]).sort(), free(fs).map((a) => `https://tech.katta.cc/dashboard/${a.section}/${a.slug}/`).sort());
+  const withBody = pages.filter((p) => p.body);
+  for (const field of ['title', 'description']) assert.equal(new Set(withBody.map((p) => p[field])).size, withBody.length, `${field}s are unique`);
+  const urls = withBody.map((p) => /<link rel="canonical" href="([^"]*)"/.exec(render(SHELL, p))[1]);
+  assert.equal(new Set(urls).size, urls.length, 'canonicals are unique');
 });
