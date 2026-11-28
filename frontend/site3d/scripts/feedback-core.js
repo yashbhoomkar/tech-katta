@@ -45,6 +45,39 @@ export function canSend(last, now, gap = GAP_MS) {
   return left > 0 && t > 0 ? { ok: false, wait: Math.ceil(left / 1000) } : { ok: true, wait: 0 };
 }
 
+// ---- spam and privacy rules (tested in test/feedback.test.js)
+export const MIN_QUICK = 10, DAILY_MAX = 10, DAY_MS = 86_400_000, MIN_OPEN_MS = 2000;
+/** Quick feedback needs a few real words: at least MIN_QUICK characters once trimmed */
+export const quickOk = (text) => String(text || '').trim().length >= MIN_QUICK;
+/** the times (ms) of this browser's recent reports, from the stored JSON; only the last day, only numbers */
+export function recentLog(raw, now = Date.now()) {
+  let l = []; try { const j = JSON.parse(raw || '[]'); if (Array.isArray(j)) l = j; } catch { /* not ours: start again */ }
+  return l.filter((t) => typeof t === 'number' && Number.isFinite(t) && now - t < DAY_MS && t <= now + 60_000).slice(-DAILY_MAX);
+}
+/** at most DAILY_MAX reports per browser in any 24 hours: { ok } or { ok: false, hours: until the oldest drops out } */
+export function dailyCap(raw, now = Date.now(), max = DAILY_MAX) {
+  const l = recentLog(raw, now);
+  return l.length < max ? { ok: true, hours: 0 } : { ok: false, hours: Math.max(1, Math.ceil((l[0] + DAY_MS - now) / 3_600_000)) };
+}
+/** the stored JSON with this report added */
+export const logReport = (raw, now = Date.now()) => JSON.stringify([...recentLog(raw, now), now].slice(-DAILY_MAX));
+/** a report sent less than MIN_OPEN_MS after the popup opened is not a person (it is dropped like the honeypot's) */
+export const tooSoon = (openedAt, now = Date.now()) => now - openedAt < MIN_OPEN_MS;
+
+/** what the Visual screenshot always covers: every field a person types in, and anything the page marks data-private (the signed-in person's name, email and photo) */
+export const REDACT_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [data-private], [data-private] *';
+/** boxes to paint over the picture: `rects` are screen rectangles read now (scroll `now`); the picture shows the window as it was at the press (`geo`: its scroll and size);
+ *  `scale` turns screen pixels into picture pixels. Clipped to the picture; empty ones dropped. */
+export function redactBoxes(rects, geo, now = { x: 0, y: 0 }, scale = 1, pad = 2) {
+  const out = [];
+  for (const r of rects) {
+    const l = Math.max(0, r.left + now.x - geo.x - pad), t = Math.max(0, r.top + now.y - geo.y - pad);
+    const rr = Math.min(geo.w, r.right + now.x - geo.x + pad), b = Math.min(geo.h, r.bottom + now.y - geo.y + pad);
+    if (rr - l > 1 && b - t > 1) out.push({ x: Math.floor(l * scale), y: Math.floor(t * scale), w: Math.ceil((rr - l) * scale), h: Math.ceil((b - t) * scale) });
+  }
+  return out;
+}
+
 /** the size to draw a screenshot at: its long side at most `max` */
 export function fitSize(w, h, max = MAX_SIDE) {
   const long = Math.max(w, h); if (long <= max) return { width: Math.round(w), height: Math.round(h) };

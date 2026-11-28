@@ -1,5 +1,6 @@
 import { devices, expect, test, type Locator, type Page } from "@playwright/test";
 import { localApi } from "./api";
+import { lite3d } from "./lite3d";
 
 // The phone workspace (tech-katta-context 53 §5, phase 3): one header, Problem · Design · Results, a parts sheet, a bar for the selected part, settings as a
 // sheet. Touch is real here: Input.dispatchTouchEvent over CDP (touchStart, touchMove steps, touchEnd), because clicks and synthetic scrolls missed two
@@ -203,9 +204,12 @@ test.describe("touch flow on a Pixel 7", () => {
 
 test.describe("3D canvas on a Pixel 7", () => {
   test.use({ ...phone("Pixel 7") });
-  test("+ Part in 3D adds a part with no settings open; a touch on it shows the bar @phone", async ({ page }) => {
+  test("+ Part in 3D adds a part with no settings open; a touch on it shows the bar @phone @3d", async ({ page }) => {
+    test.slow();
     await signedIn(page, "dark", "3d");
+    await lite3d(page);
     await page.goto("/problems/url-shortener");
+    await expect(page.locator(".solve.ph.pv-problem")).toBeVisible({ timeout: 30_000 }); // the workspace is drawn (its island has loaded) before anything is tapped
     const t = await touch(page);
     await tapOn(t, page.locator(".ph-start button"));
     await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 });
@@ -215,9 +219,13 @@ test.describe("3D canvas on a Pixel 7", () => {
     await expect(page.locator(".ph-sheet")).toHaveCount(0);
     await expect.poll(() => count(page, ".react-flow__node")).toBe(n0 + 1);
     await expect(page.locator(".ph-selbar")).toHaveCount(0);
-    await page.waitForTimeout(1500);
-    // the part sits under its label: a touch there selects it
-    const at = await page.evaluate(() => { const p = Array.from(document.querySelectorAll(".d3 .p3")).find((e) => (e as HTMLElement).innerText.trim().startsWith("CDN")); if (!p) return null; const r = p.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom + 28 }; });
+    // the part sits under its label: a touch there selects it. The label glides to its place, so wait until it has not moved for five frames (a real readiness signal, not a sleep)
+    const at = await page.evaluate(() => new Promise<{ x: number; y: number } | null>((resolve) => {
+      const read = () => { const p = Array.from(document.querySelectorAll(".d3 .p3")).find((e) => (e as HTMLElement).innerText.trim().startsWith("CDN")); if (!p) return null; const r = p.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom + 28 }; };
+      let last = read(), still = 0; const t0 = performance.now();
+      const tick = () => { const now = read(); still = now && last && Math.abs(now.x - last.x) < 0.5 && Math.abs(now.y - last.y) < 0.5 ? still + 1 : 0; last = now; if (still >= 5 || performance.now() - t0 > 15_000) return resolve(now); requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+    }));
     expect(at, "the CDN's label is drawn").not.toBeNull();
     if (at) await t.tap(at.x, at.y);
     await expect(page.locator(".ph-selbar")).toBeVisible();

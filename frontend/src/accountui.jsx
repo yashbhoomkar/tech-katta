@@ -19,7 +19,7 @@ if(!t||!a.ready||!a.enabled)return null;
 if(!a.user){if(!button)return null;if(t.signInDialog)return <div className="acct"><button type="button" className="acct-signin-link" aria-haspopup="dialog" onClick={()=>setSigning(true)}>{t.signIn}</button>{signing&&<SignInDialog t={t} base={termsBase} onClose={()=>setSigning(false)}/>}</div>;
 return signInHref?<div className="acct"><a className="acct-signin-link" href={signInHref}>{t.signIn}</a></div>:null}
 const who=a.user.name||a.user.email||t.menu;
-return <div className="acct" ref={box}><button type="button" className="acct-btn" aria-expanded={open} aria-haspopup="true" aria-label={`${t.menu}: ${who}`} onClick={()=>setOpen(o=>!o)}>{a.user.picture?<img src={a.user.picture} alt="" referrerPolicy="no-referrer"/>:<i aria-hidden="true">{who[0].toUpperCase()}</i>}<span>{who}</span></button>
+return <div className="acct" ref={box} data-private><button type="button" className="acct-btn" aria-expanded={open} aria-haspopup="true" aria-label={`${t.menu}: ${who}`} onClick={()=>setOpen(o=>!o)}>{a.user.picture?<img src={a.user.picture} alt="" referrerPolicy="no-referrer"/>:<i aria-hidden="true">{who[0].toUpperCase()}</i>}<span>{who}</span></button>
 {open&&<div className="acct-menu"><b>{a.user.name}</b><small>{a.user.email}</small><p className={a.error?"bad":""}>{a.syncing?t.syncing:a.error?t.syncFailed:t.saved}</p>
 <a href={privacyHref} onClick={()=>setOpen(false)}>{t.privacy}</a><button type="button" onClick={()=>{setOpen(false);signOut()}}>{t.signOut}</button>
 {t.signOutAll&&<button type="button" onClick={async()=>{if(confirm(t.signOutAllConfirm)){setOpen(false);try{await signOutAll()}catch{alert(t.syncFailed)}}}}>{t.signOutAll}</button>}

@@ -1,7 +1,7 @@
 // The Report popup's pure parts (site3d/scripts/feedback-core.js): what the address means, the title and body, the request, the rate limit, sizes, the fallback.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { feedbackParam, feedbackWanted, cleanUrl, titleOf, categoryOf, detailsText, descriptionOf, payloadOf, canSend, fitSize, pixelRatioFor, dataUrlBytes, fontBlocks, unicodeRanges, pickFontFaces, canSkipStyle, STYLE_PROPS, issueUrl, REPO, ENDPOINT, MARK_COLORS, toImagePoint, lineWidthFor, textSizeFor, boxOf, arrowHead, tooSmall } from "../scripts/feedback-core.js";
+import { feedbackParam, feedbackWanted, cleanUrl, titleOf, categoryOf, detailsText, descriptionOf, payloadOf, canSend, quickOk, MIN_QUICK, recentLog, dailyCap, logReport, tooSoon, redactBoxes, REDACT_SELECTOR, DAILY_MAX, fitSize, pixelRatioFor, dataUrlBytes, fontBlocks, unicodeRanges, pickFontFaces, canSkipStyle, STYLE_PROPS, issueUrl, REPO, ENDPOINT, MARK_COLORS, toImagePoint, lineWidthFor, textSizeFor, boxOf, arrowHead, tooSmall } from "../scripts/feedback-core.js";
 
 test("the address turns it on or off; otherwise this browser's choice; on by default", () => {
   assert.equal(feedbackParam("?feedback=on"), "on");
@@ -144,4 +144,42 @@ test("a declaration is left off the screenshot's clone only when the clone gets 
   assert.equal(canSkipStyle("border-top-color", "rgb(5, 5, 5)", "rgb(0, 0, 0)", undefined, get({ "border-top-style": "solid", color: "rgb(5, 5, 5)" })), true, "currentcolor");
   assert.equal(canSkipStyle("border-top-color", "rgb(5, 5, 5)", "rgb(0, 0, 0)", undefined, get({ "border-top-style": "solid", color: "rgb(1, 1, 1)" })), false);
   assert.ok(STYLE_PROPS.includes("background-color") && STYLE_PROPS.length < 260 && new Set(STYLE_PROPS).size === STYLE_PROPS.length);
+});
+
+test("Quick feedback needs at least 10 characters once trimmed", () => {
+  assert.equal(MIN_QUICK, 10);
+  assert.equal(quickOk(""), false); assert.equal(quickOk("short"), false); assert.equal(quickOk("   123456789   "), false);
+  assert.equal(quickOk("1234567890"), true); assert.equal(quickOk("The card does not open"), true); assert.equal(quickOk(null), false);
+});
+
+test("at most 10 reports per browser in any 24 hours", () => {
+  const now = 1_000_000_000_000, h = 3_600_000;
+  assert.deepEqual(dailyCap(null, now), { ok: true, hours: 0 });
+  assert.deepEqual(dailyCap("garbage", now), { ok: true, hours: 0 }, "a damaged log starts again");
+  let raw = null; for (let i = 8; i >= 1; i--) raw = logReport(raw, now - i * h); raw = logReport(raw, now - h);
+  assert.equal(dailyCap(raw, now).ok, true, "nine is fine");
+  raw = logReport(raw, now);
+  assert.equal(JSON.parse(raw).length, DAILY_MAX);
+  const c = dailyCap(raw, now); assert.equal(c.ok, false); assert.equal(c.hours, 16, "the oldest (8 h ago) leaves the window in 16 h");
+  assert.equal(dailyCap(raw, now + 25 * h).ok, true, "a day later it is open again");
+  assert.deepEqual(recentLog(JSON.stringify([now - 25 * h, "x", null, now - h]), now), [now - h], "old and non-number entries are dropped");
+  assert.equal(recentLog(JSON.stringify([now + 10 * h]), now).length, 0, "a time far in the future is not trusted");
+});
+
+test("a report within 2 s of opening the popup is dropped", () => {
+  assert.equal(tooSoon(1000, 2999), true); assert.equal(tooSoon(1000, 3000), false); assert.equal(tooSoon(1000, 1000), true);
+});
+
+test("redaction boxes: clipped to the picture, moved by the scroll since the press, scaled to the picture's pixels", () => {
+  const geo = { x: 0, y: 100, w: 400, h: 300 };
+  // scrolled 20 px further since the press: a box now at top 50 was at top 70 in the picture's page terms
+  const [a] = redactBoxes([{ left: 10, top: 50, right: 110, bottom: 70 }], geo, { x: 0, y: 150 }, 1, 0);
+  assert.deepEqual(a, { x: 10, y: 100, w: 100, h: 20 });
+  assert.deepEqual(redactBoxes([{ left: 390, top: 0, right: 500, bottom: 20 }], { x: 0, y: 0, w: 400, h: 300 }, { x: 0, y: 0 }, 2, 0), [{ x: 780, y: 0, w: 20, h: 40 }], "clipped at the edge, at 2x");
+  assert.deepEqual(redactBoxes([{ left: 500, top: 0, right: 600, bottom: 20 }], { x: 0, y: 0, w: 400, h: 300 }), [], "wholly outside: nothing");
+  assert.deepEqual(redactBoxes([{ left: 5, top: 5, right: 5, bottom: 5 }], { x: 0, y: 0, w: 400, h: 300 }, undefined, 1, 0), [], "empty: nothing");
+});
+
+test("what is always covered: fields people type in, and anything marked data-private", () => {
+  for (const q of ["input", "textarea", "select", "[contenteditable]", "[data-private]", "[data-private] *"]) assert.ok(REDACT_SELECTOR.includes(q), q);
 });
