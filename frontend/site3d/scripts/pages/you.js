@@ -25,7 +25,7 @@ export function mount(view) {
     view.innerHTML = `<section class="page narrow you">
       <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><span>You</span></nav>
       <h1 class="headline"><span class="thin">You</span><span class="heavy accent">Account and look</span></h1><p class="lead">Your account and how Tech Katta looks for you.</p>
-      ${u ? `      <div class="you-card glass"><i class="avatar" aria-hidden="true">${u?.picture ? `<img src="${esc(u.picture)}" alt="" referrerpolicy="no-referrer"/>` : esc((u?.name || '?')[0])}</i>
+      ${u ? `      <div class="you-card glass" data-private><i class="avatar" aria-hidden="true">${u?.picture ? `<img src="${esc(u.picture)}" alt="" referrerpolicy="no-referrer"/>` : esc((u?.name || '?')[0])}</i>
         <div><b>${u ? esc(u.name || 'Signed in') : 'Not signed in'}</b><small class="muted">${u ? `${esc(u.email || '')} · signed in with Google` : a.ready && a.enabled ? 'Your progress is kept in this browser.' : 'Sign-in is not available right now. Your progress is kept in this browser.'}</small></div>
         <div class="you-acts">${u ? '<button type="button" class="btn light sm" data-out>Sign out</button><button type="button" class="btn light sm" data-outall>Sign out everywhere</button>' : a.ready && a.enabled ? '<button type="button" class="btn dark sm" data-in>Sign in<span class="chip">→</span></button>' : ''}</div></div>` : signInCard('dashboard')}
       <div class="you-card glass block"><h2>Appearance</h2><p class="muted">System follows your device and switches by itself at night if your device does.</p>

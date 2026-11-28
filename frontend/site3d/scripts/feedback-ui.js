@@ -4,9 +4,10 @@
 // Loaded the first time the Report button is pressed (feedback.js). The page's own sheets stay where they are: this one sits above them.
 import { createEditor } from './feedback-markup.js';
 import { hold, grab } from './feedback-hold.js';
-import { pixelRatioFor, ENDPOINT, REPO, GAP_MS, titleOf, categoryOf, descriptionOf, detailsText, payloadOf, canSend, cleanUrl, issueUrl } from './feedback-core.js';
+import { pixelRatioFor, ENDPOINT, REPO, GAP_MS, titleOf, categoryOf, descriptionOf, detailsText, payloadOf, canSend, cleanUrl, issueUrl, quickOk, MIN_QUICK, DAILY_MAX, dailyCap, logReport, tooSoon } from './feedback-core.js';
 
-const TAB_KEY = 'tk-report-tab', LAST_KEY = 'tk-report-at';
+const TAB_KEY = 'tk-report-tab', LAST_KEY = 'tk-report-at', LOG_KEY = 'tk-report-log';
+const PUBLIC_NOTE = 'Reports are public on GitHub. Don\'t include personal details.';
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch { /* blocked */ } } };
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -32,6 +33,7 @@ export function openReport(opener, held, capMod, first) {
     <div class="tk-rp-body"></div></div>`;
   const box = root.querySelector('.tk-rp-box'), body = root.querySelector('.tk-rp-body');
   const state = { tab: store.get(TAB_KEY) === 'visual' ? 'visual' : 'quick', chip: 'bug', quick: '', note: '', shot: null, shotErr: '', capturing: false, view: 'form', busy: false, msg: '', sent: null, wait: 0 };
+  const openedAt = Date.now(); // a report sent within 2 s of this is not a person
   let ed = null; // the picture editor for state.shot (marks live in it)
 
   // ---- closing: ✕, Esc, a tap outside, a swipe down (phones), Back. A history entry is taken while the popup is open; the page's own sheets ignore a Back that only pops it
@@ -79,10 +81,10 @@ export function openReport(opener, held, capMod, first) {
     if (state.tab === 'quick') {
       body.innerHTML = `<div class="tk-rp-chips" role="radiogroup" aria-label="Kind of report"><button type="button" role="radio" data-chip="bug" aria-checked="${state.chip === 'bug'}">Bug</button><button type="button" role="radio" data-chip="idea" aria-checked="${state.chip === 'idea'}">Idea</button></div>
         <label class="tk-rp-f"><span>What happened?</span><textarea rows="5" maxlength="2000" data-msg placeholder="Tell us what you saw, or what you would like to see."></textarea></label>${hp}
-        <p class="tk-rp-small">Sent to a public GitHub page with your page address and browser. Leave out anything private.</p>
+        <p class="tk-rp-small tk-rp-public">${PUBLIC_NOTE}</p>
         <div class="tk-rp-foot"><p class="tk-rp-note" role="status" aria-live="polite" data-status></p><button type="button" class="tk-rp-act main" data-send disabled>Send</button></div>`;
       const ta = body.querySelector('[data-msg]'); ta.value = state.quick;
-      const sync = () => { state.quick = ta.value; body.querySelector('[data-send]').disabled = state.busy || !ta.value.trim(); };
+      const sync = () => { state.quick = ta.value; body.querySelector('[data-send]').disabled = state.busy || !quickOk(ta.value); const st = body.querySelector('[data-status]'); if (st && !state.busy) st.textContent = ta.value.trim() && !quickOk(ta.value) ? `At least ${MIN_QUICK} characters, please.` : state.msg; };
       ta.addEventListener('input', sync); sync();
       body.querySelectorAll('[data-chip]').forEach((b) => b.addEventListener('click', () => { state.chip = b.dataset.chip; body.querySelectorAll('[data-chip]').forEach((x) => x.setAttribute('aria-checked', String(x === b))); }));
       body.querySelector('[data-send]').addEventListener('click', () => send());
@@ -93,7 +95,8 @@ export function openReport(opener, held, capMod, first) {
       : state.shot ? '<div data-editor></div>'
       : `<div class="tk-rp-shot fail" role="status">Couldn't take the screenshot on this ${innerWidth <= 900 ? 'phone' : 'browser'}. You can still send your note.${state.shotErr ? `<small>${esc(state.shotErr)}</small>` : ''}</div>`;
     body.innerHTML = `${shot}<label class="tk-rp-f"><span>Add a note (optional)</span><textarea rows="3" maxlength="2000" data-note placeholder="What should we look at?"></textarea></label>${hp}
-      <p class="tk-rp-small">The picture shows this page as it is now. Draw on it to point at the problem, and use Hide to cover anything private. It goes to a public GitHub page.</p>
+      <p class="tk-rp-small">The picture shows this page as it is now. Draw on it to point at the problem. Names, emails and anything typed in a field are covered for you; use Hide to cover anything else.</p>
+      <p class="tk-rp-small tk-rp-public">${PUBLIC_NOTE}</p>
       <div class="tk-rp-foot"><p class="tk-rp-note" role="status" aria-live="polite" data-status></p>
       <div class="tk-rp-two"><button type="button" class="tk-rp-act" data-retake ${state.capturing ? 'disabled' : ''}>Retake</button><button type="button" class="tk-rp-act main" data-send ${state.capturing || state.busy ? 'disabled' : ''}>Send</button></div></div>`;
     if (state.shot) { if (!ed) ed = createEditor(state.shot); body.querySelector('[data-editor]').replaceWith(ed.el); performance.mark('tk-report:preview'); }
@@ -126,10 +129,13 @@ export function openReport(opener, held, capMod, first) {
   async function send() {
     if (state.busy) return;
     if (root.querySelector('.tk-rp-hp')?.value) { state.view = 'sent'; paint(); return; } // a bot filled the hidden field: it is told it worked
+    if (tooSoon(openedAt)) { state.view = 'sent'; paint(); return; } // under 2 s after opening: a script, told it worked like the hidden field's
     const rl = canSend(store.get(LAST_KEY), Date.now(), GAP_MS);
     if (!rl.ok) { state.msg = `Please wait ${rl.wait} s before sending another report.`; status(); return; }
+    const cap = dailyCap(store.get(LOG_KEY));
+    if (!cap.ok) { state.msg = `You have sent ${DAILY_MAX} reports today. Please try again in ${cap.hours} h.`; status(); return; }
     const visual = state.tab === 'visual', text = visual ? state.note : state.quick;
-    if (!visual && !text.trim()) return;
+    if (!visual && !quickOk(text)) { state.msg = `Please write at least ${MIN_QUICK} characters.`; status(); return; }
     const meta = pageMeta(), title = titleOf(text, meta.url), category = visual ? 'bug' : categoryOf(state.chip);
     state.busy = true; state.msg = 'Sending…'; paint();
     let shotUrl = null, shotErr = '';
@@ -143,7 +149,7 @@ export function openReport(opener, held, capMod, first) {
       const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payloadOf({ title, description, category, screenshot: shotUrl, meta })), signal: ctrl.signal }).finally(() => clearTimeout(timer));
       const j = r.ok ? await r.json().catch(() => null) : null;
       if (!j || j.success !== true) throw new Error(r.ok ? 'the service did not accept it' : `the service answered ${r.status}`);
-      store.set(LAST_KEY, String(Date.now())); state.busy = false; state.msg = ''; state.view = 'sent'; paint();
+      store.set(LAST_KEY, String(Date.now())); store.set(LOG_KEY, logReport(store.get(LOG_KEY))); state.busy = false; state.msg = ''; state.view = 'sent'; paint();
     } catch (e) {
       state.busy = false; state.sent = report; state.msg = e?.name === 'AbortError' ? 'It took too long.' : /fetch|network|failed|load/i.test(String(e?.message)) ? 'The service could not be reached from this browser.' : `${String(e?.message || 'It did not go through.')}.`; state.view = 'fallback'; paint();
     }

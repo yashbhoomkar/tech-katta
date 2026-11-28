@@ -69,7 +69,7 @@ function draw() {
   const hash = location.hash, onList = nav === 'problems' && path === '/problems';
   const active = nav === 'learn' ? sec : nav === 'sim' ? 'practice' : onList ? (hash === '#challenges' ? 'challenges' : hash === '#warm-ups' ? 'practice' : 'problems') : nav === 'problems' ? (/^\/problems\/challenge\//.test(path) ? 'challenges' : path === '/problems/sandbox' ? 'sandbox' : 'problems') : nav;
   const row = (p, label = p.name) => { const t = p.section || ['practice', 'problems', 'challenges'].includes(p.id) ? tally(p.id, list) : null;
-    return `<a class="side-row${p.id === active ? ' on' : ''}" href="${p.href}" title="${esc(label)}" ${p.id === active ? 'aria-current="page"' : ''}>${icon(p)}<span class="lbl">${esc(label)}</span>${t ? `<small class="lbl">${t.done}/${t.total}</small>` : ''}</a>`; };
+    return `<a class="side-row${p.id === active ? ' on' : ''}" href="${p.href}" title="${esc(label)}" ${label !== p.name ? 'data-private ' : ''}${p.id === active ? 'aria-current="page"' : ''}>${icon(p)}<span class="lbl">${esc(label)}</span>${t ? `<small class="lbl">${t.done}/${t.total}</small>` : ''}</a>`; };
   const sub = (id) => { if (id !== sec || !slug) return ''; const read = store.get().read;
     // a long section (29 questions) would push Practice off screen, so the list is a window round where you are, plus "All"
     const all = list.filter((a) => a.section === id), at = all.findIndex((a) => a.slug === slug), WIN = 9;
