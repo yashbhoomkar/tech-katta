@@ -2,19 +2,8 @@
 // and returns a cleanup function. Routes (real paths since the 3D site took tech.katta.cc's root): / · /learn[/<section>] ·
 // /learn/<section>/<slug> · /simulator[/<scenario>] · /home · /problems (the list). Every other address (a problem's
 // canvas /problems/<slug>, /practice, /me, /quick-notes, the policies) belongs to the React app and loads as a whole page. Old #/… links from the prototype still work.
-import * as landing from './pages/landing.js';
-import * as learn from './pages/learn.js';
-import * as article from './pages/article.js';
-import * as sim from './pages/sim.js';
-import * as me from './pages/me.js';
-import * as problems from './pages/problems.js';
-import * as workspace from './pages/workspace.js';
-import * as you from './pages/you.js';
-import * as notes from './pages/notes.js';
-import * as policy from './pages/policy.js';
-import * as start from './pages/start.js';
-import * as free from './pages/free.js';
-import * as changelog from './pages/changelog.js';
+// the pages load when their address is opened (one page of a dozen is wanted at a time); the shell's head names the first one's files, so they arrive with app.js
+const page = (f) => () => import(`./pages/${f}.js`);
 import { legacyKey, legacyTarget } from './legacy.js';
 import { wireSearch } from './search.js';
 import { updateShell } from './shell.js';
@@ -27,17 +16,17 @@ import { hashTarget } from './legacy-hash.js';
 import { pageView, hostAnalytics } from './analytics.js';
 
 /** the browser tab and history say where you are */
-function titleFor(path, nav) {
+function titleFor(path, nav, mod) {
   const brand = 'Tech Katta';
   if (nav === 'home') return `${brand}: everything for your system design interview`;
   if (nav === 'me') return `Home · ${brand}`;
   if (nav === 'you') return `You · ${brand}`;
-  if (nav === 'legal') return `${policy.policyTitle(path.replace(/\W/g, ''))} · ${brand}`;
+  if (nav === 'legal') return `${mod.policyTitle(path.replace(/\W/g, ''))} · ${brand}`;
   if (nav === 'notes') return `Quick Notes · ${brand}`;
   if (nav === 'free') return `Free while in beta · ${brand}`;
   if (nav === 'start') return `Not sure where to start? · ${brand}`;
   if (nav === 'changelog') return `What's new · ${brand}`;
-  if (nav === 'problems') return workspace.titleOf(path) || `Problems · ${brand}`;
+  if (nav === 'problems') return mod?.titleOf?.(path) || `Problems · ${brand}`;
   if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Warm-ups'} · ${inc ? 'Warm-ups · ' : ''}${brand}`; }
   const m = path.match(/^\/learn\/([\w-]+)(?:\/([\w-]+))?/);
   if (m) { const sec = SECTIONS.find((s) => s.id === m[1]); const a = m[2] && listNow().find((x) => x.slug === m[2] && x.section === m[1]); return a ? `${splitTitle(a.title)[0]} · ${sec.name} · ${brand}` : `${sec ? sec.name : 'Learn'} · ${brand}`; }
@@ -90,10 +79,10 @@ const ART = /^\/learn\/(concepts|components|interview-questions|real-systems)\/(
 // the retired sample lessons, and bare slugs, go to the real article
 const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-writes', 'load-balancing': 'networking-essentials', cdn: 'big-files' };
 const ROUTES = [
-  [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
-  [/^\/simulator\/([\w-]+)$/, sim, 'sim'], [/^\/home\/?$/, me, 'me'], [/^\/problems\/?$/, problems, 'problems'],
-  [/^\/start\/?$/, start, 'start'], [/^\/free\/?$/, free, 'free'], [/^\/changelog\/?$/, changelog, 'changelog'], [/^\/me\/?$/, you, 'you'], [/^\/(privacy|terms)\/?$/, policy, 'legal'], [/^\/learn\/quick-notes\/?$/, notes, 'notes'],
-  [/^\/(?:problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/, workspace, 'problems'],
+  [/^\/?$/, page('landing'), 'home'], [/^\/learn\/?$/, page('learn'), 'learn'], [SEC, page('learn'), 'learn'], [ART, page('article'), 'learn'],
+  [/^\/simulator\/([\w-]+)$/, page('sim'), 'sim'], [/^\/home\/?$/, page('me'), 'me'], [/^\/problems\/?$/, page('problems'), 'problems'],
+  [/^\/start\/?$/, page('start'), 'start'], [/^\/free\/?$/, page('free'), 'free'], [/^\/changelog\/?$/, page('changelog'), 'changelog'], [/^\/me\/?$/, page('you'), 'you'], [/^\/(privacy|terms)\/?$/, page('policy'), 'legal'], [/^\/learn\/quick-notes\/?$/, page('notes'), 'notes'],
+  [/^\/(?:problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/, page('workspace'), 'problems'],
 ];
 /** one address per page: the canonical link follows the route (no trailing slash; /learn is /learn/concepts); none on the not-found page */
 function setCanonical(path, missing) {
@@ -127,8 +116,11 @@ function route() {
   if (/^\/learn\/?$/.test(path)) { go('/learn/concepts', { replace: true }); return; } // the Learn tab opens its first section
   const old = path.match(/^\/learn\/([\w-]+)\/?$/);
   if (old && !SEC.test(path) && old[1] in OLD) { go(`/learn/concepts/${OLD[old[1]] || old[1]}`, { replace: true }); return; }
-  const [re, mod, nav] = ROUTES.find(([r]) => r.test(path)) || [null, null, null];
+  const [re, load, nav] = ROUTES.find(([r]) => r.test(path)) || [null, null, null];
   const my = ++token;
+  // the page's module (a moment's wait the first time; the shell's head asked for it already); a stale route stops here
+  Promise.resolve(load ? load() : null).then((mod) => { if (my === token) show(mod); }, () => { if (my === token) location.reload(); });
+  function show(mod) {
   const swap = () => {
     if (my !== token) return;
     try { cleanup?.(); } catch (e) { console.warn(e); }
@@ -139,7 +131,7 @@ function route() {
     if (!refreshing) pageView(path);
     const keep = refreshing ? keepY : 0; refreshing = false; keepY = 0;
     view.replaceChildren();
-    document.title = titleFor(path, nav || 'missing');
+    document.title = titleFor(path, nav || 'missing', mod);
     setCanonical(path, !mod);
     const back = keep || (!linkClick && !window.tkFresh && positions[path] > 0 ? positions[path] : 0); linkClick = false; window.tkFresh = false; curPath = '';
     scrollTo(0, 0);
@@ -163,6 +155,7 @@ function route() {
     const cap = setTimeout(() => vt.skipTransition?.(), 600); vt.finished?.finally?.(() => clearTimeout(cap));
   } else if (cleanup && !reduced) { view.classList.add('leaving'); setTimeout(swap, 140); } else swap();
   prevPath = path;
+  }
 }
 // a change of the #fragment alone (the workspace's tabs set one, the way the canvas's code always did) is not a new page
 addEventListener('popstate', () => { if (location.pathname + location.search === lastLoc && !location.hash.startsWith('#/')) return; route(); });

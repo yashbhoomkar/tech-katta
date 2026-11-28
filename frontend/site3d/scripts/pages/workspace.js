@@ -109,6 +109,8 @@ export function mount(view, _params, ctx) {
   }
 
   view.innerHTML = wait();
+  if (target.kind === 'problem') getArticle(target.slug).catch(() => {}); // the list and the problem's own text are asked for together, not one after the other
+  else if (target.kind === 'challenge') getLab();
   (async () => {
     await listArticles().catch(() => {});
     if (!alive) return;

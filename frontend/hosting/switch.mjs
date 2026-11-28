@@ -64,7 +64,39 @@ const buildId = (() => {
   if (!sha) { try { sha = execSync("git rev-parse --short HEAD", { cwd: frontend, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { sha = "local"; } }
   return `${new Date().toISOString().slice(0, 10)}-${sha}`;
 })();
-const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}<meta name="tk-build" content="${buildId}"/></head>`);
+// The pages are ES modules that import each other: the browser learns of each level only when the one above has arrived, so on a slow phone the first page waits for
+// seven or eight round trips of 150 ms. Every module app.js loads statically is named in the shell's head instead (modulepreload): one round trip, all at once.
+const staticGraph = (entry) => {
+  const seen = new Set(), walk = (rel) => {
+    if (seen.has(rel)) return; seen.add(rel);
+    let src; try { src = readFileSync(path.join(dist, "3d", rel), "utf8"); } catch { return; }
+    for (const m of src.matchAll(/^\s*(?:import|export)\b[^'"`;]*?from\s*['"](\.{1,2}\/[^'"]+)['"]|^\s*import\s*['"](\.{1,2}\/[^'"]+)['"]/gm)) walk(path.posix.normalize(path.posix.join(path.posix.dirname(rel), m[1] || m[2])));
+  };
+  walk(entry); return [...seen];
+};
+const base = staticGraph("scripts/app.js");
+const preloads = base.filter((f) => f !== "scripts/app.js").map((f) => `<link rel="modulepreload" href="/3d/${f}"/>`).join("");
+// the pages load when their address opens (app.js); the files of the page this address opens are named by a few lines at the end of boot-theme.js (the host's CSP allows no inline script), so
+// they are fetched with app.js and not one round trip after it
+const PAGE_AT = [["^/$", "landing"], ["^/home/?$", "me"], ["^/learn/(?:concepts|components|interview-questions|real-systems)/[\\w-]+/?$", "article"], ["^/learn(?:/|$)", "learn"], ["^/problems/?$", "problems"], ["^/simulator/", "sim"], ["^/(?:problems|practice)(?:/|$)", "workspace"]];
+const pageFiles = PAGE_AT.map(([re, name]) => [re, staticGraph(`scripts/pages/${name}.js`).filter((f) => !base.includes(f))]);
+// a problem's page opens the React workspace (islands/): its first chunk names the others it needs (vite's dependency list), and the chain is four requests deep, so the
+// whole set is named here too and arrives in one round trip. Only the chunks the problem's workspace needs (impl-*.js, whose list is the set), not the challenges' or practice's.
+const islandFiles = (() => {
+  const dir = path.join(dist, "3d", "islands"), assets = path.join(dir, "assets");
+  try {
+    const impl = readdirSync(assets).find((f) => /^impl-.+\.js$/.test(f));
+    if (!impl) return [];
+    const deps = [...readFileSync(path.join(assets, impl), "utf8").matchAll(/"(assets\/[^"]+\.(?:js|css))"/g)].map((m) => m[1]).filter((d) => !/^assets\/(?:Lab|practice|Sandbox|SharedDesign)-/.test(d)); // the challenges, practice and sandbox are other pages'
+    const css = readdirSync(assets).find((f) => /^impl-.+\.css$/.test(f));
+    const index = readdirSync(assets).find((f) => /^index-.+\.js$/.test(f));
+    return ["islands/islands.js", ...(index ? [`islands/assets/${index}`] : []), `islands/assets/${impl}`, ...(css ? [`islands/assets/${css}`] : []), ...deps.map((d) => `islands/${d}`)].filter((f, i, a) => a.indexOf(f) === i);
+  } catch { return []; }
+})();
+pageFiles.push(["^/problems/(?!challenge/|sandbox|shared)[\\w-]+/?$", [...staticGraph("scripts/pages/workspace.js").filter((f) => !base.includes(f)), ...islandFiles]]);
+const bootPath = path.join(dist, "3d", "scripts", "boot-theme.js");
+writeFileSync(bootPath, `${readFileSync(bootPath, "utf8")}\n// (added by hosting/switch.mjs) the files of this address's page, fetched together with app.js\n(function(){var p=location.pathname,M=${JSON.stringify(pageFiles)};for(var i=0;i<M.length;i++){if(new RegExp(M[i][0]).test(p)){M[i][1].forEach(function(f){var l=document.createElement("link"),c=/\\.css$/.test(f);l.rel=c?"preload":"modulepreload";if(c)l.as="style";l.href="/3d/"+f;document.head.appendChild(l);});break;}}})();\n`);
+const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}<meta name="tk-build" content="${buildId}"/>${preloads}</head>`);
 const NOINDEX = '<meta name="robots" content="noindex"/>';
 /** the shell with this title (and description, canonical address, noindex) */
 const shellFor = (title, { desc, canon, noindex } = {}) => {
