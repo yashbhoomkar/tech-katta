@@ -1,0 +1,252 @@
+{
+  "drills": [
+    {
+      "id": "redis-crash",
+      "q": "Redis crashes at peak: what happens?",
+      "a": "Every read falls through to the database at once, and a database sized for the 10% of reads that used to reach it can collapse. Fall back with a circuit breaker and a limit on concurrent queries, run the cache with a replica in another zone, and warm a new cache with the most-read keys before sending traffic to it.",
+      "article": "concepts/caching",
+      "section": "When caching goes wrong",
+      "problem": "url-shortener"
+    },
+    {
+      "id": "stampede",
+      "q": "A popular cache entry expires at the dinner peak. What goes wrong?",
+      "a": "A stampede: many requests miss at the same moment and all run the same query to rebuild the same entry. The fix is request coalescing: the first request that misses takes a short lock and rebuilds it, and the others wait briefly or are served the old value.",
+      "article": "concepts/caching",
+      "section": "When caching goes wrong",
+      "problem": "restaurants-near-me"
+    },
+    {
+      "id": "delete-not-update",
+      "q": "Why delete the cached entry on a write, instead of updating it?",
+      "a": "Two writers updating the cache in the wrong order can leave an old value there, while a delete can only cause one extra miss.",
+      "article": "concepts/caching",
+      "section": "When caching goes wrong",
+      "problem": "menu-search"
+    },
+    {
+      "id": "write-behind",
+      "q": "When is write-behind caching a bad idea?",
+      "a": "When losing a few seconds of writes is not acceptable: if the cache crashes before it flushes, those writes are gone. Never for orders or payments. It fits view counts, analytics events and metrics.",
+      "article": "concepts/caching",
+      "section": "Cache-aside, write-through, write-behind, read-through",
+      "problem": "payments"
+    },
+    {
+      "id": "hot-key",
+      "q": "One cache key gets lakhs of reads a second. Why is that a problem even with a high hit rate?",
+      "a": "Every read of it goes to the one node or shard that holds it, so that machine is the bottleneck. Replicate the key on several nodes, keep a short copy in each app server's memory, and rate-limit clients that hammer it.",
+      "article": "concepts/caching",
+      "section": "When caching goes wrong",
+      "problem": "photo-sharing"
+    },
+    {
+      "id": "when-not-cache",
+      "q": "When is a cache the wrong answer?",
+      "a": "When the database copes comfortably with the reads, when every read is different so few will hit, or when the data must be exactly current on every read, such as an account balance before a payment.",
+      "article": "concepts/caching",
+      "section": "When not to cache",
+      "problem": "payments"
+    },
+    {
+      "id": "redis-incr",
+      "q": "Why is INCR safe in Redis without a lock?",
+      "a": "Redis runs commands on a single thread, so two clients incrementing the same counter can't interleave.",
+      "article": "components/redis",
+      "section": "One command at a time",
+      "problem": "leaderboard"
+    },
+    {
+      "id": "redis-slow-command",
+      "q": "What does one slow command do to Redis?",
+      "a": "It stalls every other client: KEYS * on lakhs of keys, deleting a huge set or a long Lua script blocks the server. Use SCAN to walk keys and UNLINK to delete big ones in the background, and scale out with more nodes, since one core per node is the ceiling.",
+      "article": "components/redis",
+      "section": "One command at a time",
+      "problem": "leaderboard"
+    },
+    {
+      "id": "redis-failover",
+      "q": "Redis fails over to a replica. What can be lost?",
+      "a": "The last writes the replica had not received: replication to a replica is asynchronous.",
+      "article": "components/redis",
+      "section": "Keeping data across a restart",
+      "problem": "leaderboard"
+    },
+    {
+      "id": "redis-not-only",
+      "q": "What should you not keep only in Redis?",
+      "a": "Anything that must survive a crash with no loss, data bigger than memory, and queries you can't express as a key lookup. Set maxmemory and an eviction policy, such as allkeys-lru for a cache, so a full server evicts instead of refusing writes.",
+      "article": "components/redis",
+      "section": "Where it fits, and where it doesn't",
+      "problem": "payments"
+    },
+    {
+      "id": "kafka-order",
+      "q": "How do you keep all the events for one order in order in Kafka?",
+      "a": "Use the order ID as the key. The producer hashes the key to pick a partition, so every event for that order goes to the same partition and stays in order.",
+      "article": "components/kafka-in-practice",
+      "section": "Keys, partitions and order",
+      "problem": "notifications"
+    },
+    {
+      "id": "kafka-more-consumers",
+      "q": "You add more consumers to a group but reading is not faster. Why?",
+      "a": "Each partition is owned by one consumer in the group at a time, so you can add consumers only up to one per partition. Beyond that, make each consumer faster or add partitions for future keys.",
+      "article": "components/kafka-in-practice",
+      "section": "Consumer groups",
+      "problem": "ad-clicks"
+    },
+    {
+      "id": "kafka-lose-events",
+      "q": "Which settings stop Kafka losing acknowledged events?",
+      "a": "acks=all with min.insync.replicas=2 and a replication factor of 3, so acknowledged means held on at least two copies, and unclean leader election kept off so an out-of-date replica can never become leader.",
+      "article": "components/kafka-in-practice",
+      "section": "Settings that decide whether you lose events",
+      "problem": "ad-clicks"
+    },
+    {
+      "id": "kafka-poison",
+      "q": "One event always fails and blocks its partition. What do you do?",
+      "a": "Retry a few times, then park it in a dead-letter topic and move on.",
+      "article": "components/kafka-in-practice",
+      "section": "When consumers fall behind",
+      "problem": "notifications"
+    },
+    {
+      "id": "kafka-or-queue",
+      "q": "Kafka or a plain queue for background jobs?",
+      "a": "A queue suits jobs: each message done once by one worker, with per-message retries, delays and dead-letter handling built in. Kafka suits events: several services reading the same stream, replay, order per key and very high volume. Many systems use both.",
+      "article": "components/kafka-in-practice",
+      "section": "Kafka or a plain queue",
+      "problem": "job-scheduler"
+    },
+    {
+      "id": "shard-by-city",
+      "q": "Why not shard Zotato's users by city?",
+      "a": "Mumbai's shard would be many times larger than Kochi's. A good key has many distinct values and spreads evenly across data and traffic; customer ids usually do.",
+      "article": "concepts/sharding",
+      "section": "Shard keys and how to spread them",
+      "problem": "chat-app"
+    },
+    {
+      "id": "hash-mod-n",
+      "q": "You go from 4 shards to 5 with hash % N. What happens?",
+      "a": "Almost every key maps to a different shard, so most of the data has to move. Use consistent hashing, or a fixed number of buckets (say 1,024) assigned to machines, so adding a machine moves only some buckets.",
+      "article": "concepts/sharding",
+      "section": "Shard keys and how to spread them",
+      "problem": "key-value-store"
+    },
+    {
+      "id": "cross-shard-query",
+      "q": "A main screen needs the top 10 across all 64 shards. What do you do?",
+      "a": "Don't accept 64 times the calls and the slowest shard's time. Cache the result for a few minutes, or keep the data that query needs together, in a second table organised for it.",
+      "article": "concepts/sharding",
+      "section": "What sharding breaks",
+      "problem": "leaderboard"
+    },
+    {
+      "id": "virtual-nodes",
+      "q": "Why does a ring with virtual nodes handle a failed database better?",
+      "a": "Each database has many points on the ring, so when one fails its keys move to many different databases and its load is shared, instead of doubling one neighbour.",
+      "article": "concepts/consistent-hashing",
+      "section": "The hash ring",
+      "problem": "key-value-store"
+    },
+    {
+      "id": "cap-choice",
+      "q": "When do you choose consistency over availability?",
+      "a": "When showing stale data would be a disaster: seat booking, stock, money. For each feature ask: would it be a disaster if users briefly saw inconsistent data? If yes, choose consistency; if not, stay available.",
+      "article": "concepts/cap-theorem",
+      "section": "The three letters",
+      "problem": "ticket-booking"
+    },
+    {
+      "id": "double-booking",
+      "q": "Two people book seat 14C in the same instant. What stops a double booking?",
+      "a": "Let the database decide: a unique index on (show_id, seat_id) makes the second booking fail however the code around it is written, or use a conditional update and check how many rows changed.",
+      "article": "concepts/contention",
+      "section": "Let the database decide",
+      "problem": "ticket-booking"
+    },
+    {
+      "id": "hold-then-sell",
+      "q": "Choosing and paying take minutes. Do you lock the seat for that long?",
+      "a": "No. Mark the seat held, with an expiry, in one conditional update. Payment turns the hold into a sale, or time runs out and it is free again. If a payment arrives after the hold expired and someone else took the seat, refund it automatically.",
+      "article": "concepts/contention",
+      "section": "Hold it, then sell it",
+      "problem": "ticket-booking"
+    },
+    {
+      "id": "flash-sale",
+      "q": "1 lakh people want the same 500 phones in the first second. What do you do?",
+      "a": "Queue the requests and let one worker sell the stock in order, or split the stock into buckets and send each request to a bucket that still has stock, or keep the count in memory in Redis with the orders written behind it.",
+      "article": "concepts/contention",
+      "section": "One very hot item",
+      "problem": "grocery-delivery"
+    },
+    {
+      "id": "queue-spike",
+      "q": "When can a queue absorb a write spike, and when can't it?",
+      "a": "Only for writes that can wait: analytics, notifications, search updates. An order the customer is watching can't sit in a queue for 24 minutes. Size it with (arrival rate − write rate) × the length of the spike, and check it drains before the next spike.",
+      "article": "concepts/scaling-writes",
+      "section": "Absorb spikes with a queue",
+      "problem": "notifications"
+    },
+    {
+      "id": "sse-or-ws",
+      "q": "Polling, SSE or WebSockets for a live score?",
+      "a": "SSE: one way from server to client over plain HTTP, reconnecting by itself with the last event id, ideal for feeds, live scores and notifications. WebSockets suit chat, games and collaborative editing, where clients send often too.",
+      "article": "concepts/real-time-updates",
+      "section": "The first hop",
+      "problem": "ind-vs-pak"
+    },
+    {
+      "id": "reconnect",
+      "q": "Phones keep dropping their connection. How do you not lose updates?",
+      "a": "Give every update a sequence number per user or conversation; on reconnect the client sends the last number it saw and gets the rest. Use heartbeats to notice silent drops, and reconnect with exponential backoff and jitter.",
+      "article": "concepts/real-time-updates",
+      "section": "Real-time deep dives",
+      "problem": "chat-app"
+    },
+    {
+      "id": "idempotency-key",
+      "q": "The app retries 'Place order' after a timeout. How do you not create two orders?",
+      "a": "An idempotency key: the client generates a unique key per logical operation, the server stores it with the outcome of the first request, and a repeat with the same key gets the stored response. Payment providers such as Stripe and Razorpay work this way.",
+      "article": "concepts/api-design",
+      "section": "Everyday API patterns",
+      "problem": "payments"
+    },
+    {
+      "id": "cursor-or-offset",
+      "q": "Offset or cursor pagination?",
+      "a": "Offset is easy and allows jumping to a page, but a new row pushes everything down so the next page repeats one, and large offsets are slow. Pick a cursor when the list changes quickly, like feeds and live orders, or is very large.",
+      "article": "concepts/api-design",
+      "section": "Everyday API patterns",
+      "problem": "news-feed"
+    },
+    {
+      "id": "worker-dies",
+      "q": "A worker dies halfway through a long job. Who finishes it?",
+      "a": "Workers claim a job with a lease (locked_until, or a queue's visibility timeout) and renew it with a heartbeat while they work. A job whose lease runs out is assumed abandoned and handed to another worker.",
+      "article": "concepts/long-jobs",
+      "section": "Leases: who is working on what",
+      "problem": "job-scheduler"
+    },
+    {
+      "id": "index-cost",
+      "q": "Why not put an index on every column?",
+      "a": "Every index is more disk, and a table with five indexes turns one insert into six writes. A log table, with constant writes and few reads, is the classic case where indexes cost more than they save.",
+      "article": "concepts/database-indexing",
+      "section": "What an index costs",
+      "problem": "web-crawler"
+    },
+    {
+      "id": "big-upload",
+      "q": "How do you upload a 2 GB video?",
+      "a": "The API checks who is uploading, writes the row and returns signed URLs, one per part, so the bytes never touch the API. Send a few parts at a time and keep the ID storage returns for each part, so a restarted app resumes instead of starting again.",
+      "article": "concepts/big-files",
+      "section": "Uploading directly, in parts",
+      "problem": "video-streaming"
+    }
+  ]
+}

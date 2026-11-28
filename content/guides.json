@@ -1,0 +1,416 @@
+{
+  "guides": [
+    {
+      "slug": "redis-vs-kafka",
+      "title": "Redis or Kafka?",
+      "dek": "Both hold what you send them, and both get called \"a queue\". One is a very fast store for the present; the other is a log of what happened.",
+      "intro": "Pick by the job. If you need an answer in under a millisecond, reach for Redis. If several services need to read the same events, in order, and maybe read them again, reach for Kafka.",
+      "picks": [
+        {
+          "title": "Pick Redis when",
+          "items": [
+            "You are caching, keeping sessions, counting for a rate limit, ranking a leaderboard or holding a short-lived lock with an expiry.",
+            "A command must take well under a millisecond, at around a lakh simple operations a second per node.",
+            "The data is small enough for memory, and losing about the last second of writes in a crash is acceptable."
+          ]
+        },
+        {
+          "title": "Pick Kafka when",
+          "items": [
+            "Several services (notifications, analytics, search) each need to read the same events, independently.",
+            "You need events kept for days (7 by default) so a consumer can fall behind, or be replayed from any point.",
+            "Order matters per key, such as every event of one order, and the volume is very high."
+          ]
+        }
+      ],
+      "table": {
+        "label": "Redis and Kafka side by side",
+        "head": [
+          "Question",
+          "Redis",
+          "Kafka"
+        ],
+        "rows": [
+          [
+            "What is it",
+            "An in-memory store with data structures: strings, hashes, sorted sets, streams",
+            "A log of events kept on disk, split into partitions"
+          ],
+          [
+            "How fast is one operation",
+            "Well under a millisecond inside one data centre",
+            "A few to a few tens of milliseconds with acks=all, in one region"
+          ],
+          [
+            "How long does data live",
+            "As long as memory and your eviction policy allow; a failover can lose the last writes",
+            "7 days by default, with three copies"
+          ],
+          [
+            "Who can read it",
+            "Plain pub/sub reaches only whoever is listening; streams add consumer groups, like a small Kafka inside Redis",
+            "Each consumer group reads everything, independently"
+          ],
+          [
+            "Order",
+            "Commands run one at a time on a single thread",
+            "Per key, within one partition"
+          ]
+        ]
+      },
+      "example": {
+        "title": "At Zotato",
+        "paragraphs": [
+          "Zotato limits each phone to a number of calls a minute. The count is a Redis counter with an expiry: INCR is safe without a lock because Redis runs one command at a time.",
+          "When an order is placed, the notification service, the analytics job and the search index each need to hear about it. The order service writes one event to a Kafka topic keyed by the order ID, so every event for an order stays in order, and each service reads it in its own consumer group. If notifications fall 7 minutes behind, the alert is consumer lag, and nothing is lost: the events are still in the topic."
+        ]
+      },
+      "articles": [
+        {
+          "article": "components/redis",
+          "why": "Persistence, Cluster, and where Redis does not fit"
+        },
+        {
+          "article": "components/kafka-in-practice",
+          "why": "Keys, consumer groups and the settings that decide whether you lose events"
+        }
+      ],
+      "problem": "notifications",
+      "problemWhy": "Design the notification system, where both appear"
+    },
+    {
+      "slug": "sql-vs-nosql",
+      "title": "SQL or NoSQL?",
+      "dek": "The honest answer in an interview is \"relational, unless there is a reason not to\". Here is how to give the reason when there is one.",
+      "intro": "Start from the queries and the rules the data must keep, not from the name of a database. Reaching for an unusual database to sound clever invites questions you then have to defend.",
+      "picks": [
+        {
+          "title": "Pick SQL (PostgreSQL or MySQL) when",
+          "items": [
+            "The data has relationships and you need joins and transactions: orders, payments, menus.",
+            "You want rules the database enforces, such as foreign keys and unique constraints.",
+            "One primary on good hardware is enough: thousands of writes and tens of thousands of reads a second, with read replicas and a cache for more reads."
+          ]
+        },
+        {
+          "title": "Pick NoSQL when",
+          "items": [
+            "Wide-column (Cassandra) or key-first (DynamoDB): very high write rates, or data that arrives in time order, such as rider location pings and app events; you know the queries up front.",
+            "Document: records with varied shape that are read whole, such as a restaurant with its menu nested inside.",
+            "Key-value (Redis): a cache, sessions or counters always fetched by one id."
+          ]
+        }
+      ],
+      "table": {
+        "label": "Which model for which job",
+        "head": [
+          "Model",
+          "Good for",
+          "Watch out for"
+        ],
+        "rows": [
+          [
+            "Relational",
+            "Most products: joins, transactions, constraints",
+            "Writes beyond one primary mean sharding, and cross-shard transactions are hard"
+          ],
+          [
+            "Document",
+            "Records read whole, with a varied shape",
+            "Changing one embedded dish rewrites part of a large document; data embedded in two places drifts"
+          ],
+          [
+            "Key-value",
+            "Caches, sessions, counters, one id at a time",
+            "No joins and few secondary lookups"
+          ],
+          [
+            "Wide-column",
+            "Very high, steady writes, in time order",
+            "Queries that change often, and no joins or transactions"
+          ],
+          [
+            "DynamoDB",
+            "The same key-first model with no servers to run",
+            "Write the key schema for each access pattern first; a hot partition takes about 1,000 writes a second"
+          ]
+        ]
+      },
+      "example": {
+        "title": "At Zotato",
+        "paragraphs": [
+          "Orders and payments live in PostgreSQL: an order and its payment change together in one transaction, and the restaurant's live-orders screen is one indexed query.",
+          "Rider location pings arrive every few seconds from every rider and are read as \"this rider's recent locations\". That is a wide-column or key-first table, partitioned by rider with a time bucket so no partition grows without limit. Menus are read whole, and cached in Redis. Each choice is tied to a requirement, which is what an interviewer wants to hear."
+        ]
+      },
+      "articles": [
+        {
+          "article": "concepts/data-modelling",
+          "why": "The six steps, and the models side by side"
+        },
+        {
+          "article": "components/postgresql",
+          "why": "How far one PostgreSQL stretches"
+        },
+        {
+          "article": "components/dynamodb",
+          "why": "Keys first, one question at a time"
+        },
+        {
+          "article": "components/cassandra",
+          "why": "One table per question, consistency per query"
+        }
+      ],
+      "problem": "rider-dispatch",
+      "problemWhy": "Design rider dispatch, where location pings and orders need different stores"
+    },
+    {
+      "slug": "cache-aside-vs-write-through",
+      "title": "Cache-aside or write-through?",
+      "dek": "Both keep a cache beside a database. They differ in who fills the cache and when a write is finished.",
+      "intro": "In an interview, say cache-aside unless you have a reason not to. Know the other two so you can say what the reason is.",
+      "picks": [
+        {
+          "title": "Pick cache-aside when",
+          "items": [
+            "Reads far outnumber writes and only data someone asked for should be cached.",
+            "You are using Redis or Memcached, plain stores that know nothing about your database.",
+            "A little staleness is fine, and a TTL puts an upper limit on it."
+          ]
+        },
+        {
+          "title": "Pick write-through when",
+          "items": [
+            "Reads must see fresh data right after a write, and you can afford slower writes: each write waits for the cache and the database.",
+            "You have a cache or framework that writes the database before it answers.",
+            "(Write-behind is a third choice: only for work where losing a few seconds of writes is acceptable, such as view counts and analytics events. Never for orders or payments.)"
+          ]
+        }
+      ],
+      "table": {
+        "label": "Three ways to write",
+        "head": [
+          "",
+          "Cache-aside",
+          "Write-through",
+          "Write-behind"
+        ],
+        "rows": [
+          [
+            "Who fills the cache",
+            "The application, on a miss",
+            "The write itself",
+            "The write itself"
+          ],
+          [
+            "A write is finished when",
+            "The database has it; then the cached entry is deleted",
+            "The cache and the database both hold it",
+            "The cache has it; the database gets it later, in batches"
+          ],
+          [
+            "Cost",
+            "The first read of each entry, and every read after it expires, is a miss",
+            "Slower writes; data nobody reads again fills the cache",
+            "If the cache crashes before a flush, those writes are gone"
+          ],
+          [
+            "Fits",
+            "Most reads, menus, profiles",
+            "Reads that must be fresh",
+            "Counts, analytics, metrics"
+          ]
+        ]
+      },
+      "example": {
+        "title": "At Zotato",
+        "paragraphs": [
+          "A restaurant changes its biryani price from ₹240 to ₹260. With cache-aside the app updates the database and then deletes menu:42 from Redis, so the next reader fetches ₹260 and stores it. Delete, rather than update: two writers updating the cache in the wrong order can leave an old value there, while a delete can only cause one extra miss. A 10-minute TTL means a missed delete is at most 10 minutes out of date.",
+          "The \"popular near you\" list expires at 20:01:00, the dinner peak, and every request in that second misses. Coalescing fixes it: the first request takes a short lock and rebuilds the list, and the others wait or are served the old one. Dish view counts are written behind: losing a few seconds of them is harmless."
+        ]
+      },
+      "articles": [
+        {
+          "article": "concepts/caching",
+          "why": "Patterns, eviction, stampedes, stale reads and hot keys"
+        },
+        {
+          "article": "concepts/scaling-reads",
+          "why": "The layers that take the load"
+        }
+      ],
+      "problem": "restaurants-near-me",
+      "problemWhy": "Design restaurant search, where a cache takes the dinner peak"
+    },
+    {
+      "slug": "websockets-vs-polling-vs-sse",
+      "title": "WebSockets, polling or SSE?",
+      "dek": "Three ways to get one event to an open screen. The right one depends on who talks, how fast, and how many.",
+      "intro": "Say simple polling first, then improve it. Polling is a reasonable first answer, and it is good enough more often than people think.",
+      "picks": [
+        {
+          "title": "Pick polling when",
+          "items": [
+            "The data can be seconds old: a delivery status refreshed every 10 seconds, a dashboard every minute.",
+            "You want plain HTTP, stateless servers and nothing special to run."
+          ]
+        },
+        {
+          "title": "Pick SSE when",
+          "items": [
+            "Only the server talks: feeds, live scores, notifications, progress bars, answers streamed word by word.",
+            "You want the browser to reconnect by itself and tell the server the last event id it saw."
+          ]
+        },
+        {
+          "title": "Pick WebSockets when",
+          "items": [
+            "Clients send often too: chat, multiplayer games, collaborative editing.",
+            "You can run dedicated connection servers, because each connection is tied to one server."
+          ]
+        }
+      ],
+      "table": {
+        "label": "Choosing",
+        "head": [
+          "",
+          "Who sends",
+          "Delay",
+          "Cost",
+          "Fits"
+        ],
+        "rows": [
+          [
+            "Polling",
+            "Client asks",
+            "Up to one interval",
+            "Many empty requests",
+            "Status that can be seconds old; dashboards"
+          ],
+          [
+            "Long polling",
+            "Client asks, server waits",
+            "Near instant",
+            "A held request per client",
+            "Occasional updates with ordinary HTTP"
+          ],
+          [
+            "SSE",
+            "Server to client",
+            "Near instant",
+            "An open connection per client",
+            "Feeds, scores, notifications"
+          ],
+          [
+            "WebSockets",
+            "Both ways",
+            "Near instant",
+            "An open, stateful connection",
+            "Chat, games, collaborative editing"
+          ]
+        ]
+      },
+      "example": {
+        "title": "At Zotato",
+        "paragraphs": [
+          "A delivery's status can be 10 seconds old, so the app polls. Ten lakh phones polling every 5 seconds would be 2 lakh requests a second, mostly empty, so the interval matters.",
+          "The live score on match night goes one way, to crores of screens: SSE. Chat between a customer and a rider goes both ways: WebSockets, on dedicated connection servers. Whichever you pick, assume every connection drops: give each update a sequence number, send heartbeats, and reconnect with exponential backoff and jitter, so a restart does not bring every client back in the same second."
+        ]
+      },
+      "articles": [
+        {
+          "article": "concepts/real-time-updates",
+          "why": "Both hops, reconnection and live updates at scale"
+        },
+        {
+          "article": "concepts/networking-essentials",
+          "why": "How a request travels"
+        }
+      ],
+      "problem": "chat-app",
+      "problemWhy": "Design a chat app, where WebSockets and ordering both matter"
+    },
+    {
+      "slug": "queue-vs-stream",
+      "title": "Queue or stream?",
+      "dek": "A queue hands each job to one worker. A stream is a log that many readers can read, and read again.",
+      "intro": "Ask what the message is. If it is a job to be done once, use a queue. If it is an event that several services care about, use a stream. Many systems use both.",
+      "picks": [
+        {
+          "title": "Pick a queue (SQS, RabbitMQ) when",
+          "items": [
+            "Each message is a job, done once by one worker.",
+            "You want per-message retries, delays and dead-letter handling built in.",
+            "A spike must be absorbed for writes that can wait: analytics, notifications, search updates."
+          ]
+        },
+        {
+          "title": "Pick a stream (Kafka) when",
+          "items": [
+            "Several services read the same events, each at its own pace.",
+            "You want replay from any point, order per key and very high volume.",
+            "A consumer that falls behind should catch up later, as long as retention (7 days by default) outlasts the lag."
+          ]
+        }
+      ],
+      "table": {
+        "label": "Queue and stream",
+        "head": [
+          "Question",
+          "Queue",
+          "Stream"
+        ],
+        "rows": [
+          [
+            "The message is",
+            "A job",
+            "An event"
+          ],
+          [
+            "Who reads it",
+            "One worker, once",
+            "Every consumer group, independently"
+          ],
+          [
+            "Retries",
+            "Built in, per message, with delays and a dead-letter queue",
+            "You build them: retry a few times, then park the event in a dead-letter topic"
+          ],
+          [
+            "Order",
+            "Not what it is for",
+            "Per key, within a partition"
+          ],
+          [
+            "Replay",
+            "A message is done once",
+            "From any point, within retention"
+          ]
+        ]
+      },
+      "example": {
+        "title": "At Zotato",
+        "paragraphs": [
+          "\"Order placed\" is an event: the notification service, analytics and search each read it from a Kafka topic keyed by the order ID. \"Send this SMS\" is a job derived from it: it goes on a queue, a worker takes it, and if the SMS provider times out it is retried later, waiting longer each time, and after the last attempt it lands in a dead-letter queue with its error for someone to look at.",
+          "If one worker dies halfway through a job, its lease runs out and another worker takes the job. Size the queue with the maths: (arrival rate − write rate) × the length of the spike, and check it drains before the next one."
+        ]
+      },
+      "articles": [
+        {
+          "article": "components/kafka-in-practice",
+          "why": "Topics, consumer groups and when consumers fall behind"
+        },
+        {
+          "article": "concepts/long-jobs",
+          "why": "Leases, retries and the dead-letter queue"
+        },
+        {
+          "article": "concepts/scaling-writes",
+          "why": "Absorbing spikes with a queue"
+        }
+      ],
+      "problem": "job-scheduler",
+      "problemWhy": "Design a job scheduler, where leases and retries decide everything"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import path from 'node:path';
 import { validateContent } from './validate.js';
 import { existsSync } from 'node:fs';
 import { loadProblems } from '../practice/problems.js';
+import { drillErrors, guideErrors, drillBody, guideBodies } from './validate-learn.js';
 import { publicArticle, publicLab, publicChallenge, isFree } from './public.js';
 
 const readJson = async (file) => {
@@ -32,14 +33,18 @@ export async function loadContent(dir) {
   // the 3D stories' words and sentences (content/stories.json, optional): served only to a signed-in session (GET /v1/stories)
   const storiesPath = path.join(dir, 'stories.json');
   const stories = existsSync(storiesPath) ? await readJson(storiesPath) : {};
+  // quick interview drills and decision guides (content/drills.json, content/guides.json, optional): public, built from what the articles say
+  const drillsPath = path.join(dir, 'drills.json'), guidesPath = path.join(dir, 'guides.json');
+  const drills = existsSync(drillsPath) ? await readJson(drillsPath) : null;
+  const guides = existsSync(guidesPath) ? await readJson(guidesPath) : null;
   // practice problems (content/problems2/, optional): shape and calibration checked like the rest
   const practice = await loadProblems(dir);
-  const problems = [...validateContent({ site, examples, articles, lab, evalCat }), ...practice.errors, ...storyErrors(stories, articles)];
+  const problems = [...validateContent({ site, examples, articles, lab, evalCat }), ...practice.errors, ...storyErrors(stories, articles), ...(drills ? drillErrors(drills, articles) : []), ...(guides ? guideErrors(guides, articles) : [])];
   if (problems.length) throw new Error(`Invalid content in ${dir}:\n- ${problems.join('\n- ')}`);
   let release = path.basename(dir);
   try { release = path.basename(realpathSync(dir)); } catch {}
   if (evalCat !== undefined) lab = { ...lab, eval: evalCat };
-  return { site, examples, articles, lab, release, practice: practice.problems, stories };
+  return { site, examples, articles, lab, release, practice: practice.problems, stories, drills, guides };
 }
 
 /** stories.json: { <article slug>: [ null | { words?: [string|null, string|null], text?: string } per step ] } */
@@ -68,7 +73,9 @@ const figOf = (a) => (a.body || []).find((b) => b && b.t === 'fig' && typeof b.i
 const summary = (a) => pick({ ...a, lab: labOf(a), tests: a.practice?.tests?.length, fig: figOf(a) }, [...SUMMARY_FIELDS, 'lab', 'tests', 'fig']);
 
 // Response bodies for one loaded release; objects are reused so their ETags stay stable.
-export function buildBodies({ site, examples, articles, lab, stories = {} }) {
+export function buildBodies({ site, examples, articles, lab, stories = {}, drills = null, guides = null }) {
+  const drillsBody = drills ? drillBody(drills, articles) : { drills: [] };
+  const guideSet = guides ? guideBodies(guides, articles) : { list: { guides: [] }, guide: () => null };
   const example = examples[site.example];
   const lists = new Map();
   // A problem's reference and wrong designs calibrate its tests (frontend judge.test.js). They aren't in
@@ -97,6 +104,10 @@ export function buildBodies({ site, examples, articles, lab, stories = {} }) {
     // parts: what the free sample problem needs to run signed out (GET /v1/lab/engine). The challenges' hints and designs stay behind the sign-in.
     engineLab: { ...(({ challenges: _c, ...rest }) => rest)(lab), challenges: (lab.challenges || []).map(publicChallenge), locked: true },
     stories: { stories },
+    // public: quick drills and decision guides (no sign-in: they only repeat what the articles say, in short)
+    drills: drillsBody,
+    guides: guideSet.list,
+    guide: guideSet.guide,
     publicArticle: (slug) => publics.get(slug) || null,
     /** the free sample: these articles (and a free problem's solution and wrong designs) are served in full to everyone */
     isFree: (slug) => freeSlugs.has(slug),

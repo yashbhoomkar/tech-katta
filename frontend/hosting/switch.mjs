@@ -14,8 +14,9 @@ import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync, m
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { pagesOf, renderHome, render, sitemap, llmsTxt, useAddresses, nextPath, SITE, OG_IMAGE } from "../seo.js";
+import { pagesOf, renderHome, render, withBody, sitemap, llmsTxt, useAddresses, nextPath, SITE, OG_IMAGE } from "../seo.js";
 import { workspacePages } from "./pages.mjs";
+import { drillsPage, guidePages } from "./learn-html.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const frontend = path.resolve(here, "..");
@@ -141,7 +142,15 @@ for (const [dir, title, canon] of [["learn", "Learn", "learn/concepts"], ["simul
 // Start here (the three learning paths) and What's new: public pages with their own title and description
 for (const [dir, title, desc] of [["start", "Not sure where to start?", "Three learning paths for system design interviews by experience (0-2, 2-5 and 5+ years), each a short list of lessons that ends with a problem to solve."], ["changelog", "What's new", "Every change a learner can notice on Tech Katta, newest first."], ["free", "Free while in beta", "Everything on Tech Katta is free during the beta. These lessons and the URL shortener problem open in full without signing in."]]) put(dir, shellFor(title, { desc, canon: dir }));
 
+// Quick drills and the decision guides: pages with their full text in the HTML (the 3D pages draw the same text from the API)
+const learnPages = (() => {
+  const file = (name) => { try { return read(name); } catch { return null; } };
+  const drills = file("drills.json"), guides = file("guides.json");
+  return [...(drills ? [drillsPage(drills.drills, articles)] : []), ...(guides ? guidePages(guides.guides, articles) : [])];
+})();
+for (const p of learnPages) put(p.key, withBody(shellFor(p.title.replace(/ · Tech Katta$/, ""), { desc: p.description, canon: p.key }), p.body));
+
 // 4. the sitemap and the content map for AI assistants
-writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date, free: p.free }))).replace("</urlset>", `  <url><loc>${SITE}/start</loc></url>\n  <url><loc>${SITE}/changelog</loc></url>\n  <url><loc>${SITE}/free</loc></url>\n</urlset>`));
+writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date, free: p.free }))).replace("</urlset>", `  <url><loc>${SITE}/start</loc></url>\n  <url><loc>${SITE}/changelog</loc></url>\n  <url><loc>${SITE}/free</loc></url>\n${learnPages.map((p) => `  <url><loc>${SITE}/${p.key}</loc></url>\n`).join("")}</urlset>`));
 writeFileSync(path.join(dist, "llms.txt"), llmsTxt(site, pages));
 console.log(`switch: the 3D site answers every address; ${written} search-engine pages, ${workspace} workspace and static pages, the home page, sitemap.xml and llms.txt`);
