@@ -1,26 +1,26 @@
 {
- "judge_version": 3,
+ "judge_version": 4,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
   "total": 5,
-  "cost_inr": 31000,
+  "cost_inr": 19000,
   "worst_p99_ms": {
-   "GET_IMAGE": 142.4,
-   "UPLOAD_IMAGE": 126.5
+   "GET_IMAGE": 56.1,
+   "UPLOAD_IMAGE": 68.7
   },
   "worst_p50_ms": {
    "GET_IMAGE": 4,
-   "UPLOAD_IMAGE": 31.6
+   "UPLOAD_IMAGE": 17.2
   },
   "tightest": {
-   "promise": "p99",
+   "promise": "p50",
    "request": "GET_IMAGE",
    "test": "t02-dinner",
-   "margin": 0.11,
-   "text": "Tightest promise: GET_IMAGE p99, 11 % to spare."
+   "margin": 0.6,
+   "text": "Tightest promise: GET_IMAGE p50, 60 % to spare."
   },
-  "rank_p99_ms": 142.4,
+  "rank_p99_ms": 56.1,
   "tests": [
    {
     "id": "t01-afternoon",
@@ -54,53 +54,53 @@
    }
   ],
   "warnings": [],
-  "judge_version": 3
+  "judge_version": 4
  },
  "wrong": {
   "no-cdn": {
    "verdict": "Overloaded",
-   "passed": 1,
+   "passed": 0,
    "total": 5,
-   "cost_inr": 28000,
+   "cost_inr": 16000,
    "worst_p99_ms": {
-    "GET_IMAGE": 482.6,
-    "UPLOAD_IMAGE": 482.6
+    "GET_IMAGE": 442.1,
+    "UPLOAD_IMAGE": 442.1
    },
    "worst_p50_ms": {
-    "GET_IMAGE": 120.6,
-    "UPLOAD_IMAGE": 120.6
+    "GET_IMAGE": 110.5,
+    "UPLOAD_IMAGE": 110.5
    },
    "failed": {
-    "test": "t02-dinner",
-    "title": "Dinner time",
+    "test": "t01-afternoon",
+    "title": "An afternoon",
     "hidden": false,
     "reason": "overloaded",
     "request": "GET_IMAGE",
-    "phase": 2,
-    "expected": "at most 4,000 calls a second",
-    "actual": "60,050 calls a second",
-    "message": "api received 60,050 calls a second but can serve 4,000.",
+    "phase": 1,
+    "expected": "at most 2,000 calls a second",
+    "actual": "2,010 calls a second",
+    "message": "api received 2,010 calls a second but can serve 2,000.",
     "blame": {
      "part": "api",
      "line": 2,
-     "rho": 15.0125,
-     "note": "api is at 1501 % of its capacity"
+     "rho": 1.005,
+     "note": "api is at 100 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 40,
-      "rho": 1.201
+      "ms": 2.04,
+      "rho": 0.0201
      },
      {
       "part": "api",
       "ms": 400,
-      "rho": 15.0125
+      "rho": 1.005
      },
      {
       "part": "files",
-      "ms": 42.56,
-      "rho": 0.0601
+      "ms": 40.08,
+      "rho": 0.002
      }
     ]
    },
@@ -108,28 +108,23 @@
     {
      "reason": "p99",
      "request": "GET_IMAGE",
-     "message": "GET_IMAGE took 482.6 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 1501 % of capacity."
-    },
-    {
-     "reason": "p50",
-     "request": "GET_IMAGE",
-     "message": "GET_IMAGE took 120.6 ms for the median request; the promise is 10 ms."
+     "message": "GET_IMAGE took 442.1 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 100 % of capacity."
     }
    ],
-   "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 482.6,
+   "tip": "More capacity in \"api\" would fix this.",
+   "rank_p99_ms": 442.1,
    "tests": [
     {
      "id": "t01-afternoon",
      "title": "An afternoon",
      "hidden": false,
-     "verdict": "Passed"
+     "verdict": "Overloaded"
     },
     {
      "id": "t02-dinner",
      "title": "Dinner time",
      "hidden": false,
-     "verdict": "Overloaded"
+     "verdict": null
     },
     {
      "id": "t03-a-server-dies",
@@ -151,58 +146,58 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "cache-behind-servers": {
    "verdict": "Overloaded",
-   "passed": 1,
+   "passed": 0,
    "total": 5,
-   "cost_inr": 34000,
+   "cost_inr": 22000,
    "worst_p99_ms": {
-    "GET_IMAGE": 521.1,
-    "UPLOAD_IMAGE": 481.1
+    "GET_IMAGE": 444.2,
+    "UPLOAD_IMAGE": 442.1
    },
    "worst_p50_ms": {
-    "GET_IMAGE": 120,
-    "UPLOAD_IMAGE": 120.3
+    "GET_IMAGE": 101,
+    "UPLOAD_IMAGE": 110.5
    },
    "failed": {
-    "test": "t02-dinner",
-    "title": "Dinner time",
+    "test": "t01-afternoon",
+    "title": "An afternoon",
     "hidden": false,
     "reason": "overloaded",
     "request": "GET_IMAGE",
-    "phase": 2,
-    "expected": "at most 4,000 calls a second",
-    "actual": "60,050 calls a second",
-    "message": "api received 60,050 calls a second but can serve 4,000.",
+    "phase": 1,
+    "expected": "at most 2,000 calls a second",
+    "actual": "2,010 calls a second",
+    "message": "api received 2,010 calls a second but can serve 2,000.",
     "blame": {
      "part": "api",
      "line": 3,
-     "rho": 15.0125,
-     "note": "api is at 1501 % of its capacity"
+     "rho": 1.005,
+     "note": "api is at 100 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 40,
-      "rho": 1.201
+      "ms": 2.04,
+      "rho": 0.0201
      },
      {
       "part": "api",
       "ms": 400,
-      "rho": 15.0125
+      "rho": 1.005
      },
      {
       "part": "cache",
-      "ms": 40,
-      "rho": 1.2,
+      "ms": 2.08,
+      "rho": 0.04,
       "hit": 0.537159
      },
      {
       "part": "files",
-      "ms": 41.14,
-      "rho": 0.0278
+      "ms": 40.04,
+      "rho": 0.0009
      }
     ]
    },
@@ -210,28 +205,23 @@
     {
      "reason": "p99",
      "request": "GET_IMAGE",
-     "message": "GET_IMAGE took 521.1 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 1501 % of capacity."
-    },
-    {
-     "reason": "p50",
-     "request": "GET_IMAGE",
-     "message": "GET_IMAGE took 120.0 ms for the median request; the promise is 10 ms."
+     "message": "GET_IMAGE took 444.2 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 100 % of capacity."
     }
    ],
-   "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 521.1,
+   "tip": "More capacity in \"api\" would fix this.",
+   "rank_p99_ms": 444.2,
    "tests": [
     {
      "id": "t01-afternoon",
      "title": "An afternoon",
      "hidden": false,
-     "verdict": "Passed"
+     "verdict": "Overloaded"
     },
     {
      "id": "t02-dinner",
      "title": "Dinner time",
      "hidden": false,
-     "verdict": "Overloaded"
+     "verdict": null
     },
     {
      "id": "t03-a-server-dies",
@@ -261,16 +251,16 @@
      "part": "cache"
     }
    ],
-   "judge_version": 3
+   "judge_version": 4
   },
-  "one-server": {
+  "views-through-servers": {
    "verdict": "Overloaded",
    "passed": 1,
    "total": 5,
    "cost_inr": 13000,
    "worst_p99_ms": {
-    "GET_IMAGE": 458.2,
-    "UPLOAD_IMAGE": 442.3
+    "GET_IMAGE": 458.1,
+    "UPLOAD_IMAGE": 442.2
    },
    "worst_p50_ms": {
     "GET_IMAGE": 4,
@@ -301,8 +291,8 @@
      },
      {
       "part": "lb",
-      "ms": 2.13,
-      "rho": 0.061
+      "ms": 2.06,
+      "rho": 0.0305
      },
      {
       "part": "api",
@@ -320,11 +310,11 @@
     {
      "reason": "p99",
      "request": "GET_IMAGE",
-     "message": "GET_IMAGE took 458.2 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 305 % of capacity."
+     "message": "GET_IMAGE took 458.1 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 305 % of capacity."
     }
    ],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 458.2,
+   "rank_p99_ms": 458.1,
    "tests": [
     {
      "id": "t01-afternoon",
@@ -366,20 +356,20 @@
      "part": "api"
     }
    ],
-   "judge_version": 3
+   "judge_version": 4
   },
   "random-32-bit-ids": {
    "verdict": "Wrong Answer",
    "passed": 0,
    "total": 5,
-   "cost_inr": 31000,
+   "cost_inr": 19000,
    "worst_p99_ms": {
-    "GET_IMAGE": 77.6,
-    "UPLOAD_IMAGE": 62.6
+    "GET_IMAGE": 55,
+    "UPLOAD_IMAGE": 62.1
    },
    "worst_p50_ms": {
     "GET_IMAGE": 3.8,
-    "UPLOAD_IMAGE": 15.6
+    "UPLOAD_IMAGE": 15.5
    },
    "failed": {
     "test": "t01-afternoon",
@@ -401,7 +391,7 @@
    },
    "also": [],
    "tip": "More bits in the ids of \"ids\" would fix this.",
-   "rank_p99_ms": 77.6,
+   "rank_p99_ms": 55,
    "tests": [
     {
      "id": "t01-afternoon",
@@ -435,7 +425,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "many-servers": {
    "verdict": "Over Budget",
@@ -443,8 +433,8 @@
    "total": 5,
    "cost_inr": 247000,
    "worst_p99_ms": {
-    "GET_IMAGE": 77.1,
-    "UPLOAD_IMAGE": 62.1
+    "GET_IMAGE": 55,
+    "UPLOAD_IMAGE": 62
    },
    "worst_p50_ms": {
     "GET_IMAGE": 3.8,
@@ -470,7 +460,7 @@
    },
    "also": [],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 77.1,
+   "rank_p99_ms": 55,
    "tests": [
     {
      "id": "t01-afternoon",
@@ -504,7 +494,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   }
  }
 }

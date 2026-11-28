@@ -10,12 +10,12 @@
   ],
   "companies": [],
   "free": true,
-  "statement": "Zotato runs a quiz game during cricket matches. Players **submit scores** after every question, and everyone keeps the **top-100 list** of their game open, refreshing it all the time.\n\nDesign the leaderboard. Scores are stored per player; the top list is read per game. A player plays in one game at a time. There are only about a thousand games running at once, so a few lists take all the reads.\n\nThe top list may be at most **5 seconds** old, and it must keep working when the cache restarts. A lost score is not a disaster (the player's next answer resends it). The budget is ₹1.9 lakh a month.",
+  "statement": "Zotato runs a quiz game during cricket matches. Players **submit scores** after every question, and everyone keeps the **top-100 list** of their game open, refreshing it all the time.\n\nDesign the leaderboard. Scores are stored per player; the top list is read per game. A player plays in one game at a time. There are only about a thousand games running at once, so a few lists take all the reads.\n\nThe top list may be at most **5 seconds** old, and it must keep working when the cache restarts. A lost score is not a disaster (the player's next answer resends it). The budget is ₹4 lakh a month.\n\nTwo things this problem leaves out: it has no in-memory sorted set (the Redis answer that the Live leaderboard question teaches), and a top-100 query is best served by an index on game and score together, where here the single column `index(game_id)` stands for it.",
   "constraints": [
     "About 1,000 games at a time, 10 lakh players",
-    "Peak: 6,000 top-list reads and 1,200 score submits a second",
+    "Peak: 24,000 top-list reads and 1,200 score submits a second",
     "A top list at most 5 seconds old",
-    "Budget ₹1,90,000 a month"
+    "Budget ₹4,00,000 a month"
   ],
   "total_items": 1000000,
   "requests": [
@@ -59,12 +59,12 @@
       "id": "t01-warm-up",
       "title": "Before the match",
       "hidden": false,
-      "explain": "1,000 reads and 200 submits a second. The budget is checked here.",
+      "explain": "4,000 reads and 200 submits a second. The budget is checked here.",
       "phases": [
         {
           "seconds": 600,
           "rates": {
-            "GET_TOP": 1000,
+            "GET_TOP": 4000,
             "SUBMIT_SCORE": 200
           }
         }
@@ -73,26 +73,26 @@
         "p99_ms": {
           "GET_TOP": 120
         },
-        "budget_inr": 190000
+        "budget_inr": 400000
       }
     },
     {
       "id": "t02-match",
       "title": "During the match",
       "hidden": false,
-      "explain": "3,000 then 6,000 reads, and up to 1,200 submits a second.",
+      "explain": "12,000 then 24,000 reads, and up to 1,200 submits a second.",
       "phases": [
         {
           "seconds": 300,
           "rates": {
-            "GET_TOP": 3000,
+            "GET_TOP": 12000,
             "SUBMIT_SCORE": 600
           }
         },
         {
           "seconds": 300,
           "rates": {
-            "GET_TOP": 6000,
+            "GET_TOP": 24000,
             "SUBMIT_SCORE": 1200
           }
         }
@@ -111,14 +111,14 @@
         {
           "seconds": 300,
           "rates": {
-            "GET_TOP": 5000,
+            "GET_TOP": 20000,
             "SUBMIT_SCORE": 1000
           }
         },
         {
           "seconds": 300,
           "rates": {
-            "GET_TOP": 5000,
+            "GET_TOP": 20000,
             "SUBMIT_SCORE": 1000
           },
           "events": [
@@ -142,14 +142,14 @@
         {
           "seconds": 600,
           "rates": {
-            "GET_TOP": 4000,
+            "GET_TOP": 16000,
             "SUBMIT_SCORE": 800
           }
         },
         {
           "seconds": 600,
           "rates": {
-            "GET_TOP": 4000,
+            "GET_TOP": 16000,
             "SUBMIT_SCORE": 800
           },
           "events": [
@@ -176,7 +176,7 @@
         {
           "seconds": 300,
           "rates": {
-            "GET_TOP": 6000,
+            "GET_TOP": 24000,
             "SUBMIT_SCORE": 1200
           },
           "events": [
@@ -193,37 +193,37 @@
       }
     }
   ],
-  "reference": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=large, replicas=1, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n",
+  "reference": "lb    = lb()\napi   = server(count=18, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=large, replicas=2, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n",
   "wrong": [
     {
       "name": "no-index",
       "expect": "Too Slow",
       "why": "The top list is looked up by game_id, which has no index: every miss reads the whole table, and takes a hundred times as long.",
-      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=large, replicas=1, sync=false)\n\ntable db.scores(player_id pk, game_id, score)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n"
+      "source": "lb    = lb()\napi   = server(count=18, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=large, replicas=2, sync=false)\n\ntable db.scores(player_id pk, game_id, score)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n"
     },
     {
       "name": "minute-ttl",
       "expect": "Wrong Answer",
       "why": "A one-minute TTL shows scores up to 60 s old; the problem allows 5 s.",
-      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=large, replicas=1, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n"
+      "source": "lb    = lb()\napi   = server(count=18, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=60)\ndb    = sql(size=large, replicas=2, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n"
     },
     {
       "name": "medium-db",
       "expect": "Overloaded",
       "why": "1,200 score writes a second against a medium primary's 1,000.",
-      "source": "lb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=medium, replicas=1, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n"
+      "source": "lb    = lb()\napi   = server(count=18, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=medium, replicas=2, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n"
     },
     {
       "name": "no-cache",
       "expect": "Overloaded",
-      "why": "Every top-list read goes to the primary, which is already busy with score writes.",
-      "source": "lb    = lb()\napi   = server(count=6, size=large)\ndb    = sql(size=large, replicas=1, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > db\nwrite SUBMIT_SCORE: client > lb > api > db\n"
+      "why": "Every top-list read goes to the primary: 24,000 reads a second against the 20,000 a large primary serves, on top of the score writes.",
+      "source": "lb    = lb()\napi   = server(count=18, size=large)\ndb    = sql(size=large, replicas=2, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > db\nwrite SUBMIT_SCORE: client > lb > api > db\n"
     },
     {
       "name": "big-everything",
       "expect": "Over Budget",
       "why": "It passes every test at more than the budget.",
-      "source": "lb    = lb()\napi   = server(count=12, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=large, replicas=3, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n"
+      "source": "lb    = lb()\napi   = server(count=30, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=large, replicas=3, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n"
     }
   ],
   "hints": [
@@ -231,5 +231,5 @@
     "A list may be 5 seconds old. What TTL does that allow, and what hit ratio does a short TTL get when a thousand lists take all the reads?",
     "When the cache restarts, all the reads arrive at once. Where can they go besides the primary?"
   ],
-  "editorial": "## The approach\n\nTwo details decide this problem: the lookup column and the freshness limit.\n\n1. **Index the lookup.** Scores are stored by player but read by game. Without `index(game_id)` every read that reaches the database reads every row.\n2. **A short TTL is enough.** Only about a thousand lists exist and they are read thousands of times a second, so even a 4-second TTL keeps them warm: the hit ratio is about 0.99.\n3. **Reads from the replica.** Misses go to the replica (`db[replica]`), so a cache restart sends 6,000 reads a second to the replica, not to the busy primary. The async replica is a second behind: 4 + 1 = 5 seconds at most.\n4. **A primary for the writes.** A large primary takes 2,500 writes a second; scores can be resent, so an async replica is fine.\n\n## The reference design\n\n```\nlb    = lb()\napi   = server(count=6, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=large, replicas=1, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n```\n\nIt costs ₹1.67 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **No index: Too Slow.** The top list is looked up by game_id, which has no index: every miss reads the whole table, and takes a hundred times as long.\n- **Minute ttl: Wrong Answer.** A one-minute TTL shows scores up to 60 s old; the problem allows 5 s.\n- **Medium db: Overloaded.** 1,200 score writes a second against a medium primary's 1,000.\n- **No cache: Overloaded.** Every top-list read goes to the primary, which is already busy with score writes.\n- **Big everything: Over Budget.** It passes every test at more than the budget.\n\n## Read more\n\n- [Database indexing](/dashboard/concepts/database-indexing/)\n- [Redis](/dashboard/components/redis/)\n"
+  "editorial": "## The approach\n\nTwo details decide this problem: the lookup column and the freshness limit.\n\n1. **Index the lookup.** Scores are stored by player but read by game. Without `index(game_id)` every read that reaches the database reads every row.\n2. **A short TTL is enough.** Only about a thousand lists exist and they are read tens of thousands of times a second, so even a 4-second TTL keeps them warm: the hit ratio is about 0.99.\n3. **Reads from the replica.** Misses go to the replica (`db[replica]`), so a cache restart sends up to 24,000 reads a second to the replicas, not to the busy primary. The async replica is a second behind: 4 + 1 = 5 seconds at most.\n4. **A primary for the writes.** A large primary takes 10,000 writes a second, plenty for 1,200; scores can be resent, so an async replica is fine.\n\n## The reference design\n\n```\nlb    = lb()\napi   = server(count=18, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=4)\ndb    = sql(size=large, replicas=2, sync=false)\n\ntable db.scores(player_id pk, game_id, score) index(game_id)\n\nread  GET_TOP:      client > lb > api > cache | db[replica]\nwrite SUBMIT_SCORE: client > lb > api > db\n```\n\nIt costs ₹3.56 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **No index: Too Slow.** The top list is looked up by game_id, which has no index: every miss reads the whole table, and takes a hundred times as long.\n- **Minute ttl: Wrong Answer.** A one-minute TTL shows scores up to 60 s old; the problem allows 5 s.\n- **Medium db: Overloaded.** 1,200 score writes a second against a medium primary's 1,000.\n- **No cache: Overloaded.** Every top-list read goes to the primary: 24,000 reads a second against the 20,000 a large primary serves, on top of the score writes.\n- **Big everything: Over Budget.** It passes every test at more than the budget.\n\n## Read more\n\n- [Database indexing](/dashboard/concepts/database-indexing/)\n- [Redis](/dashboard/components/redis/)\n"
 }

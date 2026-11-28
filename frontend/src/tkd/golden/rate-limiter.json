@@ -1,26 +1,26 @@
 {
- "judge_version": 3,
+ "judge_version": 4,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
   "total": 5,
-  "cost_inr": 138000,
+  "cost_inr": 162000,
   "worst_p99_ms": {
-   "CHECK": 72.4,
-   "GET_USAGE": 72.4
+   "CHECK": 72.7,
+   "GET_USAGE": 72.7
   },
   "worst_p50_ms": {
-   "CHECK": 18.1,
-   "GET_USAGE": 18.1
+   "CHECK": 18.2,
+   "GET_USAGE": 18.2
   },
   "tightest": {
    "promise": "budget",
    "request": null,
    "test": "t01-normal-day",
-   "margin": 0.1375,
-   "text": "Tightest promise: budget, 14 % to spare."
+   "margin": 0.1,
+   "text": "Tightest promise: budget, 10 % to spare."
   },
-  "rank_p99_ms": 72.4,
+  "rank_p99_ms": 72.7,
   "tests": [
    {
     "id": "t01-normal-day",
@@ -54,21 +54,21 @@
    }
   ],
   "warnings": [],
-  "judge_version": 3
+  "judge_version": 4
  },
  "wrong": {
   "sql-counters": {
    "verdict": "Overloaded",
    "passed": 1,
    "total": 5,
-   "cost_inr": 143000,
+   "cost_inr": 167000,
    "worst_p99_ms": {
-    "CHECK": 356.3,
-    "GET_USAGE": 256.3
+    "CHECK": 352.6,
+    "GET_USAGE": 252.6
    },
    "worst_p50_ms": {
-    "CHECK": 89.1,
-    "GET_USAGE": 64.1
+    "CHECK": 88.2,
+    "GET_USAGE": 63.2
    },
    "failed": {
     "test": "t02-peak",
@@ -77,30 +77,30 @@
     "reason": "overloaded",
     "request": "CHECK",
     "phase": 2,
-    "expected": "at most 2,509 calls a second",
-    "actual": "10,050 calls a second",
-    "message": "db received 10,050 calls a second but can serve 2,509.",
+    "expected": "at most 10,021 calls a second",
+    "actual": "12,050 calls a second",
+    "message": "db received 12,050 calls a second but can serve 10,021.",
     "blame": {
      "part": "db",
      "line": 3,
-     "rho": 4.0063,
-     "note": "db is at 401 % of its capacity"
+     "rho": 1.2025,
+     "note": "db is at 120 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 2.5,
-      "rho": 0.201
+      "ms": 2.27,
+      "rho": 0.1205
      },
      {
       "part": "api",
-      "ms": 53.78,
-      "rho": 0.6281
+      "ms": 50.31,
+      "rho": 0.6025
      },
      {
       "part": "db",
       "ms": 300,
-      "rho": 4.0063
+      "rho": 1.2025
      }
     ]
    },
@@ -108,11 +108,11 @@
     {
      "reason": "p99",
      "request": "CHECK",
-     "message": "CHECK took 356.3 ms at the 99th percentile; the promise is 100 ms. Slowest hop: db at 401 % of capacity."
+     "message": "CHECK took 352.6 ms at the 99th percentile; the promise is 100 ms. Slowest hop: db at 120 % of capacity."
     }
    ],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 356.3,
+   "rank_p99_ms": 352.6,
    "tests": [
     {
      "id": "t01-normal-day",
@@ -154,20 +154,20 @@
      "part": "db"
     }
    ],
-   "judge_version": 3
+   "judge_version": 4
   },
   "write-to-all-copies": {
    "verdict": "Unavailable",
    "passed": 3,
    "total": 5,
-   "cost_inr": 138000,
+   "cost_inr": 162000,
    "worst_p99_ms": {
-    "CHECK": 72.4,
-    "GET_USAGE": 72.4
+    "CHECK": 72.7,
+    "GET_USAGE": 72.7
    },
    "worst_p50_ms": {
-    "CHECK": 18.1,
-    "GET_USAGE": 18.1
+    "CHECK": 18.2,
+    "GET_USAGE": 18.2
    },
    "failed": {
     "test": "t04-a-node-dies",
@@ -188,13 +188,13 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.27,
-      "rho": 0.1204
+      "ms": 2.16,
+      "rho": 0.0722
      },
      {
       "part": "api",
-      "ms": 32.06,
-      "rho": 0.3762
+      "ms": 31.3,
+      "rho": 0.361
      },
      {
       "part": "kv",
@@ -206,7 +206,7 @@
    },
    "also": [],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 72.4,
+   "rank_p99_ms": 72.7,
    "tests": [
     {
      "id": "t01-normal-day",
@@ -240,7 +240,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "too-few-servers": {
    "verdict": "Overloaded",
@@ -248,12 +248,12 @@
    "total": 5,
    "cost_inr": 90000,
    "worst_p99_ms": {
-    "CHECK": 418.6,
-    "GET_USAGE": 418.6
+    "CHECK": 422.4,
+    "GET_USAGE": 422.4
    },
    "worst_p50_ms": {
-    "CHECK": 104.7,
-    "GET_USAGE": 104.7
+    "CHECK": 105.6,
+    "GET_USAGE": 105.6
    },
    "failed": {
     "test": "t02-peak",
@@ -263,29 +263,29 @@
     "request": "CHECK",
     "phase": 2,
     "expected": "at most 8,000 calls a second",
-    "actual": "10,050 calls a second",
-    "message": "api received 10,050 calls a second but can serve 8,000.",
+    "actual": "12,050 calls a second",
+    "message": "api received 12,050 calls a second but can serve 8,000.",
     "blame": {
      "part": "api",
      "line": 2,
-     "rho": 1.2563,
-     "note": "api is at 126 % of its capacity"
+     "rho": 1.5063,
+     "note": "api is at 151 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 2.5,
-      "rho": 0.201
+      "ms": 2.27,
+      "rho": 0.1205
      },
      {
       "part": "api",
       "ms": 400,
-      "rho": 1.2563
+      "rho": 1.5063
      },
      {
       "part": "kv",
-      "ms": 16.08,
-      "rho": 0.5025
+      "ms": 20.13,
+      "rho": 0.6025
      }
     ]
    },
@@ -293,11 +293,11 @@
     {
      "reason": "p99",
      "request": "CHECK",
-     "message": "CHECK took 418.6 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 126 % of capacity."
+     "message": "CHECK took 422.4 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 151 % of capacity."
     }
    ],
    "tip": "More capacity in \"api\" would fix this.",
-   "rank_p99_ms": 418.6,
+   "rank_p99_ms": 422.4,
    "tests": [
     {
      "id": "t01-normal-day",
@@ -331,20 +331,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
-  "three-nodes": {
+  "tight-servers": {
    "verdict": "Too Slow",
    "passed": 1,
    "total": 5,
-   "cost_inr": 104000,
+   "cost_inr": 126000,
    "worst_p99_ms": {
-    "CHECK": 149.8,
-    "GET_USAGE": 149.8
+    "CHECK": 166,
+    "GET_USAGE": 166
    },
    "worst_p50_ms": {
-    "CHECK": 37.5,
-    "GET_USAGE": 37.5
+    "CHECK": 41.5,
+    "GET_USAGE": 41.5
    },
    "failed": {
     "test": "t02-peak",
@@ -354,35 +354,35 @@
     "request": "CHECK",
     "phase": 2,
     "expected": "p99 ≤ 100 ms",
-    "actual": "p99 149.8 ms",
-    "message": "CHECK took 149.8 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 84 % of capacity.",
+    "actual": "p99 166.0 ms",
+    "message": "CHECK took 166.0 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 86 % of capacity.",
     "blame": {
      "part": "api",
      "line": 2,
-     "rho": 0.8375,
-     "note": "api is at 84 % of its capacity"
+     "rho": 0.8607,
+     "note": "api is at 86 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 2.5,
-      "rho": 0.201
+      "ms": 2.27,
+      "rho": 0.1205
      },
      {
       "part": "api",
-      "ms": 123.08,
-      "rho": 0.8375
+      "ms": 143.58,
+      "rho": 0.8607
      },
      {
       "part": "kv",
-      "ms": 24.24,
-      "rho": 0.67
+      "ms": 20.13,
+      "rho": 0.6025
      }
     ]
    },
    "also": [],
    "tip": "More capacity in \"api\" would fix this.",
-   "rank_p99_ms": 149.8,
+   "rank_p99_ms": 166,
    "tests": [
     {
      "id": "t01-normal-day",
@@ -416,7 +416,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "huge-cluster": {
    "verdict": "Over Budget",
@@ -424,8 +424,8 @@
    "total": 5,
    "cost_inr": 266000,
    "worst_p99_ms": {
-    "CHECK": 31.1,
-    "GET_USAGE": 31.1
+    "CHECK": 31.3,
+    "GET_USAGE": 31.3
    },
    "worst_p50_ms": {
     "CHECK": 7.8,
@@ -438,9 +438,9 @@
     "reason": "budget",
     "request": null,
     "phase": null,
-    "expected": "≤ ₹1,60,000",
+    "expected": "≤ ₹1,80,000",
     "actual": "₹2,66,000",
-    "message": "This design costs ₹2,66,000 a month; the budget is ₹1,60,000.",
+    "message": "This design costs ₹2,66,000 a month; the budget is ₹1,80,000.",
     "blame": {
      "part": "api",
      "line": 2,
@@ -451,7 +451,7 @@
    },
    "also": [],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 31.1,
+   "rank_p99_ms": 31.3,
    "tests": [
     {
      "id": "t01-normal-day",
@@ -485,7 +485,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   }
  }
 }

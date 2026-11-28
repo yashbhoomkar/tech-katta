@@ -1,5 +1,5 @@
 {
- "judge_version": 3,
+ "judge_version": 4,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
@@ -11,14 +11,14 @@
   },
   "worst_p50_ms": {
    "GET_PASTE": 15.7,
-   "CREATE_PASTE": 31.2
+   "CREATE_PASTE": 31.1
   },
   "tightest": {
-   "promise": "p99",
-   "request": "GET_PASTE",
-   "test": "t02-incident",
-   "margin": 0.2388,
-   "text": "Tightest promise: GET_PASTE p99, 24 % to spare."
+   "promise": "budget",
+   "request": null,
+   "test": "t01-quiet-hour",
+   "margin": 0.24,
+   "text": "Tightest promise: budget, 24 % to spare."
   },
   "rank_p99_ms": 62.8,
   "tests": [
@@ -54,7 +54,7 @@
    }
   ],
   "warnings": [],
-  "judge_version": 3
+  "judge_version": 4
  },
  "wrong": {
   "small-cache": {
@@ -63,12 +63,12 @@
    "total": 5,
    "cost_inr": 93000,
    "worst_p99_ms": {
-    "GET_PASTE": 89.2,
-    "CREATE_PASTE": 164.6
+    "GET_PASTE": 89.1,
+    "CREATE_PASTE": 164.5
    },
    "worst_p50_ms": {
     "GET_PASTE": 12.6,
-    "CREATE_PASTE": 41.2
+    "CREATE_PASTE": 41.1
    },
    "failed": {
     "test": "t02-incident",
@@ -78,8 +78,8 @@
     "request": "GET_PASTE",
     "phase": 2,
     "expected": "p99 ≤ 80 ms",
-    "actual": "p99 89.2 ms",
-    "message": "GET_PASTE took 89.2 ms at the 99th percentile; the promise is 80 ms. Slowest hop: db at 74 % of capacity.",
+    "actual": "p99 89.1 ms",
+    "message": "GET_PASTE took 89.1 ms at the 99th percentile; the promise is 80 ms. Slowest hop: db at 74 % of capacity.",
     "blame": {
      "part": "db",
      "line": 4,
@@ -89,8 +89,8 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.2,
-      "rho": 0.0906
+      "ms": 2.09,
+      "rho": 0.0453
      },
      {
       "part": "api",
@@ -112,7 +112,7 @@
    },
    "also": [],
    "tip": "Bigger machines for \"db\" would fix this.",
-   "rank_p99_ms": 89.2,
+   "rank_p99_ms": 89.1,
    "tests": [
     {
      "id": "t01-quiet-hour",
@@ -146,7 +146,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "no-cache-small-servers": {
    "verdict": "Overloaded",
@@ -154,12 +154,12 @@
    "total": 5,
    "cost_inr": 54000,
    "worst_p99_ms": {
-    "GET_PASTE": 602.2,
-    "CREATE_PASTE": 1002.2
+    "GET_PASTE": 602.1,
+    "CREATE_PASTE": 1002.1
    },
    "worst_p50_ms": {
-    "GET_PASTE": 150.6,
-    "CREATE_PASTE": 250.6
+    "GET_PASTE": 150.5,
+    "CREATE_PASTE": 250.5
    },
    "failed": {
     "test": "t02-incident",
@@ -180,8 +180,8 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.2,
-      "rho": 0.0906
+      "ms": 2.09,
+      "rho": 0.0453
      },
      {
       "part": "api",
@@ -199,11 +199,11 @@
     {
      "reason": "p99",
      "request": "GET_PASTE",
-     "message": "GET_PASTE took 602.2 ms at the 99th percentile; the promise is 80 ms. Slowest hop: api at 227 % of capacity."
+     "message": "GET_PASTE took 602.1 ms at the 99th percentile; the promise is 80 ms. Slowest hop: api at 227 % of capacity."
     }
    ],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 602.2,
+   "rank_p99_ms": 602.1,
    "tests": [
     {
      "id": "t01-quiet-hour",
@@ -237,7 +237,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "no-replica": {
    "verdict": "Unavailable",
@@ -245,8 +245,8 @@
    "total": 5,
    "cost_inr": 94000,
    "worst_p99_ms": {
-    "GET_PASTE": 60.9,
-    "CREATE_PASTE": 64
+    "GET_PASTE": 60.8,
+    "CREATE_PASTE": 63.9
    },
    "worst_p50_ms": {
     "GET_PASTE": 12.6,
@@ -271,8 +271,8 @@
     "trace": [
      {
       "part": "lb",
-      "ms": 2.08,
-      "rho": 0.0404
+      "ms": 2.04,
+      "rho": 0.0202
      },
      {
       "part": "api",
@@ -295,7 +295,7 @@
    },
    "also": [],
    "tip": "A replica of \"db\" would fix this.",
-   "rank_p99_ms": 60.9,
+   "rank_p99_ms": 60.8,
    "tests": [
     {
      "id": "t01-quiet-hour",
@@ -337,7 +337,7 @@
      "part": "db"
     }
    ],
-   "judge_version": 3
+   "judge_version": 4
   },
   "async-replica": {
    "verdict": "Data Lost",
@@ -345,8 +345,8 @@
    "total": 5,
    "cost_inr": 114000,
    "worst_p99_ms": {
-    "GET_PASTE": 60.9,
-    "CREATE_PASTE": 64
+    "GET_PASTE": 60.8,
+    "CREATE_PASTE": 63.9
    },
    "worst_p50_ms": {
     "GET_PASTE": 12.6,
@@ -372,7 +372,7 @@
    },
    "also": [],
    "tip": "Making \"db\" wait for its replicas would fix this.",
-   "rank_p99_ms": 60.9,
+   "rank_p99_ms": 60.8,
    "tests": [
     {
      "id": "t01-quiet-hour",
@@ -406,7 +406,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "random-32-bit-ids": {
    "verdict": "Wrong Answer",
@@ -475,7 +475,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "huge-cache": {
    "verdict": "Over Budget",
@@ -544,7 +544,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   }
  }
 }

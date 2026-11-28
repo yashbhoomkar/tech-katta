@@ -1,26 +1,26 @@
 {
- "judge_version": 3,
+ "judge_version": 4,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
   "total": 5,
-  "cost_inr": 227000,
+  "cost_inr": 335000,
   "worst_p99_ms": {
-   "GET_SCORE": 120.2,
-   "UPDATE_SCORE": 102.5
+   "GET_SCORE": 153.5,
+   "UPDATE_SCORE": 124.1
   },
   "worst_p50_ms": {
-   "GET_SCORE": 4.7,
-   "UPDATE_SCORE": 25.6
+   "GET_SCORE": 7.5,
+   "UPDATE_SCORE": 31
   },
   "tightest": {
    "promise": "budget",
    "request": null,
    "test": "t01-toss",
-   "margin": 0.1269,
-   "text": "Tightest promise: budget, 13 % to spare."
+   "margin": 0.1184,
+   "text": "Tightest promise: budget, 12 % to spare."
   },
-  "rank_p99_ms": 120.2,
+  "rank_p99_ms": 153.5,
   "tests": [
    {
     "id": "t01-toss",
@@ -54,21 +54,21 @@
    }
   ],
   "warnings": [],
-  "judge_version": 3
+  "judge_version": 4
  },
  "wrong": {
   "no-cdn": {
    "verdict": "Overloaded",
    "passed": 0,
    "total": 5,
-   "cost_inr": 224000,
+   "cost_inr": 332000,
    "worst_p99_ms": {
-    "GET_SCORE": 416,
-    "UPDATE_SCORE": 433.3
+    "GET_SCORE": 418.1,
+    "UPDATE_SCORE": 434
    },
    "worst_p50_ms": {
-    "GET_SCORE": 101.5,
-    "UPDATE_SCORE": 108.3
+    "GET_SCORE": 102,
+    "UPDATE_SCORE": 108.5
    },
    "failed": {
     "test": "t01-toss",
@@ -77,36 +77,36 @@
     "reason": "overloaded",
     "request": "GET_SCORE",
     "phase": 1,
-    "expected": "at most 14,000 calls a second",
-    "actual": "20,001 calls a second",
-    "message": "api received 20,001 calls a second but can serve 14,000.",
+    "expected": "at most 32,001 calls a second",
+    "actual": "50,001 calls a second",
+    "message": "api received 50,001 calls a second but can serve 32,001.",
     "blame": {
      "part": "api",
      "line": 2,
-     "rho": 1.4286,
-     "note": "api is at 143 % of its capacity"
+     "rho": 1.5625,
+     "note": "api is at 156 % of its capacity"
     },
     "trace": [
      {
       "part": "lb",
-      "ms": 3.33,
-      "rho": 0.4
+      "ms": 4,
+      "rho": 0.5
      },
      {
       "part": "api",
       "ms": 400,
-      "rho": 1.4286
+      "rho": 1.5625
      },
      {
       "part": "cache",
-      "ms": 2.5,
-      "rho": 0.2,
+      "ms": 4,
+      "rho": 0.5,
       "hit": 0.99
      },
      {
       "part": "db",
       "ms": 10.13,
-      "rho": 0.0129
+      "rho": 0.0126
      }
     ]
    },
@@ -114,11 +114,11 @@
     {
      "reason": "p99",
      "request": "GET_SCORE",
-     "message": "GET_SCORE took 416.0 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 143 % of capacity."
+     "message": "GET_SCORE took 418.1 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 156 % of capacity."
     }
    ],
    "tip": "More capacity in \"api\" would fix this.",
-   "rank_p99_ms": 416,
+   "rank_p99_ms": 418.1,
    "tests": [
     {
      "id": "t01-toss",
@@ -152,19 +152,19 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "cdn-minute-ttl": {
    "verdict": "Wrong Answer",
    "passed": 0,
    "total": 5,
-   "cost_inr": 227000,
+   "cost_inr": 335000,
    "worst_p99_ms": {
-    "GET_SCORE": 50.9,
-    "UPDATE_SCORE": 53.6
+    "GET_SCORE": 51.6,
+    "UPDATE_SCORE": 53.8
    },
    "worst_p50_ms": {
-    "GET_SCORE": 3.8,
+    "GET_SCORE": 4,
     "UPDATE_SCORE": 13.4
    },
    "failed": {
@@ -187,7 +187,7 @@
    },
    "also": [],
    "tip": "Clearing \"cdn\" when the data changes would fix this.",
-   "rank_p99_ms": 50.9,
+   "rank_p99_ms": 51.6,
    "tests": [
     {
      "id": "t01-toss",
@@ -221,7 +221,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "thin-origin": {
    "verdict": "Overloaded",
@@ -229,12 +229,12 @@
    "total": 5,
    "cost_inr": 191000,
    "worst_p99_ms": {
-    "GET_SCORE": 433.5,
-    "UPDATE_SCORE": 432.5
+    "GET_SCORE": 445.4,
+    "UPDATE_SCORE": 432.7
    },
    "worst_p50_ms": {
-    "GET_SCORE": 4.7,
-    "UPDATE_SCORE": 108.1
+    "GET_SCORE": 7.5,
+    "UPDATE_SCORE": 108.2
    },
    "failed": {
     "test": "t02-last-over",
@@ -244,41 +244,41 @@
     "request": "GET_SCORE",
     "phase": 2,
     "expected": "at most 8,000 calls a second",
-    "actual": "10,001 calls a second",
-    "message": "api received 10,001 calls a second but can serve 8,000.",
+    "actual": "25,001 calls a second",
+    "message": "api received 25,001 calls a second but can serve 8,000.",
     "blame": {
      "part": "api",
      "line": 3,
-     "rho": 1.2501,
-     "note": "api is at 125 % of its capacity"
+     "rho": 3.1251,
+     "note": "api is at 313 % of its capacity"
     },
     "trace": [
      {
       "part": "cdn",
-      "ms": 18.75,
-      "rho": 0.2,
+      "ms": 30,
+      "rho": 0.5,
       "hit": 0.95
      },
      {
       "part": "lb",
-      "ms": 2.5,
-      "rho": 0.2
+      "ms": 2.67,
+      "rho": 0.25
      },
      {
       "part": "api",
       "ms": 400,
-      "rho": 1.2501
+      "rho": 3.1251
      },
      {
       "part": "cache",
-      "ms": 2.22,
-      "rho": 0.1,
+      "ms": 2.67,
+      "rho": 0.25,
       "hit": 0.99
      },
      {
       "part": "db",
-      "ms": 10.07,
-      "rho": 0.0067
+      "ms": 10.06,
+      "rho": 0.0064
      }
     ]
    },
@@ -286,11 +286,11 @@
     {
      "reason": "p99",
      "request": "GET_SCORE",
-     "message": "GET_SCORE took 433.5 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 125 % of capacity."
+     "message": "GET_SCORE took 445.4 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 313 % of capacity."
     }
    ],
-   "tip": "More capacity in \"api\" would fix this.",
-   "rank_p99_ms": 433.5,
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 445.4,
    "tests": [
     {
      "id": "t01-toss",
@@ -324,20 +324,20 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   },
   "primary-only": {
    "verdict": "Unavailable",
    "passed": 3,
    "total": 5,
-   "cost_inr": 137000,
+   "cost_inr": 245000,
    "worst_p99_ms": {
-    "GET_SCORE": 293.5,
-    "UPDATE_SCORE": 372.5
+    "GET_SCORE": 326.8,
+    "UPDATE_SCORE": 394.1
    },
    "worst_p50_ms": {
-    "GET_SCORE": 4.7,
-    "UPDATE_SCORE": 93.1
+    "GET_SCORE": 7.5,
+    "UPDATE_SCORE": 98.5
    },
    "failed": {
     "test": "t04-cache-restarts",
@@ -347,47 +347,47 @@
     "request": "GET_SCORE",
     "phase": 1,
     "expected": "99.90%",
-    "actual": "95.99%",
-    "message": "GET_SCORE was available 95.99% of the time; the promise is 99.90%. db had no spare when it failed.",
+    "actual": "96.00%",
+    "message": "GET_SCORE was available 96.00% of the time; the promise is 99.90%. db had no spare when it failed.",
     "blame": {
      "part": "db",
      "line": 5,
-     "rho": 1.2504,
+     "rho": 1.2501,
      "note": "db is at 125 % of its capacity"
     },
     "trace": [
      {
       "part": "cdn",
-      "ms": 18.75,
-      "rho": 0.2,
+      "ms": 30,
+      "rho": 0.5,
       "hit": 0.95
      },
      {
       "part": "lb",
-      "ms": 2.5,
-      "rho": 0.2
+      "ms": 2.67,
+      "rho": 0.25
      },
      {
       "part": "api",
-      "ms": 70.03,
-      "rho": 0.7144
+      "ms": 91.45,
+      "rho": 0.7813
      },
      {
       "part": "cache",
-      "ms": 2.22,
-      "rho": 0.1,
+      "ms": 2.67,
+      "rho": 0.25,
       "hit": 0
      },
      {
       "part": "db",
       "ms": 200,
-      "rho": 1.2504
+      "rho": 1.2501
      }
     ]
    },
    "also": [],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 293.5,
+   "rank_p99_ms": 326.8,
    "tests": [
     {
      "id": "t01-toss",
@@ -429,20 +429,20 @@
      "part": "db"
     }
    ],
-   "judge_version": 3
+   "judge_version": 4
   },
   "big-origin": {
    "verdict": "Over Budget",
    "passed": 0,
    "total": 5,
-   "cost_inr": 383000,
+   "cost_inr": 623000,
    "worst_p99_ms": {
-    "GET_SCORE": 49.9,
-    "UPDATE_SCORE": 52.6
+    "GET_SCORE": 50.6,
+    "UPDATE_SCORE": 52.7
    },
    "worst_p50_ms": {
-    "GET_SCORE": 3.8,
-    "UPDATE_SCORE": 13.1
+    "GET_SCORE": 4,
+    "UPDATE_SCORE": 13.2
    },
    "failed": {
     "test": "t01-toss",
@@ -451,9 +451,9 @@
     "reason": "budget",
     "request": null,
     "phase": null,
-    "expected": "≤ ₹2,60,000",
-    "actual": "₹3,83,000",
-    "message": "This design costs ₹3,83,000 a month; the budget is ₹2,60,000.",
+    "expected": "≤ ₹3,80,000",
+    "actual": "₹6,23,000",
+    "message": "This design costs ₹6,23,000 a month; the budget is ₹3,80,000.",
     "blame": {
      "part": "api",
      "line": 3,
@@ -464,7 +464,7 @@
    },
    "also": [],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 49.9,
+   "rank_p99_ms": 50.6,
    "tests": [
     {
      "id": "t01-toss",
@@ -498,7 +498,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 3
+   "judge_version": 4
   }
  }
 }
