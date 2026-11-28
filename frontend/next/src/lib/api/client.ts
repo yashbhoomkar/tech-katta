@@ -32,7 +32,9 @@ export async function getJson<T>(path: string, signal?: AbortSignal): Promise<T>
   signal?.addEventListener("abort", onAbort, { once: true });
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, { signal: controller.signal, headers: { Accept: "application/json" } });
+    // inside the 3D site the page has asked already (site3d/scripts/boot-theme.js): one request per address, shared
+    const shared = (globalThis as { tkGet?: ((p: string, i?: { signal?: AbortSignal }) => Promise<Response>) & { api?: string } }).tkGet;
+    res = shared && shared.api === API_BASE ? await shared(path, { signal: controller.signal }) : await fetch(`${API_BASE}${path}`, { signal: controller.signal, headers: { Accept: "application/json" } });
   } catch (err) {
     if (signal?.aborted) throw err; // the caller cancelled: let it see the AbortError
     throw new ApiError(timedOut ? "The server took too long to answer." : "Couldn't reach the server.", null, path);

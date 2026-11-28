@@ -13,8 +13,8 @@ if(Date.now()-last<60000)return;e.preventDefault();try{sessionStorage.setItem("t
 // request is made without it and returns the public part. After anyone signs in or out these are forgotten and asked again.
 export const GATED=/^\/v1\/(lab|stories|articles\/[^?]+)$/;
 export const forgetGated=()=>{for(const k of [...cache.keys()])if(GATED.test(k))cache.delete(k)};
-try{addEventListener("tk-account",forgetGated)}catch{}
-export async function fetchApi(path,init={}){if(GATED.test(path)){try{return await fetch(API+path,{...init,credentials:"include"})}catch(e){if(e?.name==="AbortError")throw e}}return fetch(API+path,init)}
+try{addEventListener("tk-identity",forgetGated)}catch{}
+export async function fetchApi(path,init={}){if(globalThis.tkGet?.api===API&&(!init.method||init.method==="GET")&&!init.body)return globalThis.tkGet(path,{signal:init.signal});if(GATED.test(path)){try{return await fetch(API+path,{...init,credentials:"include"})}catch(e){if(e?.name==="AbortError")throw e}}return fetch(API+path,init)}
 export function getJSON(path,{timeout=8000,retries=1}={}){
 if(cache.has(path))return cache.get(path);
 const p=(async()=>{let err;for(let i=0;i<=retries;i++){const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),timeout);

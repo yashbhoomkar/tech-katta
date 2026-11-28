@@ -7,7 +7,7 @@ import{readProgress,replaceProgress}from"./progress.js";import{track,markStaff}f
 
 export const DELETED_KEY="tk-lab-deleted";// {design id: when it was deleted}, so deletions reach other devices
 // every account call gives up after 15 s, so a bad network shows "couldn't reach your account" instead of hanging
-const call=async(path,{method="GET",body}={})=>{const r=await fetch(API+path,{method,credentials:"include",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout?.(15000)});
+const call=async(path,{method="GET",body}={})=>{const r=await(method==="GET"&&globalThis.tkGet?.api===API?globalThis.tkGet(path,{signal:AbortSignal.timeout?.(15000)}):fetch(API+path,{method,credentials:"include",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout?.(15000)}));
 let data=null;try{data=await r.json()}catch{}if(!r.ok)throw Object.assign(new Error(data?.error||`HTTP ${r.status}`),{status:r.status});return data};
 
 // --- account state, shared by every part of the page ("tk-account" event on change)
@@ -15,7 +15,7 @@ let data=null;try{data=await r.json()}catch{}if(!r.ok)throw Object.assign(new Er
 // unavailable: sign-in cannot be used right now (the API cannot be reached or does not take sign-ins). The text stays locked then; nothing opens.
 let state={ready:false,enabled:false,unavailable:false,required:true,user:null,clientId:null,syncing:false,error:null};
 const emit=()=>{try{dispatchEvent(new Event("tk-account"))}catch{}};
-const setState=p=>{if(p.user)markStaff(p.user);state={...state,...p};emit()};
+const setState=p=>{if(p.user)markStaff(p.user);if("user"in p)try{globalThis.tkWho?.(p.user?(p.user.email||p.user.id||"x"):null)}catch{}state={...state,...p};emit()};
 export const account=()=>state;
 // Whether sign-in is on, and who is signed in: both asked at once, as soon as the page starts and before
 // its content has arrived (prefetchAccount, from boot), so the account menu is ready about when the page

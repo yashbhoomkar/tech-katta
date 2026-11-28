@@ -1537,6 +1537,8 @@ button.side-row { width: 100%; border: 0; background: none; font-family: inherit
 /* ---- the workspace pages: an island (the canvas and the judge, React) fills the page area (phase 1 of 49) ---- */
 .ws { position: fixed; z-index: 1; inset: var(--ws-top, 0px) 0 var(--ws-bottom, 0px) 0; }
 .ws-host { position: absolute; inset: 0; }
+.ws-host.ws-pending { visibility: hidden; } /* the canvas draws here while the problem's brief (.ws-brief) is what the reader sees */
+.ws-brief { position: absolute; inset: 0; overflow: auto; }
 .ws-wait { position: absolute; inset: 24px; max-width: 520px; max-height: 220px; padding: 22px; border-radius: 24px; }
 body.ws-page { overflow: hidden; }
 

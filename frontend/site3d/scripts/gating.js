@@ -5,13 +5,16 @@ import { accountState, onAccount, startAccount } from './account.js';
 import { API } from './articles.js';
 import { gateFor } from './gate.js';
 
-let copy = null, state = 'idle'; // idle | loading | ready | failed
+let copy = null, site = null, state = 'idle', copyP = Promise.resolve(null); // idle | loading | ready | failed
 export const accountCopy = () => copy;
+/** the whole site text (GET /v1/site) once it has arrived, and a promise for it (null when it cannot be had) */
+export const siteNow = () => site;
+export const siteReady = () => copyP;
 function loadCopy() {
   if (state !== 'idle') return;
   state = 'loading';
-  fetch(`${API}/v1/site`, { headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json() : null))
-    .then((s) => { copy = s?.account || null; state = copy ? 'ready' : 'failed'; }, () => { state = 'failed'; })
+  copyP = (globalThis.tkGet ? globalThis.tkGet('/v1/site') : fetch(`${API}/v1/site`, { headers: { accept: 'application/json' } })).then((r) => (r.ok ? r.json() : null))
+    .then((s) => { site = s; copy = s?.account || null; state = copy ? 'ready' : 'failed'; return s; }, () => { state = 'failed'; return null; })
     .finally(() => document.dispatchEvent(new Event('tk-gate')));
 }
 /** ask for the account and the copy (the router does this once, at start) */
