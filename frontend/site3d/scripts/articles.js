@@ -51,7 +51,12 @@ const forgetGated = () => { for (const k of [...mem.keys()]) if (k !== 'list') m
 try { addEventListener('tk-account', forgetGated); document.addEventListener('tk-account', forgetGated); } catch { /* no window */ }
 
 /** every article's header (section, slug, group, no, tag, title, dek), live or the snapshot */
-export async function listArticles() {
+let listAsk = null;
+export function listArticles() {
+  if (mem.has('list')) return Promise.resolve(mem.get('list'));
+  return (listAsk ||= fetchList().finally(() => { listAsk = null; })); // the shell, the page and the gate all ask at once: one request
+}
+async function fetchList() {
   if (mem.has('list')) return mem.get('list');
   let list = ss.get('tk-r3d-articles');
   if (!list) { try { list = (await getJson('/v1/articles')).articles; ss.set('tk-r3d-articles', list); } catch { list = ARTICLES_FALLBACK; } }
@@ -66,11 +71,16 @@ export const listNow = () => mem.get('list') || tidy(ss.get('tk-r3d-articles') |
 export async function getArticle(slug) {
   const k = `a:${slug}`;
   if (mem.has(k)) return mem.get(k);
-  let a = null;
-  try { a = await getJson(`/v1/articles/${encodeURIComponent(slug)}`); } catch { a = null; }
-  if (a) mem.set(k, a);
-  return a;
+  // one request at a time for an article (a page may ask early, to overlap it with the list, and ask again when it draws)
+  return (asking.get(k) || asking.set(k, (async () => {
+    let a = null;
+    try { a = await getJson(`/v1/articles/${encodeURIComponent(slug)}`); } catch { a = null; }
+    if (a) mem.set(k, a);
+    asking.delete(k);
+    return a;
+  })()).get(k));
 }
+const asking = new Map();
 
 /** the 3D stories' words and sentences (signed-in readers only), put back into the figures; true when they are in */
 let storiesP = null;

@@ -20,7 +20,7 @@ for (const [name, url, sel] of PAGES) for (const theme of ["dark", "light"]) for
   await page.addStyleTag({ content: `html,body,.stage-wrap,.stage,.dash-stage{background:transparent!important} body *{visibility:hidden!important} .stage::before,.stage::after,.overlay,.tk-report,.play3d{display:none!important} ${sel}{visibility:visible!important;-webkit-mask-image:none!important;mask-image:none!important;opacity:1!important;filter:none!important;animation:none!important}` });
   const tmp = path.join(here, `.tmp-${name}-${theme}-${size}.png`);
   await page.locator(sel).first().screenshot({ path: tmp, omitBackground: true });
-  execFileSync("python3", ["-I", "-c", "import sys;from PIL import Image;i=Image.open(sys.argv[1]).convert('RGBA');i.thumbnail((int(sys.argv[3]),int(sys.argv[4])));i.save(sys.argv[2],'WEBP',quality=50,method=6,alpha_quality=40)", tmp, path.join(here, `${name}-${theme}-${size}.webp`), String(cfg.out[0]), String(cfg.out[1])]);
+  execFileSync("python3", ["-I", "-c", "import sys;from PIL import Image;i=Image.open(sys.argv[1]).convert('RGBA');r,g,b,a=i.split();i=Image.merge('RGBA',(r,g,b,a.point(lambda v:0 if v<10 else v)));i.thumbnail((int(sys.argv[3]),int(sys.argv[4])));i.save(sys.argv[2],'WEBP',quality=36,method=6,alpha_quality=30)", tmp, path.join(here, `${name}-${theme}-${size}.webp`), String(cfg.out[0]), String(cfg.out[1])]);
   fs.unlinkSync(tmp); await ctx.close(); console.log("made", name, theme, size);
 }
 await b.close();
