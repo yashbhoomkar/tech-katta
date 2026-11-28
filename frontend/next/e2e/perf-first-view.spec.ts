@@ -82,7 +82,7 @@ test("a problem's page on a budget phone: LCP <= 4 s, the brief first, each API 
   for (let i = 0; i < RUNS; i++) {
     const { ctx, page } = await phone(browser);
     const seen: Record<string, number> = {};
-    page.on("request", (r) => { if (r.url().startsWith(API) && r.method() === "GET") { const p = new URL(r.url()).pathname; seen[p] = (seen[p] || 0) + 1; } });
+    page.on("request", (r) => { const u = new URL(r.url()); if (u.origin === API && r.method() === "GET") { const p = u.pathname; seen[p] = (seen[p] || 0) + 1; } });
     await page.addInitScript(() => {
       new PerformanceObserver((l) => { const e = l.getEntries().at(-1) as PerformanceEntry & { element?: Element }; (window as unknown as { __el: string }).__el = e.element ? `${e.element.tagName.toLowerCase()}.${e.element.className}` : ""; }).observe({ type: "largest-contentful-paint", buffered: true });
     });
