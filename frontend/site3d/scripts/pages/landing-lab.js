@@ -61,7 +61,7 @@ export function sectionsHtml() {
     </div>
   </section>
   <section class="page lab-free" aria-labelledby="free-h">
-    <h2 class="sub-h" id="free-h">What is free</h2>
+    <h2 class="sub-h" id="free-h">Free while in beta</h2>
     <p class="lead">Everything is free while Tech Katta is in beta. Sign in only if you want your progress on every device.</p>
     <div class="actions"><a class="btn dark" href="/problems/url-shortener" data-final>Solve your first problem<span class="chip">→</span></a><a class="btn light" href="/free">See what opens without signing in</a></div>
   </section>

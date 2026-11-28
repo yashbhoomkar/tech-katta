@@ -21,15 +21,16 @@ async function signedIn(page: Page) {
   await page.route(`${API}/v1/me/**`, (r) => r.fulfill({ status: 204, headers: CORS }));
 }
 
-test("landing: the outcome hero, and the demo starts only on tap, signed out", async ({ page }) => {
+test("landing: today's hero is kept, and the demo starts only on tap, signed out", async ({ page }) => {
   await signedOut(page);
   await page.goto("/");
-  await expect(page.locator(".hero h1")).toContainText("Practise system design interviews");
-  await expect(page.getByRole("link", { name: /Solve your first problem/ }).first()).toHaveAttribute("href", "/problems/url-shortener");
+  await expect(page.locator(".hero h1")).toContainText("Everything for it, in one place");
+  await expect(page.locator(".hero .actions a[href='/home']")).toContainText("Start preparing");
+  await expect(page.getByRole("button", { name: /See what is inside/ })).toBeVisible();
   // before the tap: a still frame, a failing verdict, no fixes shown, nothing playing
   await expect(page.locator("[data-demo-checks] li.bad").first()).toBeVisible();
   await expect(page.locator(".demo-fixes")).toBeHidden();
-  await page.getByRole("button", { name: /See how it works/ }).click();
+  await page.locator("#demo").scrollIntoViewIfNeeded();
   await expect(page.locator("#demo")).toBeInViewport();
   await page.locator("[data-demo-start]").click();
   await expect(page.locator(".demo-fixes")).toBeVisible();

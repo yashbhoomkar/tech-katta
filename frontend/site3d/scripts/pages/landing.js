@@ -77,9 +77,9 @@ export function mount(view, _p, { reduced }) {
   <section class="story landing-story">
     ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${STEPS.length - 1}</span><span class="segs">${STEPS.slice(1).map(() => '<i></i>').join('')}</span><span class="mono name">Start</span></div>`, 'landing')}
     <div class="step hero" data-step="0">
-      <h1 class="headline"><span class="thin">Practise system design interviews</span><span class="heavy accent">on a canvas that runs your design</span></h1>
-      <p class="lead">Real Indian-scale problems. Your design meets traffic, failures and a budget, and the tests tell you what broke and why. Free while in beta.</p>
-      <div class="actions"><a class="btn dark" href="/problems/url-shortener">Solve your first problem<span class="chip">→</span></a><button class="btn light" type="button" data-next>See how it works<span class="chip violet">↓</span></button></div>
+      <h1 class="headline"><span class="thin">Your system design interview</span><span class="heavy accent">Everything for it, in one place</span></h1>
+      <p class="lead">Learn the concepts and components, see how real apps are built, answer the questions interviewers ask, then design systems and get them judged. Free.</p>
+      <div class="actions"><a class="btn dark" href="/home">Start preparing<span class="chip">→</span></a><button class="btn light" type="button" data-next>See what is inside<span class="chip violet">↓</span></button></div>
       <p class="explore-hint"><span class="eh-tap"><i class="eh-dot" aria-hidden="true"></i>Tap any part to see what it does</span><span class="eh-scroll"><i class="eh-arrow" aria-hidden="true">↓</i>Scroll to play</span><button type="button" class="eh-tour" data-tour>Take the tour</button></p>
     </div>
     <div class="step" data-step="1">
@@ -227,7 +227,7 @@ export function mount(view, _p, { reduced }) {
   };
   const stopOffer = offerTour({ start: startTour });
   root.querySelector('[data-tour]').addEventListener('click', startTour);
-  root.querySelector('[data-next]').addEventListener('click', () => { document.getElementById('demo')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); });
+  root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.28, behavior: reduced ? 'auto' : 'smooth' }); });
   return () => { offLab(); tour?.end(); stopOffer(); cancelAnimationFrame(ringRaf); ring.remove(); pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); offTheme(); story.destroy(); };
 }
 
