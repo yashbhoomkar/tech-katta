@@ -109,6 +109,6 @@ for (const [dir, title, canon] of [["learn", "Learn", "learn/concepts"], ["simul
 for (const [dir, title, desc] of [["start", "Not sure where to start?", "Three learning paths for system design interviews by experience (0-2, 2-5 and 5+ years), each a short list of lessons that ends with a problem to solve."], ["changelog", "What's new", "Every change a learner can notice on Tech Katta, newest first."]]) put(dir, shellFor(title, { desc, canon: dir }));
 
 // 4. the sitemap and the content map for AI assistants
-writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date }))).replace("</urlset>", `  <url><loc>${SITE}/start</loc></url>\n  <url><loc>${SITE}/changelog</loc></url>\n</urlset>`));
+writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date, free: p.free }))).replace("</urlset>", `  <url><loc>${SITE}/start</loc></url>\n  <url><loc>${SITE}/changelog</loc></url>\n</urlset>`));
 writeFileSync(path.join(dist, "llms.txt"), llmsTxt(site, pages));
 console.log(`switch: the 3D site answers every address; ${written} search-engine pages, ${workspace} workspace and static pages, the home page, sitemap.xml and llms.txt`);

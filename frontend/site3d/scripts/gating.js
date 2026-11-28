@@ -21,11 +21,11 @@ export function startGate() { loadCopy(); startAccount(); }
 export function devOpen() { try { return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && localStorage.getItem('tk-dev-open') === '1'; } catch { return false; } }
 
 /** "open" | "wait" | "preview" | "locked" for a kind of page (see gate.js) */
-export function gateNow(kind) { loadCopy(); return gateFor(kind, accountState(), { devOpen: devOpen() }); }
+export function gateNow(kind, { free = false } = {}) { loadCopy(); return gateFor(kind, accountState(), { devOpen: devOpen(), free }); }
 /** calls cb(gate) whenever the answer for this kind changes (the account arrived, or someone signed in or out) */
-export function watchGate(kind, cb) {
-  let last = gateNow(kind);
-  const check = () => { const g = gateNow(kind); if (g !== last) { last = g; cb(g); } };
+export function watchGate(kind, cb, opts) {
+  let last = gateNow(kind, opts);
+  const check = () => { const g = gateNow(kind, opts); if (g !== last) { last = g; cb(g); } };
   const off = onAccount(check); document.addEventListener('tk-gate', check);
   return () => { off(); document.removeEventListener('tk-gate', check); };
 }
