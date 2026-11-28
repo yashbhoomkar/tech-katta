@@ -381,5 +381,11 @@
         "Close with the one question, applied to the system in front of you."
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "Gilbert and Lynch: Brewer's conjecture and the feasibility of consistent, available, partition-tolerant web services (2002)",
+      "url": "https://users.ece.cmu.edu/~adrian/731-sp04/readings/GL-cap.pdf"
+    }
   ]
 }

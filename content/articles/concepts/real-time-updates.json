@@ -634,5 +634,15 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "RFC 6455: The WebSocket Protocol",
+      "url": "https://www.rfc-editor.org/rfc/rfc6455"
+    },
+    {
+      "label": "HTML Standard: Server-sent events",
+      "url": "https://html.spec.whatwg.org/multipage/server-sent-events.html"
+    }
   ]
 }

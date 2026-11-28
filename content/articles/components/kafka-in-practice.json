@@ -290,5 +290,11 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "Apache Kafka documentation",
+      "url": "https://kafka.apache.org/documentation/"
+    }
   ]
 }

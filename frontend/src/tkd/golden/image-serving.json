@@ -7,18 +7,18 @@
   "cost_inr": 19000,
   "worst_p99_ms": {
    "GET_IMAGE": 56.1,
-   "UPLOAD_IMAGE": 68.7
+   "UPLOAD_IMAGE": 142.2
   },
   "worst_p50_ms": {
    "GET_IMAGE": 4,
-   "UPLOAD_IMAGE": 17.2
+   "UPLOAD_IMAGE": 35.5
   },
   "tightest": {
-   "promise": "p50",
-   "request": "GET_IMAGE",
+   "promise": "p99",
+   "request": "UPLOAD_IMAGE",
    "test": "t02-dinner",
-   "margin": 0.6,
-   "text": "Tightest promise: GET_IMAGE p50, 60 % to spare."
+   "margin": 0.1318,
+   "text": "Tightest promise: UPLOAD_IMAGE p99, 13 % to spare."
   },
   "rank_p99_ms": 56.1,
   "tests": [
@@ -259,8 +259,8 @@
    "total": 5,
    "cost_inr": 13000,
    "worst_p99_ms": {
-    "GET_IMAGE": 458.1,
-    "UPLOAD_IMAGE": 442.2
+    "GET_IMAGE": 458.2,
+    "UPLOAD_IMAGE": 442.3
    },
    "worst_p50_ms": {
     "GET_IMAGE": 4,
@@ -274,13 +274,13 @@
     "request": "GET_IMAGE",
     "phase": 2,
     "expected": "at most 1,000 calls a second",
-    "actual": "3,050 calls a second",
-    "message": "api received 3,050 calls a second but can serve 1,000.",
+    "actual": "4,250 calls a second",
+    "message": "api received 4,250 calls a second but can serve 1,000.",
     "blame": {
      "part": "api",
      "line": 3,
-     "rho": 3.05,
-     "note": "api is at 305 % of its capacity"
+     "rho": 4.25,
+     "note": "api is at 425 % of its capacity"
     },
     "trace": [
      {
@@ -291,18 +291,18 @@
      },
      {
       "part": "lb",
-      "ms": 2.06,
-      "rho": 0.0305
+      "ms": 2.09,
+      "rho": 0.0425
      },
      {
       "part": "api",
       "ms": 400,
-      "rho": 3.05
+      "rho": 4.25
      },
      {
       "part": "files",
-      "ms": 40.12,
-      "rho": 0.0031
+      "ms": 40.17,
+      "rho": 0.0043
      }
     ]
    },
@@ -310,11 +310,16 @@
     {
      "reason": "p99",
      "request": "GET_IMAGE",
-     "message": "GET_IMAGE took 458.1 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 305 % of capacity."
+     "message": "GET_IMAGE took 458.2 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 425 % of capacity."
+    },
+    {
+     "reason": "p99",
+     "request": "UPLOAD_IMAGE",
+     "message": "UPLOAD_IMAGE took 442.3 ms at the 99th percentile; the promise is 110 ms. Slowest hop: api at 425 % of capacity."
     }
    ],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 458.1,
+   "rank_p99_ms": 458.2,
    "tests": [
     {
      "id": "t01-afternoon",
@@ -447,9 +452,9 @@
     "reason": "budget",
     "request": null,
     "phase": null,
-    "expected": "≤ ₹60,000",
+    "expected": "≤ ₹30,000",
     "actual": "₹2,47,000",
-    "message": "This design costs ₹2,47,000 a month; the budget is ₹60,000.",
+    "message": "This design costs ₹2,47,000 a month; the budget is ₹30,000.",
     "blame": {
      "part": "api",
      "line": 3,

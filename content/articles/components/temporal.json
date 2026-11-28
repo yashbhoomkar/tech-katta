@@ -145,5 +145,11 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "Temporal documentation: workflows",
+      "url": "https://docs.temporal.io/workflows"
+    }
   ]
 }

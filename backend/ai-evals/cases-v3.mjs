@@ -332,7 +332,7 @@ write BOOK:      client > lb > api > ids > db then invalidate cache
 
   // ── D. Store fit ───────────────────────────────────────────────────────────────────────────────────────────
   {
-    id: 'image-serving/photos-in-key-value', cls: 'D', kind: 'flawed', judge: 'pass',
+    id: 'image-serving/photos-in-key-value', cls: 'D', kind: 'flawed', judge: 'Over Budget',
     faults: [{
       lines: [4, 7, 8], categories: ['store_fit', 'data_model'],
       finding: 'Large files kept in a key-value store',
@@ -343,7 +343,7 @@ write BOOK:      client > lb > api > ids > db then invalidate cache
     }],
     source: `cdn   = cdn(ttl_s=86400)
 lb    = lb()
-api   = server(count=4, size=medium)
+api   = server(count=4, size=small)
 files = nosql(nodes=3, rf=3, w=2, r=2)
 ids   = idgen(kind=snowflake)
 
@@ -465,7 +465,7 @@ write UPDATE_SCORE: client > lb > api ~> queue > worker > db
     }],
     source: `cdn   = cdn(ttl_s=1)
 lb    = lb()
-api   = server(count=2, size=medium)
+api   = server(count=4, size=small)
 files = objectstore()
 ids   = idgen(kind=snowflake)
 
@@ -763,7 +763,7 @@ write CREATE_PASTE: client > lb > api > ids > db then invalidate cache
     why: 'A CDN reading public photos straight from object storage is the usual design. Tempts "the store is exposed" (compare url-shortener/clients-read-the-store, where a database is exposed).',
     source: `cdn   = cdn(ttl_s=86400)
 lb    = lb()
-api   = server(count=2, size=medium)
+api   = server(count=4, size=small)
 files = objectstore()
 ids   = idgen(kind=snowflake)
 

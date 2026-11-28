@@ -13,6 +13,8 @@ import { costOf } from './verdict.js';
 import { SIZES, ID_KINDS } from './catalogue.js';
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
+/** the reference's own size and the steps either side of it (a half, three quarters, a quarter more, half as much again), so that designs with just enough, and just too little, are in the grid */
+const around = (n) => [...new Set([n, ...[0.5, 0.75, 1.25, 1.5].map((f) => Math.max(1, Math.round(n * f)))])];
 const setArg = (st, name, value) => { const a = st.args.find((x) => x.name === name); if (a) a.value = value; else st.args.push({ name, value }); };
 
 // Remove a part from the parsed design: its statement, its hops (neighbours joined with ">"), "then … it".
@@ -34,7 +36,7 @@ export function grid(problem) {
     const on = (fn) => (stmts) => { fn(stmts.find((s) => s.type === 'part' && s.name === p.name), stmts); return stmts; };
     // servers and workers: the spec's counts plus the reference's own, so the reference is always in the grid
     const refArg = (n, d) => p.args.find((a) => a.name === n)?.value ?? d;
-    if (p.kind === 'server' || p.kind === 'worker') product(p.name, [...new Set([1, 2, 3, 4, 6, 8, refArg('count', 1)])].sort((a, b) => a - b).flatMap((n) => SIZES.map((z) => ({ label: `${n}×${z}`, apply: on((s) => { setArg(s, 'count', n); setArg(s, 'size', z); }) }))));
+    if (p.kind === 'server' || p.kind === 'worker') product(p.name, [...new Set([1, 2, 3, 4, 6, 8, ...around(refArg('count', 1))])].sort((a, b) => a - b).flatMap((n) => SIZES.map((z) => ({ label: `${n}×${z}`, apply: on((s) => { setArg(s, 'count', n); setArg(s, 'size', z); }) }))));
     // nosql: nodes and the quorum (w, r) with rf 3
     if (p.kind === 'nosql') product(p.name, [...new Set([3, 4, 6, 8, 12, refArg('nodes', 3)])].sort((a, b) => a - b).flatMap((n) => [[1, 1], [2, 2], [3, 1], [1, 3]].map(([w, r]) => ({ label: `${n}n/w${w}r${r}`, apply: on((s) => { setArg(s, 'nodes', n); setArg(s, 'rf', 3); setArg(s, 'w', w); setArg(s, 'r', r); }) }))));
     if (p.kind === 'sql') product(p.name, SIZES.flatMap((z) => [0, 1, 2].flatMap((r) => [true, false].map((y) => ({ label: `${z}+${r}${y ? 'sync' : ''}`, apply: on((s) => { setArg(s, 'size', z); setArg(s, 'replicas', r); setArg(s, 'sync', y); }) })))));
@@ -71,13 +73,32 @@ export function sweep(problem) {
   const byVerdict = {};
   for (const r of rows) byVerdict[r.verdict] = (byVerdict[r.verdict] || 0) + 1;
   // designs that only this test rejects (every other test passes them)
-  const alone = tests.map((t, i) => ({ test: t.id, rejects: rows.filter((r) => r.perTest[i] !== 'Passed' && r.perTest.every((v, j) => j === i || v === 'Passed')).length }));
+  const alone = tests.map((t, i) => ({ test: t.id, rejects: rows.filter((r) => r.perTest[i] !== 'Passed' && r.perTest.every((v, j) => j === i || v === 'Passed')).length,
+    // designs this test rejects for a reason no other test gives them (the others pass them, or fail them with another verdict): what the learner would not have been told without it
+    own: rows.filter((r) => r.perTest[i] !== 'Passed' && r.perTest.every((v, j) => j === i || v !== r.perTest[i])).length }));
   const share = accepted.length / n, cheapest = accepted[0] || null;
   const taught = [...new Set((problem.wrong || []).map((w) => w.expect))];
+  // The ship rules. The grid's size changes from problem to problem (100 designs to 80,000), so the rules are counts that say what each is for, not a share
+  // that shrinks with every part a problem has (a fixed 1 % of the grid Accepted, and each test alone rejecting 2 % of it, failed all ten problems whatever they taught):
+  //  - not a needle, not a gift: a handful of different designs are Accepted, and no more than a fifth of the grid;
+  //  - the reference is a sensible answer, not an expensive one;
+  //  - every test pulls its weight. A load test: some designs get a verdict from this test that no other test gives them (the others pass them, or fail
+  //    them for another reason: Overloaded at the peak, Too Slow in a long evening), so the learner would not have been told that reason without it.
+  //    A failure test (it kills a part or restarts a cache): some designs fail it. It cannot be held to a verdict of its own: a design with the spare
+  //    capacity the peak asks for (the judge wants machines under about 80 % busy to keep p99) has more than enough left when one of them dies, so the peak
+  //    test already rejects every design a lost server would; what the failure test adds is Unavailable and Data Lost, for the designs that survive the peak
+  //    but not the loss;
+  //  - every mistake the problem teaches (its wrong designs' verdicts) is made by some design in the grid.
+  const needed = Math.max(3, Math.ceil(n * 0.0005));
   const rules = [
-    { rule: '1 % to 20 % of the grid is Accepted', ok: share >= 0.01 && share <= 0.2, value: `${(share * 100).toFixed(1)} %` },
+    { rule: 'at least 5 designs are Accepted, and no more than 20 % of the grid', ok: accepted.length >= 5 && share <= 0.2, value: `${accepted.length} of ${n} (${(share * 100).toFixed(1)} %)` },
     { rule: 'the reference is within 15 % of the cheapest Accepted cost', ok: !!cheapest && refCost <= cheapest.cost * 1.15, value: cheapest ? `reference ₹${refCost}, cheapest ₹${cheapest.cost}` : 'nothing Accepted' },
-    ...alone.map((a) => ({ rule: `${a.test} alone rejects at least 2 % of the grid`, ok: a.rejects / n >= 0.02, value: `${(100 * a.rejects / n).toFixed(1)} %` })),
+    ...alone.map((a, i) => {
+      const fault = tests[i].phases.some((ph) => (ph.events || []).length), total = rows.filter((r) => r.perTest[i] !== 'Passed').length;
+      return fault
+        ? { rule: `${a.test} (a failure) rejects at least ${needed} designs`, ok: total >= needed, value: `${total} (${(100 * total / n).toFixed(1)} %), ${a.rejects} of them only this test` }
+        : { rule: `${a.test} gives at least ${needed} designs a verdict no other test gives them`, ok: a.own >= needed, value: `${a.own} (${(100 * a.own / n).toFixed(1)} %), ${a.rejects} of them only this test` };
+    }),
     ...taught.map((v) => ({ rule: `some design gets ${v}`, ok: (byVerdict[v] || 0) > 0, value: String(byVerdict[v] || 0) })),
   ];
   return { designs: n, accepted: accepted.length, cheapest, referenceCost: refCost, referenceRank: accepted.filter((a) => a.cost < refCost).length + 1, byVerdict, alone, rules, ship: rules.every((r) => r.ok) };

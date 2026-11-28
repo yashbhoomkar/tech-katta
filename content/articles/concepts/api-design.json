@@ -990,5 +990,19 @@
         "Keep it short: security that shows judgment in three sentences beats a full design nobody asked for."
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "RFC 9110: HTTP Semantics",
+      "url": "https://www.rfc-editor.org/rfc/rfc9110"
+    },
+    {
+      "label": "RFC 6585: Additional HTTP Status Codes (429 Too Many Requests)",
+      "url": "https://www.rfc-editor.org/rfc/rfc6585"
+    },
+    {
+      "label": "Stripe API documentation: idempotent requests",
+      "url": "https://docs.stripe.com/api/idempotent_requests"
+    }
   ]
 }

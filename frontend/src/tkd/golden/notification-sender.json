@@ -4,21 +4,21 @@
   "verdict": "Accepted",
   "passed": 5,
   "total": 5,
-  "cost_inr": 228000,
+  "cost_inr": 204000,
   "worst_p99_ms": {
-   "SEND": 62.3
+   "SEND": 142.2
   },
   "worst_p50_ms": {
-   "SEND": 15.6
+   "SEND": 35.6
   },
   "tightest": {
    "promise": "budget",
    "request": null,
    "test": "t01-steady",
-   "margin": 0.1231,
-   "text": "Tightest promise: budget, 12 % to spare."
+   "margin": 0.2154,
+   "text": "Tightest promise: budget, 22 % to spare."
   },
-  "rank_p99_ms": 62.3,
+  "rank_p99_ms": 142.2,
   "tests": [
    {
     "id": "t01-steady",
@@ -59,12 +59,12 @@
    "verdict": "Overloaded",
    "passed": 1,
    "total": 5,
-   "cost_inr": 200000,
+   "cost_inr": 176000,
    "worst_p99_ms": {
-    "SEND": 662.3
+    "SEND": 742.2
    },
    "worst_p50_ms": {
-    "SEND": 165.6
+    "SEND": 185.6
    },
    "failed": {
     "test": "t02-match-starts",
@@ -90,8 +90,8 @@
      },
      {
       "part": "api",
-      "ms": 60.01,
-      "rho": 0.6667
+      "ms": 139.96,
+      "rho": 0.8571
      },
      {
       "part": "db",
@@ -102,7 +102,7 @@
    },
    "also": [],
    "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 662.3,
+   "rank_p99_ms": 742.2,
    "tests": [
     {
      "id": "t01-steady",
@@ -142,12 +142,12 @@
    "verdict": "Too Slow",
    "passed": 0,
    "total": 5,
-   "cost_inr": 207000,
+   "cost_inr": 183000,
    "worst_p99_ms": {
-    "SEND": 23.2
+    "SEND": 23.6
    },
    "worst_p50_ms": {
-    "SEND": 5.8
+    "SEND": 5.9
    },
    "failed": {
     "test": "t01-steady",
@@ -173,8 +173,8 @@
      },
      {
       "part": "api",
-      "ms": 21.18,
-      "rho": 0.0556
+      "ms": 21.54,
+      "rho": 0.0714
      },
      {
       "part": "queue",
@@ -198,7 +198,7 @@
    },
    "also": [],
    "tip": "More capacity in \"worker\" would fix this.",
-   "rank_p99_ms": 23.2,
+   "rank_p99_ms": 23.6,
    "tests": [
     {
      "id": "t01-steady",
@@ -238,12 +238,12 @@
    "verdict": "Data Lost",
    "passed": 3,
    "total": 5,
-   "cost_inr": 228000,
+   "cost_inr": 204000,
    "worst_p99_ms": {
-    "SEND": 62.3
+    "SEND": 142.2
    },
    "worst_p50_ms": {
-    "SEND": 15.6
+    "SEND": 35.6
    },
    "failed": {
     "test": "t04-database-fails",
@@ -265,7 +265,7 @@
    },
    "also": [],
    "tip": "Making \"db\" wait for its replicas would fix this.",
-   "rank_p99_ms": 62.3,
+   "rank_p99_ms": 142.2,
    "tests": [
     {
      "id": "t01-steady",
@@ -401,12 +401,12 @@
    "verdict": "Over Budget",
    "passed": 0,
    "total": 5,
-   "cost_inr": 348000,
+   "cost_inr": 324000,
    "worst_p99_ms": {
-    "SEND": 23.2
+    "SEND": 23.6
    },
    "worst_p50_ms": {
-    "SEND": 5.8
+    "SEND": 5.9
    },
    "failed": {
     "test": "t01-steady",
@@ -416,8 +416,8 @@
     "request": null,
     "phase": null,
     "expected": "≤ ₹2,60,000",
-    "actual": "₹3,48,000",
-    "message": "This design costs ₹3,48,000 a month; the budget is ₹2,60,000.",
+    "actual": "₹3,24,000",
+    "message": "This design costs ₹3,24,000 a month; the budget is ₹2,60,000.",
     "blame": {
      "part": "worker",
      "line": 4,
@@ -427,8 +427,8 @@
     "trace": []
    },
    "also": [],
-   "tip": "There is more than one thing to fix here.",
-   "rank_p99_ms": 23.2,
+   "tip": "A smaller \"worker\" would fix this.",
+   "rank_p99_ms": 23.6,
    "tests": [
     {
      "id": "t01-steady",

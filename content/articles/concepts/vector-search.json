@@ -168,5 +168,11 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "Malkov and Yashunin: Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs (HNSW)",
+      "url": "https://arxiv.org/abs/1603.09320"
+    }
   ]
 }

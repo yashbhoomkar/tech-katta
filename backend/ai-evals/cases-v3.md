@@ -326,12 +326,12 @@ Class C · **flawed** · the judge: Accepted
 
 ### image-serving/photos-in-key-value
 
-Class D · **flawed** · the judge: Accepted
+Class D · **flawed** · the judge: fails it
 
 ```
  1 | cdn   = cdn(ttl_s=86400)
  2 | lb    = lb()
- 3 | api   = server(count=4, size=medium)
+ 3 | api   = server(count=4, size=small)
  4 | files = nosql(nodes=3, rf=3, w=2, r=2)
  5 | ids   = idgen(kind=snowflake)
  6 | 
@@ -470,7 +470,7 @@ Class L · **clean** · the judge: Accepted
 ```
  1 | cdn   = cdn(ttl_s=1)
  2 | lb    = lb()
- 3 | api   = server(count=2, size=medium)
+ 3 | api   = server(count=4, size=small)
  4 | files = objectstore()
  5 | ids   = idgen(kind=snowflake)
  6 | 
@@ -834,7 +834,7 @@ Class K · **clean** · the judge: Accepted
 ```
  1 | cdn   = cdn(ttl_s=86400)
  2 | lb    = lb()
- 3 | api   = server(count=2, size=medium)
+ 3 | api   = server(count=4, size=small)
  4 | files = objectstore()
  5 | ids   = idgen(kind=snowflake)
  6 | 
@@ -1048,9 +1048,9 @@ Class K · **clean** · the judge: Accepted
 
 ```
  1 | lb     = lb()
- 2 | api    = server(count=9, size=large)
+ 2 | api    = server(count=7, size=large)
  3 | queue  = queue()
- 4 | worker = worker(count=4, size=medium)
+ 4 | worker = worker(count=2, size=large)
  5 | db     = sql(size=large, replicas=1, sync=true)
  6 | 
  7 | table db.jobs(id pk, user_id, body, status)
@@ -1068,7 +1068,7 @@ Class K · **clean** · the judge: Accepted
 ```
  1 | cdn   = cdn(ttl_s=86400)
  2 | lb    = lb()
- 3 | api   = server(count=2, size=medium)
+ 3 | api   = server(count=4, size=small)
  4 | files = objectstore()
  5 | ids   = idgen(kind=snowflake)
  6 | 

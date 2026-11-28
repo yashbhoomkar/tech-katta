@@ -180,5 +180,15 @@
         }
       ]
     }
+  ],
+  "sources": [
+    {
+      "label": "Hunt et al.: ZooKeeper: Wait-free coordination for Internet-scale systems (USENIX ATC 2010)",
+      "url": "https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf"
+    },
+    {
+      "label": "Apache ZooKeeper documentation",
+      "url": "https://zookeeper.apache.org/doc/current/index.html"
+    }
   ]
 }
