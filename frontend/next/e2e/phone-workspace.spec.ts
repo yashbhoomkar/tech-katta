@@ -209,6 +209,7 @@ test.describe("3D canvas on a Pixel 7", () => {
     await signedIn(page, "dark", "3d");
     await lite3d(page);
     await page.goto("/problems/url-shortener");
+    await expect(page.locator(".solve.ph.pv-problem")).toBeVisible({ timeout: 30_000 }); // the workspace is drawn (its island has loaded) before anything is tapped
     const t = await touch(page);
     await tapOn(t, page.locator(".ph-start button"));
     await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 });
