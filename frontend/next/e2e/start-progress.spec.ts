@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { localApi } from "./api";
+import { localApi, questionCount } from "./api";
 
 // Learning paths (/start), the progress panel on Home, "Updated" on articles and the changelog: all from content and this browser's own record.
 
@@ -49,7 +49,7 @@ test("Home shows the progress panel from this browser's record", async ({ page }
   await page.goto("/home");
   const panel = page.locator(".prog-panel");
   await expect(panel).toBeVisible();
-  await expect(panel.locator("dd").nth(0)).toContainText("1 of 22");
+  await expect(panel.locator("dd").nth(0)).toContainText(`1 of ${await questionCount()}`);
   await expect(panel.locator("dd").nth(1)).toContainText("2 of");
   await expect(panel.locator("dd").nth(2)).toContainText("88");
   await expect(panel.locator("dd").nth(2)).toContainText("40");
