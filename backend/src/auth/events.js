@@ -33,6 +33,9 @@ export const EVENTS = {
   // and how: a card, Previous or Next, an arrow key, a swipe)
   article_view: { view: S }, topic_open: { n: N, via: S },
   sign_in: { ads: B }, sign_out: {}, sign_out_all: {}, delete_account: {}, ads_consent: { ads: B },
+  // the design workspace breaking (owner's phone crash, 2026-11-25): the error screen's message (letters, digits and
+  // simple punctuation, at most 80 characters, as every text here) and where; the 3D canvas falling back to 2D, and why
+  canvas_error: { msg: S, where: S, view: S, mem: N }, canvas_3d_lost: { why: S },
 };
 export const MAX_BATCH = 50;
 const VISITOR = /^[a-z0-9]{16,40}$/;
