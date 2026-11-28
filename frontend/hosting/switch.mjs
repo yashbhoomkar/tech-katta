@@ -93,9 +93,10 @@ const islandFiles = (() => {
     return ["islands/islands.js", ...(index ? [`islands/assets/${index}`] : []), `islands/assets/${impl}`, ...(css ? [`islands/assets/${css}`] : []), ...deps.map((d) => `islands/${d}`)].filter((f, i, a) => a.indexOf(f) === i);
   } catch { return []; }
 })();
-pageFiles.push(["^/problems/(?!challenge/|sandbox|shared)[\\w-]+/?$", [...staticGraph("scripts/pages/workspace.js").filter((f) => !base.includes(f)), ...islandFiles]]);
+// (not preloaded with the page: a signed-out visitor never loads the workspace. workspace.js names these when the gate says open: window.__tkIsland)
+const islandSet = islandFiles;
 const bootPath = path.join(dist, "3d", "scripts", "boot-theme.js");
-writeFileSync(bootPath, `${readFileSync(bootPath, "utf8")}\n// (added by hosting/switch.mjs) the files of this address's page, fetched together with app.js\n(function(){var p=location.pathname,M=${JSON.stringify(pageFiles)};for(var i=0;i<M.length;i++){if(new RegExp(M[i][0]).test(p)){M[i][1].forEach(function(f){var l=document.createElement("link"),c=/\\.css$/.test(f);l.rel=c?"preload":"modulepreload";if(c)l.as="style";l.href="/3d/"+f;document.head.appendChild(l);});break;}}})();\n`);
+writeFileSync(bootPath, `${readFileSync(bootPath, "utf8")}\n// (added by hosting/switch.mjs) the files of this address's page, fetched together with app.js\n(function(){var p=location.pathname,M=${JSON.stringify(pageFiles)};window.__tkIsland=${JSON.stringify(islandSet.filter((f) => !base.includes(f)))};for(var i=0;i<M.length;i++){if(new RegExp(M[i][0]).test(p)){M[i][1].forEach(function(f){var l=document.createElement("link"),c=/\\.css$/.test(f);l.rel=c?"preload":"modulepreload";if(c)l.as="style";l.href="/3d/"+f;document.head.appendChild(l);});break;}}})();\n`);
 const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}<meta name="tk-build" content="${buildId}"/>${preloads}</head>`);
 const NOINDEX = '<meta name="robots" content="noindex"/>';
 /** the shell with this title (and description, canonical address, noindex) */

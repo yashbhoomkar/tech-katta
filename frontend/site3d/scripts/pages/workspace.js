@@ -45,7 +45,7 @@ const challengeName = (id) => getLab().then((l) => (l?.challenges || []).find((c
 export function mount(view, _params, ctx) {
   const path = location.pathname.replace(/(.)\/$/, '$1');
   const target = kindOf(path);
-  let alive = true, unmount = null, island = null, ro = null, offPublic = null;
+  let alive = true, unmount = null, island = null, warm = false, ro = null, offPublic = null;
   /** which kind of gate this address has: a problem, a challenge or a practice problem shows its public part; the sandbox and shared designs only the card; the practice list is open */
   /** the free sample's problem (access "free" in the list): the workspace opens signed out too */
   const isFree = () => target.kind === 'problem' && listNow().some((x) => x.slug === target.slug && x.access === 'free');
@@ -93,6 +93,8 @@ export function mount(view, _params, ctx) {
     document.body.classList.toggle('ws-phone', target.kind === 'problem' || target.kind === 'challenge' || target.kind === 'sandbox'); // phones: the problem is a focus screen, the site's bars step aside (styles/app.css)
     reserve();
     const host = view.querySelector('.ws-host');
+    // the gate says open: the workspace's chunks are asked for all at once, not one level after the other (the list is the build's, from boot-theme.js)
+    if (target.kind === 'problem' && !island && !warm) { warm = true; for (const f of window.__tkIsland || []) { const l = document.createElement('link'), css = /\.css$/.test(f); l.rel = css ? 'preload' : 'modulepreload'; if (css) l.as = 'style'; l.href = `/3d/${f}`; document.head.appendChild(l); } }
     try {
       island ||= await import('/3d/islands/islands.js');
       if (!alive) return;
